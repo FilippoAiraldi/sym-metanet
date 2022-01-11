@@ -9,8 +9,8 @@ PARTICULAR PURPOSE.
 
 ## Installation
 
-Currently, no `*setup.py` file is implemented. The library can be included in 
-path and then imported.
+Currently, no `*setup.py` file is implemented. The library must be included 
+in the Python path and then imported.
 
 To use TM, you will need a recent versions of
 
@@ -37,7 +37,10 @@ The code to simulate this network with the METANET framework is explained below.
 ```python
 import numpy as np
 import casadi as cs
-from traffic_modelling import metanet, util as tm_util
+
+import sys
+sys.path.append('path\to\traffic-modelling')
+from trafficmodelling import metanet, util as tm_util
 ```
 Then, we can initialize the METANET model with all its parameters. The <code>metanet.init</code> must be called to initialize the internal variables, otherwise an error will be thrown.
 ```python
