@@ -8,10 +8,11 @@ import functools
 ###############################################################################
 
 
-class _NonInstantiable:
-    '''A class that cannot be instantiated with __new__'''
-    def __new__(cls: type) -> None:
-        raise TypeError(f'{cls.__name__} cannot be instantiated')
+class _ConfigurableObj:
+    '''A class holding a configuration object.'''
+
+    def __init__(self, config) -> None:
+        self._config = config
 
 
 def _nonnegative(f):

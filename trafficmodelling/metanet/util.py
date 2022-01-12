@@ -10,9 +10,9 @@ def steady_state(mdl: Model, flow_in):
     incoming flow.
     '''
 
-    I = mdl.config.I
-    lanes = mdl.config.lanes
-    v_free = mdl.config.v_free
+    I = mdl._config.I
+    lanes = mdl._config.lanes
+    v_free = mdl._config.v_free
 
     # create x (rho + v)
     x = cs.SX.sym('x', 2 * I)

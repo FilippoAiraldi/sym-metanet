@@ -7,22 +7,21 @@ from . import ramps
 from .. import util as tm_util
 
 
-class Model:
+class Model(tm_util._ConfigurableObj):
     '''METANET model class'''
-
-    config: Config
 
     def __init__(self, config: Config, version: int = 1) -> None:
         '''
         Initialize a new instance of a \'metanet.model\' with the given 
         \'metanet.Config\'.
         '''
-        self.config = config
+        super().__init__(config)
         if version == 1:
-            self.links = links.Links(self.config)
-            self.ramps = ramps.Ramps(self.config)
+            self.links = links.Links_v1(self._config)
+            self.ramps = ramps.Ramps_v1(self._config)
         elif version == 2:
-            pass
+            self.links = links.Links_v2(self._config)
+            self.ramps = ramps.Ramps_v2(self._config)
         else:
             raise ValueError(f'Unknown version {version}; 1 and 2 are valid.')
 
@@ -33,8 +32,8 @@ class Model:
     @tm_util._check_shapes_cols_out
     def x2q(self, x):
         '''Retuns w, rho, v from a vector state x'''
-        O = self.config.O
-        I = self.config.I
+        O = self._config.O
+        I = self._config.I
         return ((x[: O], x[O: O + I], x[O + I:])
                 if len(x.shape) == 1 else
                 (x[: O, :], x[O: O + I, :], x[O + I:, :]))

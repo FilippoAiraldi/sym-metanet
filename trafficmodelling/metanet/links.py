@@ -4,17 +4,14 @@ import casadi as cs
 from .. import util as tm_util
 
 
-class Links:
-    def __init__(self, config: None) -> None:
-        self.__config = config
-
+class Links_v1(tm_util._ConfigurableObj):
     @tm_util._check_shapes_all
     def get_flow(self, rho, v):
         '''
         Computes the flow (veh/h).
         Rho is current density (veh/km/lane), v the current speed (km/h).
         '''
-        return rho * v * self.__config.lanes
+        return rho * v * self._config.lanes
 
     @tm_util._check_shapes_all
     def get_Veq(self, rho):
@@ -22,9 +19,9 @@ class Links:
         Computes the equivalent velocity (km/h).
         Rho is current density (veh/km/lane).
         '''
-        a = self.__config.a
-        v_free = self.__config.v_free
-        rho_crit = self.__config.rho_crit
+        a = self._config.a
+        v_free = self._config.v_free
+        rho_crit = self._config.rho_crit
         return v_free * cs.exp((-1 / a) * cs.power(rho / rho_crit, a))
 
     @tm_util._nonnegative
@@ -36,8 +33,8 @@ class Links:
         q_up the current upstream flow (i.e., the same flow but shifted up
         by one index), r and s the ramps' in- and out-flows.
         '''
-        return rho + (self.__config.T * (q_up - q + r - s) /
-                      (self.__config.lanes * self.__config.L))
+        return rho + (self._config.T * (q_up - q + r - s) /
+                      (self._config.lanes * self._config.L))
 
     @tm_util._nonnegative
     @tm_util._check_shapes_col
@@ -50,30 +47,34 @@ class Links:
         the current downstream density (i.e., the same density but shifted
         down by one index), r the ramps' in-flows.
         '''
-        lanes = self.__config.lanes
-        L = self.__config.L
-        T = self.__config.T
-        tau = self.__config.tau
-        kappa = self.__config.kappa
+        lanes = self._config.lanes
+        L = self._config.L
+        T = self._config.T
+        tau = self._config.tau
+        kappa = self._config.kappa
 
         lanes_down = np.array([*lanes[1:], lanes[-1]])
         # equilibrium speed error
         t1 = (T / tau) * (Veq - v)
         # on-ramp merging phenomenum
-        t2 = (self.__config.delta * T) * (r * v) / (L * lanes * (rho + kappa))
+        t2 = (self._config.delta * T) * (r * v) / (L * lanes * (rho + kappa))
         # speed difference error
         t3 = T * (v / L) * (v_up - v)
         # density difference error
-        t4 = (self.__config.eta * T / tau) * (rho_down - rho) / (L * (rho +
+        t4 = (self._config.eta * T / tau) * (rho_down - rho) / (L * (rho +
                                                                       kappa))
         # lane drop phenomenum
-        t5 = (self.__config.phi * T) * (((lanes - lanes_down)
+        t5 = (self._config.phi * T) * (((lanes - lanes_down)
                                          * rho * cs.power(v, 2))
-                                        / (L * lanes * self.__config.rho_crit))
+                                       / (L * lanes * self._config.rho_crit))
         return v + t1 - t2 + t3 - t4 - t5
 
     def get_downstream_density(self, rho):
-        return cs.fmin(rho, self.__config.rho_crit)
+        return cs.fmin(rho, self._config.rho_crit)
 
     def get_upstream_speed(self, v):
         return v
+
+
+class Links_v2(Links_v1):
+    pass
