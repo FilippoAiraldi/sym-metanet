@@ -22,7 +22,7 @@ def _nonnegative(f):
 
 def _check_shapes(f, type):
     def _f(*args, **kwargs):
-        x = args[0]
+        x = args[1]  # 0 is self
         out = f(*args, **kwargs)
         if type == 'col':
             assert out.shape[0] == x.shape[0]
@@ -30,7 +30,7 @@ def _check_shapes(f, type):
                 assert out.shape[1] == 1
         elif type == 'cols_out':
             assert sum(o.shape[0] for o in out) == x.shape[0]
-            if len(args[0].shape) > 1:
+            if len(x.shape) > 1:
                 assert all(o.shape[1] == x.shape[1] for o in out)
         elif type == 'row':
             assert out.shape == (1, x.shape[1])
