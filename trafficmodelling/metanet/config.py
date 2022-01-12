@@ -36,6 +36,8 @@ class Config:
                                ('L', 'I', (float, int)),
                                ('C0', 'O', (float, int))]:
             arr = getattr(self, name)
+
+            # check type
             is_scalar = isinstance(arr, types)
             is_array = isinstance(arr, np.ndarray)
             if not is_scalar and not is_array or (
@@ -44,9 +46,13 @@ class Config:
                 raise ValueError(f'parameter \'{name}\' must be a scalar '
                                  f'or an array of types \'{types}\'; '
                                  f'got {wrong_type} instead.')
+
+            # check size
             sz = getattr(self, n)
             if is_scalar:
-                arr = np.full((sz, 1), arr)
+                if sz != 1:
+                    raise ValueError(f'parameter \'{n}\' expected to be 1; '
+                                     f'got {sz} instead.')
             else:
                 if arr.ndim > 2 or (arr.ndim == 2 and arr.shape[1] != 1):
                     raise ValueError(
