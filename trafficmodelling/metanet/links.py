@@ -1,80 +1,80 @@
 import numpy as np
-import casadi as cs
 
-from .. import util as tm_util
+from ..util import NamedClass, SmartList
 
 
-class Links_v1(tm_util._ConfigurableObj):
-    @tm_util._check_shapes_all
-    def get_flow(self, rho, v):
+class Link(NamedClass):
+    '''METANET link'''
+
+    @property
+    def nb_seg(self) -> int:
+        return self.__nb_seg
+
+    @property
+    def lanes(self) -> int:
+        return self.__lanes
+
+    @property
+    def lengths(self):
+        return self.__lengths
+
+    @property
+    def density(self) -> SmartList:
+        return self.__rho
+
+    @property
+    def speed(self) -> SmartList:
+        return self.__v
+
+    @property
+    def flow(self) -> SmartList:
+        return self.__q
+
+    @property
+    def v_ctrl(self) -> SmartList:
+        return self.__v_ctrl
+
+    def __init__(self, nb_seg, lanes, lengths, v_free, rho_crit, a,
+                 name=None) -> None:
         '''
-        Computes the flow (veh/h).
-        Rho is current density (veh/km/lane), v the current speed (km/h).
+        Instanciate a link.
+
+        Parameters
+        ----------
+            nb_seg : int
+                Number of segments in this link.
+
+            lanes : int
+                Number of lanes in this link's segments. Must be positive.
+
+            lengths, v_free, rho_crit, a : {float, array}
+                Length, free-flow speed, critical density and model parameter 
+                of each link's segment. If not scalar, shape is (Ns, 1) with Ns
+                the number of segments in this link. Must be positive.
+
+            name : str, optional
+                Name of the link.
         '''
-        return rho * v * self._config.lanes
 
-    @tm_util._check_shapes_all
-    def get_Veq(self, rho):
-        '''
-        Computes the equivalent velocity (km/h).
-        Rho is current density (veh/km/lane).
-        '''
-        a = self._config.a
-        v_free = self._config.v_free
-        rho_crit = self._config.rho_crit
-        return v_free * cs.exp((-1 / a) * cs.power(rho / rho_crit, a))
+        super().__init__(name=name)
 
-    @tm_util._nonnegative
-    @tm_util._check_shapes_col
-    def step_density(self, rho, q, q_up, r, s):
-        '''
-        Computes the density (veh/km/lane) at the next time instant.
-        Rho is current density (veh/km/lane), q the current flow (veh/h),
-        q_up the current upstream flow (i.e., the same flow but shifted up
-        by one index), r and s the ramps' in- and out-flows.
-        '''
-        return rho + (self._config.T * (q_up - q + r - s) /
-                      (self._config.lanes * self._config.L))
+        # save unmutable params
+        self.__nb_seg = nb_seg
+        self.__lanes = lanes
+        self.__lengths = lengths
 
-    @tm_util._nonnegative
-    @tm_util._check_shapes_col
-    def step_speed(self, v, v_up, Veq, rho, rho_down, r):
-        '''
-        Computes the speed (km/h) at the next time instant.
-        v is the current speed (km/h), v_up the current upstream speed
-        (i.e., the same speed but shifted up  by one index), Veq the
-        equivalent speed, rho the current density (veh/km/lane), rho_down
-        the current downstream density (i.e., the same density but shifted
-        down by one index), r the ramps' in-flows.
-        '''
-        lanes = self._config.lanes
-        L = self._config.L
-        T = self._config.T
-        tau = self._config.tau
-        kappa = self._config.kappa
+        # save mutable params
+        self.v_free = v_free
+        self.rho_crit = rho_crit
+        self.a = a
 
-        lanes_down = np.array([*lanes[1:], lanes[-1]])
-        # equilibrium speed error
-        t1 = (T / tau) * (Veq - v)
-        # on-ramp merging phenomenum
-        t2 = (self._config.delta * T) * (r * v) / (L * lanes * (rho + kappa))
-        # speed difference error
-        t3 = T * (v / L) * (v_up - v)
-        # density difference error
-        t4 = (self._config.eta * T / tau) * (rho_down - rho) / (L * (rho +
-                                                                      kappa))
-        # lane drop phenomenum
-        t5 = (self._config.phi * T) * (((lanes - lanes_down)
-                                         * rho * cs.power(v, 2))
-                                       / (L * lanes * self._config.rho_crit))
-        return v + t1 - t2 + t3 - t4 - t5
+        self.reset()
 
-    def get_downstream_density(self, rho):
-        return cs.fmin(rho, self._config.rho_crit)
-
-    def get_upstream_speed(self, v):
-        return v
-
-
-class Links_v2(Links_v1):
-    pass
+    def reset(self):
+        # initialize state (speed and rho) and others (flow, speed limits)
+        self.__rho = SmartList()
+        self.__rho.append(np.zeros((self.__nb_seg, 1)))
+        self.__v = SmartList()
+        self.__v.append(np.zeros((self.__nb_seg, 1)))
+        self.__q = SmartList()
+        self.__v_ctrl = SmartList()
