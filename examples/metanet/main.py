@@ -3,10 +3,8 @@
 ###############################################################################
 import numpy as np
 
-import sys, os
-sys.path.append(os.path.expanduser('~\\Documents\\git\\traffic-modelling'))
-# import sys
-# sys.path.append('path\to\traffic-modelling')
+import sys
+sys.path.append('path\to\traffic-modelling')
 from trafficmodelling import metanet, util as tm_util
 
 from tqdm import tqdm
