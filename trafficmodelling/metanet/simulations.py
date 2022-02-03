@@ -1,214 +1,8 @@
 import casadi as cs
-from dataclasses import dataclass, field
 
-from ..util import NamedClass
-from .links import Link
-from .nodes import Node
-from .origins import Origin, MainstreamOrigin, OnRamp
-from .destinations import Destination
+from .origins import MainstreamOrigin, OnRamp
+from .networks import Network
 from . import functional as F
-
-
-@dataclass
-class NodeData:
-    node: Node
-    links_in: list['LinkData'] = field(default_factory=list)
-    links_out: list['LinkData'] = field(default_factory=list)
-    origin: Origin = None
-    destination: Destination = None
-
-
-@dataclass
-class LinkData:
-    link: Link
-    node_up: NodeData = None
-    node_down: NodeData = None
-
-
-class Network(NamedClass):
-    '''METANET traffic network'''
-
-    @property
-    def nodes(self) -> dict[Node, NodeData]:
-        return self.__nodes
-
-    @property
-    def links(self) -> dict[Link, LinkData]:
-        return self.__links
-
-    @property
-    def origins(self) -> dict[Origin, NodeData]:
-        return self.__origins
-
-    @property
-    def destinations(self) -> dict[Destination, NodeData]:
-        return self.__destinations
-
-    @property
-    def turnrates(self) -> dict[(Node, Link), float]:
-        return self.__beta
-
-    def __init__(self, name=None) -> None:
-        '''
-        Creates a METANET traffic network model
-
-        Parameters
-        ----------
-            name : str, optional
-                Name of the model.
-        '''
-        super().__init__(name=name)
-        # self.__g = nx.DiGraph()
-        self.__nodes: dict[Node, NodeData] = {}
-        self.__links: dict[Link, LinkData] = {}
-        self.__origins: dict[Origin, NodeData] = {}
-        self.__destinations: dict[Destination, NodeData] = {}
-        self.__beta: dict[(Node, Link), float] = {}  # turn rates
-
-    def add_vertex(self, *args, **kwargs):
-        '''Alias for add_node'''
-        return self.add_node(*args, **kwargs)
-
-    def add_edge(self, *args, **kwargs):
-        '''Alias for add_link'''
-        return self.add_link(*args, **kwargs)
-
-    def add_node(self, node: Node):
-        '''
-        Add a node to the network. If already present, does nothing.
-
-        Parameters
-        ----------
-            node : metanet.Node
-                The node to add.
-        '''
-        if node not in self.__nodes:
-            self.__nodes[node] = NodeData(node)
-
-    def add_link(self, node_up: Node, link: Link, node_down: Node,
-                 turnrate: float = 1.0):
-        '''
-        Add a link from the upstream node to the downstream node. Raises if
-        already present.
-
-        Parameters
-        ----------
-            node_up : metanet.Node
-                Upstream node.
-            link : metanet.Link
-                Link connecting the two nodes.
-            node_down : metanet.Node
-                Downstream node.
-            turnrate : float, optional
-                Turn rate from the upstream node into this link.
-
-        Raises
-        ------
-            ValueError : link already in network
-                If the link had already been added.
-        '''
-        if link in self.__links:
-            data = self.__links[link]
-            raise ValueError(
-                f'Link {link.name} already inserted from node '
-                f'{data.node_up.name} to {data.node_down.name}.')
-
-        # add link
-        self.__links[link] = LinkData(link, self.__nodes[node_up],
-                                      self.__nodes[node_down])
-
-        # add nodes
-        self.__nodes[node_up].links_out.append(self.__links[link])
-        self.__nodes[node_down].links_in.append(self.__links[link])
-
-        # add turn rate
-        self.__beta[(node_up, link)] = turnrate
-
-    def add_origin(self, origin: Origin, node: None):
-        '''
-        Add an origin to the node.
-
-        Parameters
-        ----------
-            origin : metanet.Origin
-                Origin (mainstream, on-ramp) to be connected to the node.
-            node : metanet.Node
-                Node to be connected to the origin.
-        '''
-        self.__origins[origin] = self.__nodes[node]
-        self.__nodes[node].origin = origin
-
-    def add_destination(self, destination: Destination, node: Node):
-        '''
-        Add a destination to the node.
-
-        Parameters
-        ----------
-            destination : metanet.Destination
-                Destination to be connected to the node.
-            node : metanet.Node
-                Node to be connected to the destination.
-        '''
-        self.__destinations[destination] = self.__nodes[node]
-        self.__nodes[node].destination = destination
-
-    def plot(self, reverse_x=False, reverse_y=False, **kwargs):
-        import matplotlib.pyplot as plt
-        import networkx as nx
-
-        # build the network
-        G = nx.DiGraph()
-        for link, data in self.__links.items():
-            G.add_edge(data.node_up.node, data.node_down.node, object=link)
-        for origin, data in self.__origins.items():
-            G.add_edge(origin, data.node, object=None)
-        for destination, data in self.__destinations.items():
-            G.add_edge(data.node, destination, object=None)
-
-        # compute positions
-        pos = nx.spectral_layout(G)
-        if reverse_x:
-            for k in pos.values():
-                k[0] *= -1
-        if reverse_y:
-            for k in pos.values():
-                k[1] *= -1
-
-        # nodes
-        cmap, labels = [], {}
-        for node in G.nodes:
-            labels[node] = node.name
-            if isinstance(node, MainstreamOrigin):
-                cmap.append('tab:red')
-            elif isinstance(node, OnRamp):
-                cmap.append('tab:orange')
-            elif isinstance(node, Destination):
-                cmap.append('tab:blue')
-            else:
-                cmap.append('white')
-        nx.draw_networkx_nodes(G, pos, node_color=cmap,
-                               edgecolors='k', node_size=600, alpha=0.9)
-        nx.draw_networkx_labels(G, pos, labels)
-
-        # links
-        cmap, width, labels = [], [], {}
-        for u, v in G.edges:
-            if link := G.edges[u, v]['object']:
-                cmap.append('k')
-                width.append(2.0)
-                labels[(u, v)] = f'{link.name}\n({self.__beta[(u, link)]:.2f})'
-            else:
-                cmap.append('grey')
-                width.append(1.0)
-        nx.draw_networkx_edges(G, pos, width=width, edge_color=cmap,
-                               arrowsize=20)
-        nx.draw_networkx_edge_labels(G, pos, labels)
-
-        # ax = plt.gca()
-        # ax.collections[0].set_edgecolor('#000000')
-        plt.tight_layout()
-        plt.axis("off")
-        plt.show()
 
 
 class Simulation:
@@ -248,13 +42,13 @@ class Simulation:
         self.alpha = alpha
 
         # some checks
-        self.__check_normalized_turnrates(net)
-        self.__check_main_origins_and_destinations(net)
+        self.__check_normalized_turnrates()
+        self.__check_main_origins_and_destinations()
 
-    def __check_normalized_turnrates(self, net: Network):
+    def __check_normalized_turnrates(self):
         # check turnrates are normalized
         sums_per_node = {}
-        for (node, _), rate in net.turnrates.items():
+        for (node, _), rate in self.net.turnrates.items():
             s = sums_per_node.get(node, 0)
             sums_per_node[node] = s + rate
         for node, s in sums_per_node.items():
@@ -262,9 +56,9 @@ class Simulation:
                 raise ValueError(f'Turn-rates at node {node.name} do not sum '
                                  f'to 1; got {s} instead.')
 
-    def __check_main_origins_and_destinations(self, net: Network):
+    def __check_main_origins_and_destinations(self):
         # all nodes that have a mainstream origin must have no entering links
-        for origin, nodedata in net.origins.items():
+        for origin, nodedata in self.net.origins.items():
             if (isinstance(origin, MainstreamOrigin)
                     and len(nodedata.links_in) != 0):
                 raise ValueError(
@@ -274,7 +68,7 @@ class Simulation:
                     'links instead.')
 
         # all nodes that have a destination must have no exiting links
-        for destination, nodedata in net.destinations.items():
+        for destination, nodedata in self.net.destinations.items():
             if (isinstance(origin, MainstreamOrigin)
                     and len(nodedata.links_out) != 0):
                 raise ValueError(
@@ -282,6 +76,18 @@ class Simulation:
                     'since it is connected to the destination '
                     f'{destination.name}; got {len(nodedata.links_out)} '
                     'exiting links instead.')
+
+    def _check_unique_names(self):
+        names = set()
+        for o in (list(self.net.nodes.keys())
+                  + list(self.net.links.keys())
+                  + list(self.net.origins.keys())
+                  + list(self.net.destinations.keys())):
+            name = o.name
+            if name in names:
+                raise ValueError(
+                    f'{o.__class__.__name__} {name} has a non-unique name.')
+            names.add(name)
 
     def set_init_cond(self, links_init=None, origins_init=None,
                       reset=False):
@@ -436,15 +242,152 @@ class Simulation:
                 delta=self.delta,
                 T=self.T)
 
-    def to_func(self):
-        # NOTE: in future, might turn everything (also params) in sym.
 
-        # save state of each link, origin
+def sim2func(sim: Simulation,
+             states: bool = True,
+             inputs: bool = True,
+             disturbances: bool = True,
+             origin_params: bool = False,
+             link_params: bool = False,
+             sim_params: bool = False,
+             out_nonstate: bool = False,
+             k: int = 0,
+             funcname: str = 'F',
+             cs_type: str = 'SX',
+             return_args: bool = False) -> cs.Function:
+    '''
+    Converts the simulation to a one-step lookahead casadi function 
+                    x_next = f( x, u, d )
+    where x and x_next are the current and next states, u the input (metering
+    rates, speed controls, etc.), and d the disturbances (origin demands). 
 
-        # change initial conditions to casadi symbolic
-        # states, inputs, disturbances
+    In this case the state x is a tuple of 1 queue for each origin and N 
+    densities and velocities for each link (where N is the number of segments 
+    in that link).
 
-        # perform one step
+    Parameters
+    ----------
+        sim : metanet.Simulation
+            Simulation from which to extract the casadi function. If not 
+            symbolic, the values/parameters are taken from this simulation as 
+            they are.
 
-        # create function from state k to state k+1
-        pass
+        states, inputs, disturbances, 
+        link_params origin_params, sim_params : bool, optional
+            Whether to make various components symbolic or not.
+
+        out_nonstate : bool, optional
+            Whether the function should output also other quantities apart 
+            from the next states, namely origin and link flows (not in state).
+            Note that these quantities belong to the current timestep k, while
+            the next states are from time k + 1. Defaults to False.
+
+        k : int, optional
+            Specify a specific timestep to evaluate the simulation. Defaults 
+            to 0.
+
+        cs_type : str, {'SX', 'MX'}, optional
+            Instruct whether to use casadi symbolic SX or symbolic MX.
+
+         return_args : bool 
+            Whether also the symbolic arguments (in and out) of the function 
+            should be returned. Defaults to False.
+
+    Returns
+    -------
+        F : casadi.Function
+            A function that computes the next states for the simulation.
+
+        args : dict[str, SX | MX], optional
+            A dictionary of names and symbolic arguments (inputs of F). Only 
+            returned if return_args is True.
+
+        out : dict[str, SX | MX], optional
+            A dictionary of names and symbolic outputs (outputs of F). Only 
+            returned if return_args is True.
+
+    Raises
+    ------
+        ValueError : non-unique naming
+            If the same name is used more than once for nodes or links.
+    '''
+
+    if cs_type in {'SX', 'sx'}:
+        csXX = cs.SX
+    elif cs_type in {'MX', 'mx'}:
+        csXX = cs.MX
+    else:
+        raise ValueError('Invalid casadi type; must be either'
+                         f'\'SX\' or \'MX\', got \'{cs_type}\'')
+
+    # since we are using names to identify symbolic variables, better not to
+    # have conflicts
+    sim._check_unique_names()
+
+    # create a copy of the simulation which will be entirely symbolic
+    from copy import deepcopy
+    sym_sim = deepcopy(sim)
+    origins, links = sym_sim.net.origins, sym_sim.net.links
+
+    # create the function arguments
+    args = {}
+
+    def add_arg(name, *size):
+        var = csXX.sym(name, *size)
+        args[name] = var
+        return var
+
+    if states:
+        for origin in origins:
+            origin.queue[k] = add_arg(f'w_{origin.name}', 1, 1)
+        for link in links:
+            link.density[k] = add_arg(f'rho_{link.name}', link.nb_seg, 1)
+            link.speed[k] = add_arg(f'v_{link.name}', link.nb_seg, 1)
+
+    if inputs:
+        for origin in origins:
+            if isinstance(origin, OnRamp):
+                origin.rate[k] = add_arg(f'r_{origin.name}', 1, 1)
+        for link in links:
+            link.v_ctrl[k] = add_arg(f'v_ctrl_{link.name}', link.nb_seg, 1)
+
+    if disturbances:
+        for origin in origins:
+            origin.demand[k] = add_arg(f'd_{origin.name}', 1, 1)
+
+    if origin_params:
+        for origin in origins:
+            if isinstance(origin, OnRamp):
+                origin.capacity = add_arg(f'C_{origin.name}', 1, 1)
+
+    if link_params:
+        for link in links:
+            for name in ['lanes', 'lengths', 'v_free', 'rho_crit', 'a']:
+                setattr(link, name, add_arg(f'{name}_{link.name}', 1, 1))
+
+    if sim_params:
+        for name in ['rho_max', 'eta', 'tau', 'kappa', 'delta', 'alpha', 'T']:
+            setattr(sym_sim, name, add_arg(name, 1, 1))
+
+    # perform one step
+    sym_sim.step(k)
+
+    # gather outputs - queue for each ramp,
+    outs = {}  # sourcery skip: dict-comprehension
+    for origin in origins:
+        if out_nonstate:
+            outs[f'q_{origin.name}'] = origin.flow[k]
+        outs[f'w+_{origin.name}'] = origin.queue[k + 1]
+    for link in links:
+        if out_nonstate:
+            outs[f'q_{link.name}'] = link.flow[k]
+        outs[f'rho+_{link.name}'] = link.density[k + 1]
+        outs[f'v+_{link.name}'] = link.speed[k + 1]
+
+    # create function from state k to state k+1
+    F = cs.Function(funcname,
+                    list(args.values()),
+                    list(outs.values()),
+                    list(args.keys()),
+                    list(outs.keys()))
+    return ((F, args, outs) if return_args else F)
