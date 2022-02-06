@@ -33,7 +33,7 @@ class Network(NamedClass):
         return filter(lambda o: isinstance(o[0], OnRamp), self.origins.items())
 
     @property
-    def mainstream_origins(self) -> Iterable[tuple
+    def mainstream_origins(self) -> Iterable[Tuple
                                              [MainstreamOrigin, NodeData]]:
         return filter(lambda o: isinstance(o[0], MainstreamOrigin),
                       self.origins.items())
