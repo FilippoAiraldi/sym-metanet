@@ -1,4 +1,7 @@
 import casadi as cs
+import numpy as np
+
+from typing import Union
 
 from ..util import NamedClass, SmartList
 
@@ -6,10 +9,11 @@ from ..util import NamedClass, SmartList
 class Link(NamedClass):
     '''METANET link'''
 
-    def __init__(self, nb_seg, lanes, lengths, v_free, rho_crit, a,
-                 name=None) -> None:
+    def __init__(
+            self, nb_seg: int, lanes: int, lengths: float, v_free: float,
+            rho_crit: float, a: float, name: str = None) -> None:
         '''
-        Instanciate a link.
+        Instantiate a link.
 
         Parameters
         ----------
@@ -23,6 +27,10 @@ class Link(NamedClass):
                 Length, free-flow speed, critical density and model parameter 
                 of each link's segment. Must be positive.
 
+            vms : set, tuple, list of int, optional
+                Which segments of this link are equipped with Variable Messsage
+                Signs for speed control. 0-based. Defaults to None. 
+
             name : str, optional
                 Name of the link.
         '''
@@ -35,16 +43,62 @@ class Link(NamedClass):
         self.v_free = v_free
         self.rho_crit = rho_crit
         self.a = a
-        self.reset()
+        self.__reset()
 
-    def reset(self):
+    def __reset(self) -> None:
         # initialize state (speed and rho) and others (flow, speed limits)
-        self.density = SmartList()
-        self.speed = SmartList()
+        self.density = SmartList.from_list([cs.DM(self.nb_seg, 1)])  # zeroes
+        self.speed = SmartList.from_list([cs.DM(self.nb_seg, 1)])  # zeroes
         self.flow = SmartList()
+
+
+class LinkWithVms(Link):
+    def __init__(
+            self, nb_seg: int, lanes: int, lengths: float, v_free: float,
+            rho_crit: float, a: float, vms: list[int],
+            name: str = None) -> None:
+        '''
+        Instantiate a link with Variable Sign Messages for speed control.
+
+        Parameters
+        ----------
+            Same as Link.
+
+            vms : set, tuple, list of int, optional
+                Which segments of this link are equipped with Variable Messsage
+                Signs for speed control. 0-based.
+
+        Raises
+        ------
+            ValueError : segment outside link
+                If the vms variable points to a segment outside the link.
+        '''
+
+        super().__init__(nb_seg, lanes, lengths, v_free, rho_crit, a, name)
+
+        if not all(0 <= s < nb_seg for s in vms):
+            raise ValueError('Segment with VMS not contained in the link.')
+
         self.v_ctrl = SmartList()
-        # NOTE: matrix with structural zeroes vs normal zeroes
-        self.density.append(cs.DM(self.nb_seg, 1))  # zero matrix
-        self.speed.append(cs.DM(self.nb_seg, 1))  # zero matrix
-        # self.density.append(cs.vertcat(*[0] * self.nb_seg))
-        # self.speed.append(cs.vertcat(*[0] * self.nb_seg))
+        self.vms = sorted(vms)
+        self.has_vms = np.zeros(nb_seg, dtype=bool)
+        for i in self.vms:
+            self.has_vms[i] = True
+        self.nb_vms = len(self.vms)
+
+    def v_ctrl_at(self, k: int, seg: Union[int, slice] = None):
+        '''
+        Returns the control speed at time k for a segment (infinity if the 
+        segment has no vms). If None, returns for all segments.
+        '''
+
+        if seg is None:
+            seg = slice(None, None, None)
+        elif isinstance(seg, int):
+            return (self.v_ctrl[k][self.vms.index(seg)]
+                    if self.has_vms[seg] else
+                    cs.inf)
+
+        # seg is a slice
+        return cs.vertcat(*[self.v_ctrl_at(k, s)
+                            for s in range(*seg.indices(self.nb_seg))])

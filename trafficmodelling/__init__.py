@@ -8,5 +8,4 @@ except Exception as ex:
 
 
 from . import util
-from . import cost
 from . import metanet

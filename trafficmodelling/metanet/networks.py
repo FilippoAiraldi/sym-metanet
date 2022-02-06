@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 
+from typing import Iterable
+
 from ..util import NamedClass
-from .links import Link
+from .links import Link, LinkWithVms
 from .nodes import Node
 from .origins import Origin, MainstreamOrigin, OnRamp
 from .destinations import Destination
@@ -25,6 +27,21 @@ class LinkData:
 
 class Network(NamedClass):
     '''METANET traffic network'''
+
+    @property
+    def onramps(self) -> Iterable[tuple[OnRamp, NodeData]]:
+        return filter(lambda o: isinstance(o[0], OnRamp), self.origins.items())
+
+    @property
+    def mainstream_origins(self) -> Iterable[tuple
+                                             [MainstreamOrigin, NodeData]]:
+        return filter(lambda o: isinstance(o[0], MainstreamOrigin),
+                      self.origins.items())
+
+    @property
+    def links_with_vms(self) -> Iterable[tuple[LinkWithVms, LinkData]]:
+        return filter(lambda o: isinstance(o[0], LinkWithVms),
+                      self.links.items())
 
     def __init__(self, name=None) -> None:
         '''

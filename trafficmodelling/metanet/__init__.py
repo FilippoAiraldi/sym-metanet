@@ -3,4 +3,5 @@ from .links import Link
 from .origins import OnRamp, MainstreamOrigin
 from .destinations import Destination
 from .networks import Network
-from .simulations import Simulation, sim2func
+from .simulations import Simulation
+from . import control
