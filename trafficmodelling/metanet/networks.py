@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from typing import Iterable
+from typing import Iterable, Dict, List, Tuple
 
 from ..util import NamedClass
 from .links import Link, LinkWithVms
@@ -12,8 +12,8 @@ from .destinations import Destination
 @dataclass
 class NodeData:
     node: Node
-    links_in: list['LinkData'] = field(default_factory=list)
-    links_out: list['LinkData'] = field(default_factory=list)
+    links_in: List['LinkData'] = field(default_factory=list)
+    links_out: List['LinkData'] = field(default_factory=list)
     origin: Origin = None
     destination: Destination = None
 
@@ -29,7 +29,7 @@ class Network(NamedClass):
     '''METANET traffic network'''
 
     @property
-    def onramps(self) -> Iterable[tuple[OnRamp, NodeData]]:
+    def onramps(self) -> Iterable[Tuple[OnRamp, NodeData]]:
         return filter(lambda o: isinstance(o[0], OnRamp), self.origins.items())
 
     @property
@@ -39,7 +39,7 @@ class Network(NamedClass):
                       self.origins.items())
 
     @property
-    def links_with_vms(self) -> Iterable[tuple[LinkWithVms, LinkData]]:
+    def links_with_vms(self) -> Iterable[Tuple[LinkWithVms, LinkData]]:
         return filter(lambda o: isinstance(o[0], LinkWithVms),
                       self.links.items())
 
@@ -53,11 +53,11 @@ class Network(NamedClass):
                 Name of the model.
         '''
         super().__init__(name=name)
-        self.nodes: dict[Node, NodeData] = {}
-        self.links: dict[Link, LinkData] = {}
-        self.origins: dict[Origin, NodeData] = {}
-        self.destinations: dict[Destination, NodeData] = {}
-        self.turnrates: dict[(Node, Link), float] = {}
+        self.nodes: Dict[Node, NodeData] = {}
+        self.links: Dict[Link, LinkData] = {}
+        self.origins: Dict[Origin, NodeData] = {}
+        self.destinations: Dict[Destination, NodeData] = {}
+        self.turnrates: Dict[(Node, Link), float] = {}
 
     def add_vertex(self, *args, **kwargs) -> None:
         '''Alias for add_node'''
@@ -79,7 +79,7 @@ class Network(NamedClass):
         if node not in self.nodes:
             self.nodes[node] = NodeData(node)
 
-    def add_nodes(self, nodes: list[Node]) -> None:
+    def add_nodes(self, nodes: List[Node]) -> None:
         for n in nodes:
             self.add_node(n)
 

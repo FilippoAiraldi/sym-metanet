@@ -3,10 +3,10 @@ import casadi as cs
 import itertools
 
 
-from typing import Union, Any
+from typing import List, Tuple, Union, Any
 
 
-def create_profile(t: list[int], x: list[int], y: list[int]) -> np.ndarray:
+def create_profile(t: List[int], x: List[int], y: List[int]) -> np.ndarray:
     '''
     Creates a piece-wise linear profile along time vector t, passing through 
     all x and y points.
@@ -95,7 +95,7 @@ class SmartList(list):
         return f'SL #{len(self)}: {super().__repr__()}'
 
     @classmethod
-    def from_list(cls, other: list[Any]) -> 'SmartList[Any]':
+    def from_list(cls, other: List[Any]) -> 'SmartList[Any]':
         o = cls()
         o.extend(other)
         return o
@@ -130,8 +130,8 @@ def repinterl(x: cs.SX, n: int, m: int = 1) -> cs.SX:
     return x
 
 
-def pad(x: cs.SX, pad1: tuple[int, int],
-        pad2: tuple[int, int] = (0, 0),
+def pad(x: cs.SX, pad1: Tuple[int, int],
+        pad2: Tuple[int, int] = (0, 0),
         mode: str = 'constant', constant_value: Any = 0.0) -> cs.SX:
     '''
     Pads a casadi array.
@@ -180,7 +180,7 @@ def pad(x: cs.SX, pad1: tuple[int, int],
     return x
 
 
-def shift(x, n: int = 1, axis: int = 1):
+def shift(x: cs.SX, n: int = 1, axis: int = 1) -> cs.SX:
     '''
     Shifts the array along the axis and pads with last value.
         [1,2,3,4]    --- shift n=2 --> [3,4,4,4]

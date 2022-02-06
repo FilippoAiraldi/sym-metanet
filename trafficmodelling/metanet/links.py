@@ -1,7 +1,7 @@
 import casadi as cs
 import numpy as np
 
-from typing import Union
+from typing import Union, List
 
 from ..util import NamedClass, SmartList
 
@@ -55,7 +55,7 @@ class Link(NamedClass):
 class LinkWithVms(Link):
     def __init__(
             self, nb_seg: int, lanes: int, lengths: float, v_free: float,
-            rho_crit: float, a: float, vms: list[int],
+            rho_crit: float, a: float, vms: List[int],
             name: str = None) -> None:
         '''
         Instantiate a link with Variable Sign Messages for speed control.

@@ -4,7 +4,7 @@ from ..util import NamedClass, SmartList
 class Origin(NamedClass):
     '''METANET origin'''
 
-    def __init__(self, name=None) -> None:
+    def __init__(self, name: str = None) -> None:
         super().__init__(name=name)
         self.__reset()
 
@@ -18,7 +18,7 @@ class Origin(NamedClass):
 class OnRamp(Origin):
     '''METANET on-ramp'''
 
-    def __init__(self, capacity: float, name=None) -> None:
+    def __init__(self, capacity: float, name: str = None) -> None:
         super().__init__(name=name)
         self.capacity = capacity
         self.__reset()

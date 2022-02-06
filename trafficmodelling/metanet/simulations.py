@@ -7,8 +7,9 @@ from . import functional as F
 
 
 class Simulation:
-    def __init__(self, net: Network, T: float, rho_max: float, eta: float, tau: float,
-                 kappa: float, delta: float, alpha: float = 0.0) -> None:
+    def __init__(self, net: Network, T: float, rho_max: float, eta: float,
+                 tau: float, kappa: float, delta: float,
+                 alpha: float = 0.0) -> None:
         '''
         Creates a simulation environment
 

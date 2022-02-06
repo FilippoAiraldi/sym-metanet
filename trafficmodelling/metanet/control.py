@@ -2,7 +2,7 @@ import casadi as cs
 from copy import deepcopy
 import itertools
 
-from typing import Union, Callable
+from typing import Union, Callable, Tuple, List, Dict
 
 from .origins import Origin, OnRamp
 from .links import Link, LinkWithVms
@@ -21,12 +21,12 @@ def __create_args(in_states: bool,
                   in_link_params: bool,
                   in_sim_params: bool,
                   sim: Simulation,
-                  origins: list[Origin],
-                  onramps: list[OnRamp],
-                  links: list[Link],
-                  links_with_vms: list[LinkWithVms],
+                  origins: List[Origin],
+                  onramps: List[OnRamp],
+                  links: List[Link],
+                  links_with_vms: List[LinkWithVms],
                   csXX: Union[cs.SX, cs.MX],
-                  k: int) -> dict[str, Union[cs.SX, cs.MX]]:
+                  k: int) -> Dict[str, Union[cs.SX, cs.MX]]:
     args = {}
 
     def add_arg(name, *size):
@@ -67,9 +67,9 @@ def __create_args(in_states: bool,
 
 def __create_outs(out_nonneg: bool,
                   out_nonstate: bool,
-                  origins: list[Origin],
-                  links: list[Link],
-                  k: int) -> dict[str, Union[cs.SX, cs.MX]]:
+                  origins: List[Origin],
+                  links: List[Link],
+                  k: int) -> Dict[str, Union[cs.SX, cs.MX]]:
     outs = {}  # sourcery skip: dict-comprehension
     nonneg = (lambda o: cs.fmax(0, o)) if out_nonneg else (lambda o: o)
     for origin in origins:
@@ -238,7 +238,7 @@ def TTS_with_input_penalty(
 
 class MPC:
     def __init__(self, sim: Simulation, Np: int, Nc: int,
-                 cost: Callable[[Simulation, dict[str, cs.SX], dict[str, cs.SX]], cs.SX],
+                 cost: Callable[[Simulation, Dict[str, cs.SX], Dict[str, cs.SX]], cs.SX],
                  M: int = 1,
                  disable_ramp_metering: bool = False,
                  disable_vms: bool = False,
@@ -282,7 +282,7 @@ class MPC:
         self.Np, self.Nc, self.M = Np, Nc, M
 
     def __create_vars_and_pars(self, net: Network, opti: cs.Opti, Np: int,
-                               Nc: int, M: int) -> tuple[dict[str, cs.SX], ...]:
+                               Nc: int, M: int) -> Tuple[Dict[str, cs.SX], ...]:
         vars, vars_ext, pars = {}, {}, {}
 
         # create state
@@ -319,8 +319,8 @@ class MPC:
         return vars, vars_ext, pars
 
     def __create_constraints(
-            self, sim: Simulation, opti: cs.Opti, vars: dict[str, cs.SX],
-            vars_ext: dict[str, cs.SX], pars: dict[str, cs.SX],
+            self, sim: Simulation, opti: cs.Opti, vars: Dict[str, cs.SX],
+            vars_ext: Dict[str, cs.SX], pars: Dict[str, cs.SX],
             Np: int, M: int,
             disable_ramps: bool, disable_vms: bool) -> None:
         net = sim.net
@@ -375,8 +375,8 @@ class MPC:
                 i += 2
 
     def __create_objective_and_others(
-            self, sim: Simulation, opti: cs.Opti, vars: dict[str, cs.SX],
-            pars: dict[str, cs.SX],
+            self, sim: Simulation, opti: cs.Opti, vars: Dict[str, cs.SX],
+            pars: Dict[str, cs.SX],
             cost: Callable, plugin_opts: dict, solver_opts: dict) -> None:
         # optimization criterion
         opti.minimize(cost(sim, vars, pars))
@@ -386,13 +386,13 @@ class MPC:
                     {} if plugin_opts is None else plugin_opts,
                     {} if solver_opts is None else solver_opts)
 
-    def to_func(self) -> Callable[[int, dict[str, float], dict[str, float]],
-                                  tuple[dict[str, float], dict[str, str]]]:
+    def to_func(self) -> Callable[[int, Dict[str, float], Dict[str, float]],
+                                  Tuple[Dict[str, float], Dict[str, str]]]:
         '''
         Returns a callable function to automatically run the MPC optimization.
         '''
-        def _f(k: int, vars_init: dict[str, float],
-                pars_val: dict[str, float]):
+        def _f(k: int, vars_init: Dict[str, float],
+                pars_val: Dict[str, float]):
             for par in self.pars:
                 self.opti.set_value(self.pars[par], pars_val[par])
             for var in self.vars:
