@@ -191,7 +191,8 @@ class Network(NamedClass):
         # links
         cmap, width, labels = [], [], {}
         for u, v in G.edges:
-            if link := G.edges[u, v]['object']:
+            link = G.edges[u, v]['object']
+            if link is not None: # if link := G.edges[u, v]['object']:
                 cmap.append('k')
                 width.append(2.0)
                 lbl = link.name
