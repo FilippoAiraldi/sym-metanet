@@ -76,7 +76,7 @@ class NamedClass:
         self.name = name or f'{t.__name__}_{next(id)}'
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__ } {self.name}'
+        return f'{self.__class__.__name__} {self.name}'
 
     def __str__(self) -> str:
         return self.name

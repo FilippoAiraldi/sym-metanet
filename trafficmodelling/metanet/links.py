@@ -102,3 +102,6 @@ class LinkWithVms(Link):
         # seg is a slice
         return cs.vertcat(*[self.v_ctrl_at(k, s)
                             for s in range(*seg.indices(self.nb_seg))])
+
+    def __repr__(self) -> str:
+        return f'Link (vms: {str(self.vms)[1:-1]}) {self.name}'

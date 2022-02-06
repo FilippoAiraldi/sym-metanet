@@ -59,15 +59,15 @@ class Network(NamedClass):
         self.destinations: dict[Destination, NodeData] = {}
         self.turnrates: dict[(Node, Link), float] = {}
 
-    def add_vertex(self, *args, **kwargs):
+    def add_vertex(self, *args, **kwargs) -> None:
         '''Alias for add_node'''
         return self.add_node(*args, **kwargs)
 
-    def add_edge(self, *args, **kwargs):
+    def add_edge(self, *args, **kwargs) -> None:
         '''Alias for add_link'''
         return self.add_link(*args, **kwargs)
 
-    def add_node(self, node: Node):
+    def add_node(self, node: Node) -> None:
         '''
         Add a node to the network. If already present, does nothing.
 
@@ -79,8 +79,12 @@ class Network(NamedClass):
         if node not in self.nodes:
             self.nodes[node] = NodeData(node)
 
+    def add_nodes(self, nodes: list[Node]) -> None:
+        for n in nodes:
+            self.add_node(n)
+
     def add_link(self, node_up: Node, link: Link, node_down: Node,
-                 turnrate: float = 1.0):
+                 turnrate: float = 1.0) -> None:
         '''
         Add a link from the upstream node to the downstream node. Raises if
         already present.
@@ -118,7 +122,7 @@ class Network(NamedClass):
         # add turn rate
         self.turnrates[(node_up, link)] = turnrate
 
-    def add_origin(self, origin: Origin, node: None):
+    def add_origin(self, origin: Origin, node: None) -> None:
         '''
         Add an origin to the node.
 
@@ -132,7 +136,7 @@ class Network(NamedClass):
         self.origins[origin] = self.nodes[node]
         self.nodes[node].origin = origin
 
-    def add_destination(self, destination: Destination, node: Node):
+    def add_destination(self, destination: Destination, node: Node) -> None:
         '''
         Add a destination to the node.
 
@@ -146,7 +150,7 @@ class Network(NamedClass):
         self.destinations[destination] = self.nodes[node]
         self.nodes[node].destination = destination
 
-    def plot(self, reverse_x=False, reverse_y=False, **kwargs):
+    def plot(self, reverse_x=False, reverse_y=False) -> None:
         import matplotlib.pyplot as plt
         import networkx as nx
 
@@ -190,8 +194,11 @@ class Network(NamedClass):
             if link := G.edges[u, v]['object']:
                 cmap.append('k')
                 width.append(2.0)
-                labels[(u, v)] = \
-                    f'{link.name}\n({self.turnrates[(u, link)]:.2f})'
+                lbl = link.name
+                if isinstance(link, LinkWithVms):
+                    lbl += '\nvms:' + ','.join(str(o) for o in link.vms)
+                lbl += f'\n({self.turnrates[(u, link)]:.2f})'
+                labels[(u, v)] = lbl
             else:
                 cmap.append('grey')
                 width.append(1.0)

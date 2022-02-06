@@ -44,10 +44,13 @@ def __create_args(in_states: bool,
         for origin in onramps:
             origin.rate[k] = add_arg(f'r_{origin.name}', 1, 1)
         for link in links_with_vms:
-            link.v_ctrl[k] = add_arg(f'v_ctrl_{link.name}', len(link.vms), 1)
+            link.v_ctrl[k] = add_arg(f'v_ctrl_{link.name}', link.nb_vms, 1)
     if in_disturbances:
         for origin in origins:
-            assert isinstance(origin.demand, (list, tuple)), 'bad behaviour'
+            # if the demand is an array, assigning a SX to it will cause nan
+            # and create problems
+            if not isinstance(origin.demand, list):
+                raise TypeError('unknown behaviour for demand not as list')
             origin.demand[k] = add_arg(f'd_{origin.name}', 1, 1)
     if in_origin_params:
         for origin in onramps:
@@ -219,10 +222,11 @@ def TTS_with_input_penalty(
         var_r = 0
 
     # variability of vms
+    var_vms = 0
     if weigth_vms != 0:
-        var_vms = 0
-    else:
-        var_vms = 0
+        for l, _ in sim.net.links_with_vms:
+            v_ctrl = cs.horzcat(pars[f'v_ctrl_{l}_last'], vars[f'v_ctrl_{l}'])
+            var_vms += (cs.diff(v_ctrl) / l.v_free)**2
 
     # total cost
     return (TTS(sim, vars, pars)
@@ -262,9 +266,6 @@ class MPC:
                 Whether to disable control of ramp metering rates and Variable
                 Sign Message speed control. 
         '''
-
-        # TODO: disabling stuff. Constraint to 1 and inf
-
         opti = cs.Opti()
         vars, vars_ext, pars = self.__create_vars_and_pars(
             sim.net, opti, Np, Nc, M)
@@ -291,12 +292,17 @@ class MPC:
             vars[f'rho_{link}'] = opti.variable(link.nb_seg, M * Np + 1)
             vars[f'v_{link}'] = opti.variable(link.nb_seg, M * Np + 1)
 
-        # create control (only ramp metering) and last values of control
+        # create control and last values of control (ramp rates and vms speeds)
         for origin, _ in net.onramps:
             u = opti.variable(1, Nc)
             vars[f'r_{origin}'] = u
             vars_ext[f'r_{origin}'] = pad(repinterl(u, 1, M), (0, 0),
                                           (0, M * (Np - Nc)), mode='edge')
+        for link, _ in net.links_with_vms:
+            v_ctrl = opti.variable(link.nb_vms, Nc)
+            vars[f'v_ctrl_{link}'] = v_ctrl
+            vars_ext[f'v_ctrl_{link}'] = pad(repinterl(v_ctrl, 1, M), (0, 0),
+                                             (0, M * (Np - Nc)), mode='edge')
 
         # create parameters (demands, initial conditions, last action)
         for origin in net.origins:
@@ -307,6 +313,8 @@ class MPC:
             pars[f'v0_{link}'] = opti.parameter(link.nb_seg, 1)
         for origin, _ in net.onramps:
             pars[f'r_{origin}_last'] = opti.parameter(1, 1)
+        for link, _ in net.links_with_vms:
+            pars[f'v_ctrl_{link}_last'] = opti.parameter(link.nb_vms, 1)
 
         return vars, vars_ext, pars
 
@@ -325,6 +333,13 @@ class MPC:
             else:
                 opti.subject_to(u >= 0)
                 opti.subject_to(u <= 1)
+        for link, _ in net.links_with_vms:
+            v_ctrl = cs.vec(vars[f'v_ctrl_{link}'])
+            if disable_vms:
+                opti.subject_to(v_ctrl == link.v_free)
+            else:
+                opti.subject_to(v_ctrl >= 0)
+                opti.subject_to(v_ctrl <= link.v_free)
 
         # set initial conditions constraint
         for origin in net.origins:
@@ -347,7 +362,8 @@ class MPC:
                     (vars[f'rho_{l}'][:, k], vars[f'v_{l}'][:, k])
                     for l in net.links),
                 *(vars_ext[f'r_{o}'][:, k] for o, _ in net.onramps),
-                *(cs.DM_inf(len(l.vms), 1) for l, _ in net.links_with_vms),
+                *(vars_ext[f'v_ctrl_{l}'][:, k]
+                  for l, _ in net.links_with_vms),
                 *(pars[f'd_{o}'][:, k] for o in net.origins))
             i = 0
             for origin in net.origins:
