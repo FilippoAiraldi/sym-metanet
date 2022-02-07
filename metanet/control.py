@@ -342,6 +342,13 @@ class MPC:
                 opti.subject_to(v_ctrl >= 0)
                 opti.subject_to(v_ctrl <= link.v_free)
 
+        # set state positivity constraints
+        for origin in net.origins:
+            opti.subject_to(cs.vec(vars[f'w_{origin}']) >= 0)
+        for link in net.links:
+            opti.subject_to(cs.vec(vars[f'rho_{link}']) >= 0)
+            opti.subject_to(cs.vec(vars[f'v_{link}']) >= 0)
+
         # set initial conditions constraint
         for origin in net.origins:
             opti.subject_to(vars[f'w_{origin}'][:, 0] == pars[f'w0_{origin}'])
