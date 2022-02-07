@@ -2,7 +2,7 @@ import casadi as cs
 from copy import deepcopy
 import itertools
 
-from typing import Union, Callable, Tuple, List, Dict
+from typing import Union, Callable, Tuple, List, Dict, Any
 
 from .origins import Origin, OnRamp
 from .links import Link, LinkWithVms
@@ -200,7 +200,7 @@ def sim2func(sim: Simulation,
 ##################################### COST ####################################
 
 
-def TTS(sim: Simulation, vars: dict, pars: dict) -> cs.SX:
+def TTS(sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX]) -> cs.SX:
     # time spent in links and queues
     time_l = sum(cs.sum1(l.lengths * l.lanes * vars[f'rho_{l}'])
                  for l in sim.net.links)
@@ -211,13 +211,15 @@ def TTS(sim: Simulation, vars: dict, pars: dict) -> cs.SX:
 
 
 def TTS_with_input_penalty(
-        sim: Simulation, vars: dict, pars: dict, weight_r: float = 0.4,
-        weigth_vms: float = 0.4) -> cs.SX:
+        sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX], 
+        weight_r: float = 0.4, weigth_vms: float = 0.4) -> cs.SX:
     # variability of rates
     if weight_r != 0:
+        # var_r = sum(cs.diff(r)**2 for r in map(
+        #     lambda o: cs.horzcat(pars[f'r_{o[0]}_last'], vars[f'r_{o[0]}']),
+        #     sim.net.onramps))
         var_r = sum(cs.diff(r)**2 for r in map(
-            lambda o: cs.horzcat(pars[f'r_{o[0]}_last'], vars[f'r_{o[0]}']),
-            sim.net.onramps))
+            lambda o: vars[f'r_{o[0]}'], sim.net.onramps))
     else:
         var_r = 0
 
@@ -225,7 +227,8 @@ def TTS_with_input_penalty(
     var_vms = 0
     if weigth_vms != 0:
         for l, _ in sim.net.links_with_vms:
-            v_ctrl = cs.horzcat(pars[f'v_ctrl_{l}_last'], vars[f'v_ctrl_{l}'])
+            # v_ctrl = cs.horzcat(pars[f'v_ctrl_{l}_last'], vars[f'v_ctrl_{l}'])
+            v_ctrl = vars[f'v_ctrl_{l}']
             var_vms += (cs.diff(v_ctrl) / l.v_free)**2
 
     # total cost
@@ -243,8 +246,8 @@ class MPC:
                  disable_ramp_metering: bool = False,
                  disable_vms: bool = False,
                  solver: str = 'ipopt',
-                 plugin_opts: dict = None,
-                 solver_opts: dict = None) -> None:
+                 plugin_opts: Dict[str, Any] = None,
+                 solver_opts: Dict[str, Any] = None) -> None:
         '''
         Instantiates an MPC for METANET control.
 
@@ -386,7 +389,7 @@ class MPC:
             self, sim: Simulation, opti: cs.Opti, vars: Dict[str, cs.SX],
             pars: Dict[str, cs.SX],
             cost: Callable, solver: str,
-            plugin_opts: dict, solver_opts: dict) -> None:
+            plugin_opts: Dict[str, Any], solver_opts: Dict[str, Any]) -> None:
         # optimization criterion
         opti.minimize(cost(sim, vars, pars))
 
