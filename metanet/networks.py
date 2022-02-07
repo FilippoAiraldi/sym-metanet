@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from typing import Iterable, Dict, List, Tuple
 
-from ..util import NamedClass
+from .util import NamedClass
 from .links import Link, LinkWithVms
 from .nodes import Node
 from .origins import Origin, MainstreamOrigin, OnRamp

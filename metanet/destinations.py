@@ -1,4 +1,4 @@
-from ..util import NamedClass
+from .util import NamedClass
 
 
 class Destination(NamedClass):

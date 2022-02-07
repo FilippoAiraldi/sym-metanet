@@ -8,7 +8,7 @@ from .origins import Origin, OnRamp
 from .links import Link, LinkWithVms
 from .networks import Network
 from .simulations import Simulation
-from ..util import pad, repinterl
+from .util import pad, repinterl
 
 
 ##################################### UTIL ####################################
@@ -242,6 +242,7 @@ class MPC:
                  M: int = 1,
                  disable_ramp_metering: bool = False,
                  disable_vms: bool = False,
+                 solver: str = 'ipopt',
                  plugin_opts: dict = None,
                  solver_opts: dict = None) -> None:
         '''
@@ -273,7 +274,7 @@ class MPC:
             sim, opti, vars, vars_ext, pars, Np, M,
             disable_ramp_metering, disable_vms)
         self.__create_objective_and_others(
-            sim, opti, vars, pars, cost, plugin_opts, solver_opts)
+            sim, opti, vars, pars, cost, solver, plugin_opts, solver_opts)
 
         # save to self
         self.opti = opti
@@ -336,7 +337,7 @@ class MPC:
         for link, _ in net.links_with_vms:
             v_ctrl = cs.vec(vars[f'v_ctrl_{link}'])
             if disable_vms:
-                opti.subject_to(v_ctrl == link.v_free)
+                opti.subject_to(v_ctrl == 9e3)  # or v_free
             else:
                 opti.subject_to(v_ctrl >= 0)
                 opti.subject_to(v_ctrl <= link.v_free)
@@ -352,7 +353,7 @@ class MPC:
         # Example
         # (w_O1,w_O2,rho_L1[4],v_L1[4],rho_L2[2],v_L2[2],r_O2,d_O1,d_O2) ->
         # (w+_O1,w+_O2,rho+_L1[4],v+_L1[4],rho+_L2[2],v+_L2[2])
-        F = sim2func(sim, out_nonneg=False)
+        F = sim2func(sim, out_nonneg=True)
 
         # set trajectory evolution constraint
         for k in range(M * Np):
@@ -377,12 +378,13 @@ class MPC:
     def __create_objective_and_others(
             self, sim: Simulation, opti: cs.Opti, vars: Dict[str, cs.SX],
             pars: Dict[str, cs.SX],
-            cost: Callable, plugin_opts: dict, solver_opts: dict) -> None:
+            cost: Callable, solver: str,
+            plugin_opts: dict, solver_opts: dict) -> None:
         # optimization criterion
         opti.minimize(cost(sim, vars, pars))
 
         # set solver
-        opti.solver('ipopt',
+        opti.solver(solver,
                     {} if plugin_opts is None else plugin_opts,
                     {} if solver_opts is None else solver_opts)
 
@@ -401,9 +403,15 @@ class MPC:
                 sol = self.opti.solve()
                 info = {}
                 get_value = lambda o: sol.value(o)
-            except:
-                info = {'error': self.opti.debug.stats()['return_status']}
-                get_value = lambda o: self.opti.debug.value(o)
+            except Exception as ex1:
+                try:
+                    info = {'error': self.opti.debug.stats()['return_status']}
+                    # + ' (' + str(ex1).replace('\n', ' ') + ')'}
+                    get_value = lambda o: self.opti.debug.value(o)
+                except Exception as ex2:
+                    raise RuntimeError(
+                        'error during handling of first '
+                        f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}')
             return {name: get_value(var).reshape(var.shape)
                     for name, var in self.vars.items()}, info
         return _f

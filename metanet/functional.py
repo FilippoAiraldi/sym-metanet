@@ -68,6 +68,8 @@ def get_mainorigin_flow(
 
     # NOTE: should be Veq or Veq_ext?
     V_rho_crit = Veq_ext(rho_crit, v_free, a, rho_crit, v_ctrl, alpha)
+    # V_rho_crit = Veq(rho_crit, v_free, a, rho_crit)
+
     v_lim = cs.fmin(v_ctrl, v_first)
 
     q_cap = lanes * V_rho_crit * rho_crit

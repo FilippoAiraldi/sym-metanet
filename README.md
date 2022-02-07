@@ -1,10 +1,13 @@
-# Traffic Modelling
+# METANET
 
-Traffic Modelling (TM) is a Python collection of tools to model traffic 
-networks. TM is free software; you can redistribute it and/or modify it under 
-the terms of the GNU General Public License as published by the Free Software Foundation; either version 3, or (at your option) any later version.
+METANET is a Python collection of tools to model and control traffic networks 
+with the METANET framework. METANET is free software; you can redistribute it 
+and/or modify it under the terms of the GNU General Public License as published
+by the Free Software Foundation; either version 3, or (at your option) any 
+later version.
 
-TM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+TM is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
 PARTICULAR PURPOSE.
 
 ## Installation
@@ -18,15 +21,12 @@ To use TM, you will need a recent versions of
 * CasADi ([download here](http://files.casadi.org))
 * Optionally, [Networkx](https://networkx.org/) (for drawing) 
 
-## Supported Frameworks
-
-The currently supported traffic modelling frameworks are
-
-* METANET
 
 ##  Usage
 
-The TM package contains the methods needed to simulate a discrete system representing a traffic network. Some examples are contained in the example folder.
+The METANET package contains the methods needed to simulate a discrete system 
+representing a traffic network. Some examples are contained in the example 
+folder.
 
 
 ---

@@ -89,7 +89,7 @@ class SmartList(list):
         return super().append(val)
 
     def __str__(self) -> str:
-        return f'SL #{len(self)}: {super().__str__()}'
+        return f'SL #{len(self)}: {super().__repr__()}'
 
     def __repr__(self) -> str:
         return f'SL #{len(self)}: {super().__repr__()}'
