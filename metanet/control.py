@@ -200,7 +200,9 @@ def sim2func(sim: Simulation,
 ##################################### COST ####################################
 
 
-def TTS(sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX]) -> cs.SX:
+def TTS(
+        sim: Simulation, vars: Dict[str, cs.SX],
+        pars: Dict[str, cs.SX]) -> cs.SX:
     # time spent in links and queues
     time_l = sum(cs.sum1(l.lengths * l.lanes * vars[f'rho_{l}'])
                  for l in sim.net.links)
@@ -211,25 +213,21 @@ def TTS(sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX]) -> cs.S
 
 
 def TTS_with_input_penalty(
-        sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX], 
+        sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX],
         weight_r: float = 0.4, weigth_vms: float = 0.4) -> cs.SX:
     # variability of rates
+    var_r = 0
     if weight_r != 0:
-        # var_r = sum(cs.diff(r)**2 for r in map(
-        #     lambda o: cs.horzcat(pars[f'r_{o[0]}_last'], vars[f'r_{o[0]}']),
-        #     sim.net.onramps))
-        var_r = sum(cs.diff(r)**2 for r in map(
-            lambda o: vars[f'r_{o[0]}'], sim.net.onramps))
-    else:
-        var_r = 0
+        for o, _ in sim.net.onramps:
+            r = cs.horzcat(pars[f'r_{o}_last'], vars[f'r_{o}'])
+            var_r += cs.diff(r, 1, 1)**2
 
     # variability of vms
     var_vms = 0
     if weigth_vms != 0:
         for l, _ in sim.net.links_with_vms:
-            # v_ctrl = cs.horzcat(pars[f'v_ctrl_{l}_last'], vars[f'v_ctrl_{l}'])
-            v_ctrl = vars[f'v_ctrl_{l}']
-            var_vms += (cs.diff(v_ctrl) / l.v_free)**2
+            v_ctrl = cs.horzcat(pars[f'v_ctrl_{l}_last'], vars[f'v_ctrl_{l}'])
+            var_vms += (cs.diff(v_ctrl, 1, 1) / l.v_free)**2
 
     # total cost
     return (TTS(sim, vars, pars)
