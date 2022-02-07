@@ -200,9 +200,8 @@ def sim2func(sim: Simulation,
 ##################################### COST ####################################
 
 
-def TTS(
-        sim: Simulation, vars: Dict[str, cs.SX],
-        pars: Dict[str, cs.SX]) -> cs.SX:
+def TTS(sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX]
+        ) -> cs.SX:
     # time spent in links and queues
     time_l = sum(cs.sum1(l.lengths * l.lanes * vars[f'rho_{l}'])
                  for l in sim.net.links)
@@ -227,7 +226,7 @@ def TTS_with_input_penalty(
     if weigth_vms != 0:
         for l, _ in sim.net.links_with_vms:
             v_ctrl = cs.horzcat(pars[f'v_ctrl_{l}_last'], vars[f'v_ctrl_{l}'])
-            var_vms += (cs.diff(v_ctrl, 1, 1) / l.v_free)**2
+            var_vms += cs.sum1((cs.diff(v_ctrl, 1, 1) / l.v_free)**2)
 
     # total cost
     return (TTS(sim, vars, pars)
@@ -333,14 +332,14 @@ class MPC:
             if disable_ramps:
                 opti.subject_to(u == 1)
             else:
-                opti.subject_to(u >= 0)
+                opti.subject_to(u >= 0.2)
                 opti.subject_to(u <= 1)
         for link, _ in net.links_with_vms:
             v_ctrl = cs.vec(vars[f'v_ctrl_{link}'])
             if disable_vms:
                 opti.subject_to(v_ctrl == 9e3)  # or v_free
             else:
-                opti.subject_to(v_ctrl >= 0)
+                opti.subject_to(v_ctrl >= 20)
                 opti.subject_to(v_ctrl <= link.v_free)
 
         # set state positivity constraints
