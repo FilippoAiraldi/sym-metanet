@@ -150,14 +150,26 @@ class Network(NamedClass):
         self.destinations[destination] = self.nodes[node]
         self.nodes[node].destination = destination
 
-    def plot(self, reverse_x=False, reverse_y=False) -> None:
+    def plot(self, expanded_view=False,
+             reverse_x=False, reverse_y=False) -> None:
         import matplotlib.pyplot as plt
         import networkx as nx
+        import uuid
 
         # build the network
         G = nx.DiGraph()
-        for link, data in self.links.items():
-            G.add_edge(data.node_up.node, data.node_down.node, object=link)
+        for link, data, in self.links.items():
+            if expanded_view:
+                # create fictitious nodes between pair of real
+                nodes = [
+                    data.node_up.node,
+                    *(f'{uuid.uuid1()}' for _ in range(link.nb_seg - 1)),
+                    data.node_down.node,
+                ]
+                for i in range(link.nb_seg):
+                    G.add_edge(nodes[i], nodes[i + 1], object=(link, i))
+            else:
+                G.add_edge(data.node_up.node, data.node_down.node, object=link)
         for origin, data in self.origins.items():
             G.add_edge(origin, data.node, object=None)
         for destination, data in self.destinations.items():
@@ -172,43 +184,59 @@ class Network(NamedClass):
             for k in pos.values():
                 k[1] *= -1
 
-        # nodes
-        cmap, labels = [], {}
+        # draw proper nodes and fictitious nodes
+        cmap, size, labels = [], [], {}
         for node in G.nodes:
-            labels[node] = node.name
-            if isinstance(node, MainstreamOrigin):
-                cmap.append('tab:red')
-            elif isinstance(node, OnRamp):
-                cmap.append('tab:orange')
-            elif isinstance(node, Destination):
-                cmap.append('tab:blue')
-            else:
-                cmap.append('white')
-        nx.draw_networkx_nodes(G, pos, node_color=cmap,
-                               edgecolors='k', node_size=600, alpha=0.9)
+            if not expanded_view:
+                labels[node] = node.name
+                size.append(600)
+                if isinstance(node, MainstreamOrigin):
+                    cmap.append('tab:red')
+                elif isinstance(node, OnRamp):
+                    cmap.append('tab:orange')
+                elif isinstance(node, Destination):
+                    cmap.append('tab:blue')
+                else:
+                    cmap.append('white')
+            else:  # sourcery skip: merge-else-if-into-elif
+                if isinstance(node, Node): 
+                    # is a proper node
+                    cmap.append('white')
+                    size.append(600)
+                    labels[node] = node.name
+                else:
+                    # is fictitious, Origin, Destination
+                    cmap.append('black')
+                    if isinstance(node, (Origin, Destination)):
+                        size.append(0)
+                        labels[node] = node.name
+                    else:
+                        size.append(100)
+        nx.draw_networkx_nodes(G, pos, node_color=cmap, edgecolors='k',
+                               node_size=size)
         nx.draw_networkx_labels(G, pos, labels)
 
-        # links
-        cmap, width, labels = [], [], {}
-        for u, v in G.edges:
-            link = G.edges[u, v]['object']
-            if link is not None: # if link := G.edges[u, v]['object']:
-                cmap.append('k')
-                width.append(2.0)
-                lbl = link.name
-                if isinstance(link, LinkWithVms):
-                    lbl += '\nvms:' + ','.join(str(o) for o in link.vms)
-                lbl += f'\n({self.turnrates[(u, link)]:.2f})'
-                labels[(u, v)] = lbl
-            else:
-                cmap.append('grey')
-                width.append(1.0)
-        nx.draw_networkx_edges(G, pos, width=width, edge_color=cmap,
-                               arrowsize=20)
-        nx.draw_networkx_edge_labels(G, pos, labels)
+        # draw links
+        if not expanded_view:
+            cmap, width, labels = [], [], {}
+            for u, v in G.edges:
+                link = G.edges[u, v]['object']
+                if link is not None:  # if link := G.edges[u, v]['object']:
+                    cmap.append('k')
+                    width.append(2.0)
+                    lbl = link.name
+                    if isinstance(link, LinkWithVms):
+                        lbl += '\nvms:' + ','.join(str(o) for o in link.vms)
+                    lbl += f'\n({self.turnrates[(u, link)]:.2f})'
+                    labels[(u, v)] = lbl
+                else:
+                    cmap.append('grey')
+                    width.append(1.0)
+            nx.draw_networkx_edge_labels(G, pos, labels)
+        nx.draw_networkx_edges(G, pos, arrowsize=20)
 
-        # ax = plt.gca()
-        # ax.collections[0].set_edgecolor('#000000')
+        if self.name is not None and len(self.name) > 0:
+            plt.title(self.name)
         plt.tight_layout()
         plt.axis("off")
         plt.show()

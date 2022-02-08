@@ -203,10 +203,12 @@ class Simulation:
                     *[L.link.density[k][0] for L in node_down.links_out])
                 rho_down = F.get_downstream_density(rho_firsts)
 
-            # put in vector form
-            q_up = cs.vertcat(q_up, link.flow[k][:-1])
-            v_up = cs.vertcat(v_up, link.speed[k][:-1])
-            rho_down = cs.vertcat(link.density[k][1:], rho_down)
+            # put in vector form (when vertcatting with empty list casadi
+            # inserts 00, which unexpectedly increases size of vector)
+            if link.nb_seg > 1:
+                q_up = cs.vertcat(q_up, link.flow[k][:-1])
+                v_up = cs.vertcat(v_up, link.speed[k][:-1])
+                rho_down = cs.vertcat(link.density[k][1:], rho_down)
 
             # step density
             link.density[k + 1] = F.step_link_density(
