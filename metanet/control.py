@@ -404,8 +404,7 @@ class MPC:
         '''
         Returns a callable function to automatically run the MPC optimization.
         '''
-        def _f(k: int, vars_init: Dict[str, float],
-                pars_val: Dict[str, float]):
+        def _f(vars_init: Dict[str, float], pars_val: Dict[str, float]):
             for par in self.pars:
                 self.opti.set_value(self.pars[par], pars_val[par])
             for var in self.vars:

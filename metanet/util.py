@@ -3,7 +3,7 @@ import casadi as cs
 import itertools
 
 
-from typing import List, Tuple, Union, Any
+from typing import List, Tuple, Union, Any, Dict
 
 
 def create_profile(t: List[int], x: List[int], y: List[int]) -> np.ndarray:
@@ -83,6 +83,11 @@ class NamedClass:
 
 
 class SmartList(list):
+    '''
+    A list that appends when the user assigns the k-th element to it (where k 
+    is the length of the list before assignment) instead of throwing.
+    '''
+
     def __setitem__(self, idx: Union[int, slice], val: Any) -> None:
         if not isinstance(idx, int) or idx != len(self):
             return super().__setitem__(idx, val)

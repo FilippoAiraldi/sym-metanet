@@ -43,12 +43,16 @@ class Network(NamedClass):
         return filter(lambda o: isinstance(o[0], LinkWithVms),
                       self.links.items())
 
-    def __init__(self, name=None) -> None:
+    def __init__(self, name: str = None, setattr: bool = True) -> None:
         '''
         Creates a METANET traffic network model
 
         Parameters
         ----------
+            setattr : bool
+                When an element is added, it also creates an attribute on self.\
+                Defualts to True.
+
             name : str, optional
                 Name of the model.
         '''
@@ -58,14 +62,7 @@ class Network(NamedClass):
         self.origins: Dict[Origin, NodeData] = {}
         self.destinations: Dict[Destination, NodeData] = {}
         self.turnrates: Dict[(Node, Link), float] = {}
-
-    def add_vertex(self, *args, **kwargs) -> None:
-        '''Alias for add_node'''
-        return self.add_node(*args, **kwargs)
-
-    def add_edge(self, *args, **kwargs) -> None:
-        '''Alias for add_link'''
-        return self.add_link(*args, **kwargs)
+        self.__setattr = setattr
 
     def add_node(self, node: Node) -> None:
         '''
@@ -78,6 +75,8 @@ class Network(NamedClass):
         '''
         if node not in self.nodes:
             self.nodes[node] = NodeData(node)
+        if self.__setattr:
+            setattr(self, node.name, node)
 
     def add_nodes(self, nodes: List[Node]) -> None:
         for n in nodes:
@@ -110,6 +109,8 @@ class Network(NamedClass):
             raise ValueError(
                 f'Link {link.name} already inserted from node '
                 f'{data.node_up.name} to {data.node_down.name}.')
+        if self.__setattr:
+            setattr(self, link.name, link)
 
         # add link
         self.links[link] = LinkData(link, self.nodes[node_up],
@@ -135,6 +136,8 @@ class Network(NamedClass):
         '''
         self.origins[origin] = self.nodes[node]
         self.nodes[node].origin = origin
+        if self.__setattr:
+            setattr(self, origin.name, origin)
 
     def add_destination(self, destination: Destination, node: Node) -> None:
         '''
@@ -149,6 +152,8 @@ class Network(NamedClass):
         '''
         self.destinations[destination] = self.nodes[node]
         self.nodes[node].destination = destination
+        if self.__setattr:
+            setattr(self, destination.name, destination)
 
     def plot(self, expanded_view=False,
              reverse_x=False, reverse_y=False) -> None:
@@ -199,7 +204,7 @@ class Network(NamedClass):
                 else:
                     cmap.append('white')
             else:  # sourcery skip: merge-else-if-into-elif
-                if isinstance(node, Node): 
+                if isinstance(node, Node):
                     # is a proper node
                     cmap.append('white')
                     size.append(600)
