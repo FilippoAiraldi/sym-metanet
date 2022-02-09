@@ -421,7 +421,7 @@ class MPC:
                 except Exception as ex2:
                     raise RuntimeError(
                         'error during handling of first '
-                        f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}')
+                        f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}') from ex2
             return {name: get_value(var).reshape(var.shape)
                     for name, var in self.vars.items()}, info
         return _f
