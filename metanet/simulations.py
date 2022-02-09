@@ -163,15 +163,17 @@ class Simulation:
                 T=self.T)
 
     def __step_links(self, k: int):
-        for link, linkdata in self.net.links.items():
-            node_up = linkdata.node_up
-            node_down = linkdata.node_down
-
-            # compute flow
+        # compute flows first
+        for link in self.net.links:
             link.flow[k] = F.get_link_flow(
                 rho=link.density[k],
                 v=link.speed[k],
                 lanes=link.lanes)
+
+        # now compute quantities for the next step
+        for link, linkdata in self.net.links.items():
+            node_up = linkdata.node_up
+            node_down = linkdata.node_down
 
             # compute NODE & BOUNDARY conditions
             q_up = node_up.origin.flow[k] if node_up.origin is not None else 0
