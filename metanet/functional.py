@@ -65,17 +65,23 @@ def get_mainorigin_flow(
         d, w, v_ctrl, v_first, rho_crit, v_free, a, lanes, alpha, T):
     '''Compute mainstream origin flow (pag. 51).'''
     # v_ctrl is the control speed of the first link's segment after origin
-
-    # NOTE: should be Veq or Veq_ext?
     V_rho_crit = Veq_ext(rho_crit, v_free, a, rho_crit, v_ctrl, alpha)
-    # V_rho_crit = Veq(rho_crit, v_free, a, rho_crit)
-
     v_lim = cs.fmin(v_ctrl, v_first)
-
     q_cap = lanes * V_rho_crit * rho_crit
     q_speed = (lanes * v_lim * rho_crit *
                cs.power(-a * cs.log(v_lim / v_free), 1 / a))
+    q_lim = cs.if_else(v_lim >= V_rho_crit, q_cap, q_speed)
+    return cs.fmin(d + w / T, q_lim)
 
+
+def get_mainorigin_flow_no_ctrl(
+        d, w, v_first, rho_crit, v_free, a, lanes, alpha, T):
+    '''Compute mainstream origin flow (pag. 51) with v_ctrl = +inf.'''
+    V_rho_crit = Veq(rho_crit, v_free, a, rho_crit)
+    v_lim = v_first
+    q_cap = lanes * V_rho_crit * rho_crit
+    q_speed = (lanes * v_lim * rho_crit *
+               cs.power(-a * cs.log(v_lim / v_free), 1 / a))
     q_lim = cs.if_else(v_lim >= V_rho_crit, q_cap, q_speed)
     return cs.fmin(d + w / T, q_lim)
 

@@ -129,19 +129,22 @@ class Simulation:
 
             # compute flow
             if isinstance(origin, MainstreamOrigin):
-                origin.flow[k] = F.get_mainorigin_flow(
-                    d=origin.demand[k],
-                    w=origin.queue[k],
-                    v_ctrl=(link.v_ctrl_at(k, 0)
-                            if isinstance(link, LinkWithVms) else
-                            cs.inf),
-                    v_first=link.speed[k][0],
-                    rho_crit=link.rho_crit,
-                    v_free=link.v_free,
-                    a=link.a,
-                    lanes=link.lanes,
-                    alpha=self.alpha,
-                    T=self.T)
+                kwargs = {
+                    'd': origin.demand[k],
+                    'w': origin.queue[k],
+                    'v_first': link.speed[k][0],
+                    'rho_crit': link.rho_crit,
+                    'v_free': link.v_free,
+                    'a': link.a,
+                    'lanes': link.lanes,
+                    'alpha': self.alpha,
+                    'T': self.T
+                }
+                if isinstance(link, LinkWithVms) and link.has_vms[0]:
+                    origin.flow[k] = F.get_mainorigin_flow(
+                        v_ctrl=link.v_ctrl_at(k, 0), **kwargs)
+                else:
+                    origin.flow[k] = F.get_mainorigin_flow_no_ctrl(**kwargs)
             elif isinstance(origin, OnRamp):
                 origin.flow[k] = F.get_onramp_flow(
                     d=origin.demand[k],
@@ -210,15 +213,19 @@ class Simulation:
                 L=link.lengths,
                 T=self.T)
 
-            # compute equivalent speed
-            V = F.Veq_ext(rho=link.density[k],
-                          v_free=link.v_free,
-                          a=link.a,
-                          rho_crit=link.rho_crit,
-                          v_ctrl=(link.v_ctrl_at(k)
-                                  if isinstance(link, LinkWithVms) else
-                                  cs.inf),
-                          alpha=self.alpha)
+            # compute equivalent speed - overwrite those link segments
+            # with speed control
+            kwargs = {
+                'v_free': link.v_free,
+                'a': link.a,
+                'rho_crit': link.rho_crit
+            }
+            V = F.Veq(rho=link.density[k], **kwargs)
+            if isinstance(link, LinkWithVms):
+                for i in link.vms:
+                    V[i] = F.Veq_ext(rho=link.density[k][i],
+                                     v_ctrl=link.v_ctrl_at(k, i),
+                                     alpha=self.alpha, **kwargs)
 
             # step speed
             onramp = node_up.origin  # possible onramp connected to the link
