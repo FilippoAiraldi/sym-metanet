@@ -204,7 +204,7 @@ def shift(x: cs.SX, n: int = 1, axis: int = 1) -> cs.SX:
             If the axis is invalid.
     '''
 
-    if axis != 1 and axis != 2:
+    if axis not in (1, 2):
         raise ValueError(f'Invalid axis; expected 1 or 2, got {axis} instead.')
 
     if n == 0:
