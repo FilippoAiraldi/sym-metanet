@@ -84,6 +84,9 @@ class LinkWithVms(Link):
         self.has_vms = np.zeros(nb_seg, dtype=bool)
         for i in self.vms:
             self.has_vms[i] = True
+        if (self.has_vms == False).all():
+            raise ValueError('Created a LinkWithVms but did not pass any '
+                             'segment with vms. Use a simple Link then.')
         self.nb_vms = len(self.vms)
 
     def v_ctrl_at(self, k: int, seg: Union[int, slice] = None):

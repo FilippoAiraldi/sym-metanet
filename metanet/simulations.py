@@ -46,6 +46,7 @@ class Simulation:
         # some checks
         self.__check_normalized_turnrates()
         self.__check_main_origins_and_destinations()
+        self.net._check_unique_names()
 
     def __check_normalized_turnrates(self):
         # check turnrates are normalized
@@ -77,18 +78,6 @@ class Simulation:
                     'since it is connected to the destination '
                     f'{destination.name}; got {len(nodedata.links_out)} '
                     'exiting links instead.')
-
-    def _check_unique_names(self):
-        names = set()
-        for o in (list(self.net.nodes.keys())
-                  + list(self.net.links.keys())
-                  + list(self.net.origins.keys())
-                  + list(self.net.destinations.keys())):
-            name = o.name
-            if name in names:
-                raise ValueError(
-                    f'{o.__class__.__name__} {name} has a non-unique name.')
-            names.add(name)
 
     def set_init_cond(self, links_init=None, origins_init=None,
                       reset=False):
@@ -203,8 +192,8 @@ class Simulation:
                     *[L.link.density[k][0] for L in node_down.links_out])
                 rho_down = F.get_downstream_density(rho_firsts)
 
-            # put in vector form (when vertcatting with empty list casadi
-            # inserts 00, which unexpectedly increases size of vector)
+            # put in vector form (vertcatt with empty SX inserts 00, which
+            # unexpectedly increases size of vector)
             if link.nb_seg > 1:
                 q_up = cs.vertcat(q_up, link.flow[k][:-1])
                 v_up = cs.vertcat(v_up, link.speed[k][:-1])

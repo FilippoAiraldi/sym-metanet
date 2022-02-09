@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from itertools import chain
 
 from typing import Iterable, Dict, List, Tuple
 
@@ -245,3 +246,14 @@ class Network(NamedClass):
         plt.tight_layout()
         plt.axis("off")
         plt.show()
+
+    def _check_unique_names(self):
+        names = set()
+        for o in chain(self.nodes, self.links,
+                       self.origins, self.destinations):
+            name = o.name
+            if name in names:
+                raise ValueError(
+                    f'{o.__class__.__name__} {name} has a non-unique name '
+                    'in network. Names must be unique.')
+            names.add(name)

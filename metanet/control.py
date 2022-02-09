@@ -167,7 +167,7 @@ def sim2func(sim: Simulation,
 
     # since we are using names to identify symbolic variables, better not to
     # have conflicts
-    sim._check_unique_names()
+    sim.net._check_unique_names()
 
     # create a copy of the simulation which will be symbolic
     sym_sim = deepcopy(sim)
