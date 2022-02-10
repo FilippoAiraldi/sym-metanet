@@ -1,4 +1,8 @@
 import casadi as cs
+import numpy as np
+from itertools import product
+
+from typing import Tuple
 
 from .origins import MainstreamOrigin, OnRamp
 from .links import LinkWithVms
@@ -246,3 +250,176 @@ class Simulation:
                 q_r=q_r,
                 delta=self.delta,
                 T=self.T)
+
+    def plot(self, t: np.ndarray, axs: np.ndarray = None,
+             sharex: bool = True) -> Tuple['Figure', np.ndarray]:
+        '''
+        Plots the simulation outcome.
+
+        Parameters
+        ----------
+            t : np.ndarray
+                Time vector used for plotting in the x-axis.
+
+            axs : 2d array of matplotlib.axis, optional
+                Axes to be used for plotting. If not given, axes are 
+                automatically constructed.
+
+            sharex : bool, optional
+                Whether the axes should share the x. Defaults to True.
+
+        Returns
+        -------
+            fig : matplotlib.figure
+                The figure created ad hoc if axes were not specified; 
+                otherwise None.
+
+            axs : 2d np.ndarray of matplotlib.axis
+                The axes used for plotting.
+        '''
+
+        if axs is None:
+            import matplotlib.pyplot as plt
+            from matplotlib.gridspec import GridSpec
+            # create figure
+            fig = plt.figure(figsize=(10, 7), constrained_layout=True)
+            gs = GridSpec(4, 2, figure=fig)
+            axs = np.array(
+                [fig.add_subplot(gs[i, j]) for i, j in product(
+                    range(gs.nrows),
+                    range(gs.ncols))]).reshape(gs.nrows, gs.ncols)
+        else:
+            fig = None
+
+        # add plots
+        any_onramp, any_vms = False, False
+        for link in self.net.links:
+            v = np.hstack(link.speed[:-1])
+            rho = np.hstack(link.density[:-1])
+            q = np.hstack(link.flow)
+            for i in range(link.nb_seg):
+                axs[0, 0].plot(t, v[i], label=f'$v_{{{link.name}, {i + 1}}}$')
+                axs[0, 1].plot(t, q[i], label=f'$q_{{{link.name}, {i + 1}}}$')
+                axs[1, 0].plot(t, rho[i],
+                               label=f'$\\rho_{{{link.name}, {i + 1}}}$')
+            if isinstance(link, LinkWithVms):
+                any_vms = True
+                v_ctrl = np.hstack(link.v_ctrl)
+                for i, s in enumerate(link.vms):
+                    axs[3, 1].plot(t, v_ctrl[i],
+                                   label=f'$v^{{ctrl}}_{{{link.name}, {s + 1}}}$')
+        for origin in self.net.origins:
+            w = np.vstack(origin.queue[:-1])
+            q = np.vstack(origin.flow)
+            axs[2, 0].plot(t, q, label=f'$q_{{{origin.name}}}$')
+            axs[2, 1].plot(t, w, label=f'$\\omega_{{{origin.name}}}$')
+            if isinstance(origin, OnRamp):
+                any_onramp = True
+                r = np.vstack(origin.rate)
+                axs[3, 0].plot(t, r, label=origin.name)
+
+        excluded = {(1, 1)}
+        axs[0, 0].set_ylabel('speed (km/h)')
+        axs[0, 1].set_ylabel('flow (veh/h)')
+        axs[1, 0].set_ylabel('density (veh/km)')
+        axs[2, 0].set_ylabel('origin flows (veh/h)')
+        axs[2, 1].set_ylabel('queue length (veh)')
+        if any_onramp:
+            axs[3, 0].set_ylabel('metering rate')
+        else:
+            excluded.add((3, 0))
+        if any_vms:
+            axs[3, 1].set_ylabel('dynamic speed limit (km/h)')
+        else:
+            excluded.add((3, 1))
+
+        for i, j in product(range(axs.shape[0]), range(axs.shape[1])):
+            if (i, j) in excluded:
+                axs[i, j].set_axis_off()
+            else:
+                if sharex:
+                    axs[i, j].sharex(axs[0, 0])
+                axs[i, j].set_xlabel('time (h)')
+                axs[i, j].set_xlim(0, t[-1])
+                axs[i, j].set_ylim(0, axs[i, j].get_ylim()[1])
+                axs[i, j].legend()
+
+        return fig, axs
+
+    def savepkl(self, filename: str) -> None:
+        '''
+        Save the simulation outcomes to a .pkl file. 
+        Parameters
+        ----------
+            flename : str
+                The filename where to save the data to.
+        '''
+        import pickle
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
+
+    def savemat(self, filename: str, **other_data) -> None:
+        '''
+        Save the simulation outcomes to a .mat file. The simulation must have
+        been already run.
+
+        Parameters
+        ----------
+            flename : str
+                The filename where to save the data to.
+
+            other_data : kwargs
+                A dictionary of any additional data to be saved to the file.
+        '''
+
+        import platform
+        from scipy.io import savemat
+
+        # attributes (not lists and arrays containing states, demands, etc)
+        sim_attr = ('T', 'eta', 'tau', 'kappa', 'delta', 'rho_max', 'alpha')
+        net_attr = ('name', )
+        link_attr = ('name', 'nb_seg', 'lanes', 'lengths', 'v_free',
+                     'rho_crit', 'a')
+        link_vms_attr = link_attr + ('vms', 'nb_vms')
+        origin_data = ('name', )
+        onramp_data = origin_data + ('capactiy', )
+
+        # add the platform which the simulation was run on
+        data = other_data
+        data['platform'] = str(platform.platform())
+
+        # create link data
+        link_data = {}
+        for link in self.net.links:
+            d = {
+                'speed': np.hstack(link.speed[:-1]).reshape(link.nb_seg, -1),
+                'density': np.hstack(link.density[:-1]
+                                     ).reshape(link.nb_seg, -1),
+                'flow': np.hstack(link.flow).reshape(link.nb_seg, -1)
+            }
+            if isinstance(link, LinkWithVms):
+                d['v_ctrl'] = np.hstack(link.v_ctrl).reshape(link.nb_vms, -1)
+            link_data[link.name] = d
+
+        # create origin data
+        origin_data = {}
+        for origin in self.net.origins:
+            d = {
+                'queue': np.vstack(origin.queue[:-1]).reshape(1, -1),
+                'flow': np.vstack(origin.flow).reshape(1, -1),
+                'demand': np.vstack(origin.demand).reshape(1, -1)
+            }
+            if isinstance(origin, OnRamp):
+                d['rate'] = np.vstack(origin.rate).reshape(1, -1)
+            origin_data[origin.name] = d
+
+        # create the simulation data
+        data['simulation'] = {
+            **{a: getattr(self, a) for a in sim_attr},
+            'net': {
+                **{a: getattr(self.net, a) for a in net_attr},
+                'links': link_data,
+                'origins': origin_data
+            }
+        }
+        savemat(filename, data)
