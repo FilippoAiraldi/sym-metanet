@@ -251,14 +251,14 @@ class Simulation:
                 delta=self.delta,
                 T=self.T)
 
-    def plot(self, t: np.ndarray, axs: np.ndarray = None,
+    def plot(self, t: np.ndarray = None, axs: np.ndarray = None,
              sharex: bool = True) -> Tuple['Figure', np.ndarray]:
         '''
         Plots the simulation outcome.
 
         Parameters
         ----------
-            t : np.ndarray
+            t : np.ndarray. optional
                 Time vector used for plotting in the x-axis.
 
             axs : 2d array of matplotlib.axis, optional
@@ -290,6 +290,9 @@ class Simulation:
                     range(gs.ncols))]).reshape(gs.nrows, gs.ncols)
         else:
             fig = None
+
+        if t is None:
+            t = np.arange(len(next(iter(self.net.links)).flow)) * self.T
 
         # add plots
         any_onramp, any_vms = False, False

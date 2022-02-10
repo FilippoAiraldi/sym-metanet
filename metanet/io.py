@@ -3,8 +3,8 @@ import numpy as np
 
 from typing import Tuple, Dict, Any
 
-from .links import Link, LinkWithVms
-from .origins import Origin, OnRamp
+from .links import LinkWithVms
+from .origins import OnRamp
 from .simulations import Simulation
 
 
@@ -152,7 +152,7 @@ def save_sim(sim: Simulation, filename: str,
         __savepkl(sim, filename, **other_data)
     else:
         raise ValueError(
-            f'Invalid saving format {fmt}: expected \'pkl\' or \'mat\'')
+            f'Invalid saving format {fmt}: expected \'pkl\' or \'mat\'.')
 
 
 def load_sim(filename: str) -> Tuple[Simulation, Dict[Any, Any]]:
@@ -160,9 +160,9 @@ def load_sim(filename: str) -> Tuple[Simulation, Dict[Any, Any]]:
 
     if fmt == '.mat':
         # return __loadmat(filename)
-        raise NotImplementedError('loading .mat not yet implemented')
+        raise NotImplementedError('Loading .mat not yet implemented.')
     elif fmt == '.pkl':
         return __loadpkl(filename)
     else:
         raise ValueError(
-            f'Invalid file extension {fmt}; must be \'pkl\' or \'mat\'')
+            f'Invalid file extension {fmt}; must be \'pkl\' or \'mat\'.')
