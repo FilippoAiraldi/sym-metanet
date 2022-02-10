@@ -19,7 +19,9 @@ To use TM, you will need a recent versions of
 
 * Numpy
 * CasADi ([download here](http://files.casadi.org))
-* Optionally, [Networkx](https://networkx.org/) (for drawing) 
+* Optionally, [Networkx](https://networkx.org/) (for drawing the network), 
+[SciPy](https://scipy.org/) (for saving to .mat file), 
+[Matplotlib](https://matplotlib.org/) (for plotting results) 
 
 
 ##  Usage
