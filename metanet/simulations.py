@@ -346,17 +346,22 @@ class Simulation:
 
         return fig, axs
 
-    def savepkl(self, filename: str) -> None:
+    def savepkl(self, filename: str, **other_data) -> None:
         '''
         Save the simulation outcomes to a .pkl file. 
         Parameters
         ----------
             flename : str
                 The filename where to save the data to.
+
+            other_data : kwargs
+                A dictionary of any additional data to be saved to the file.
         '''
+        data = other_data
+        data['simulation'] = self
         import pickle
         with open(filename, 'wb') as f:
-            pickle.dump(self, f)
+            pickle.dump(data, f)
 
     def savemat(self, filename: str, **other_data) -> None:
         '''
@@ -380,9 +385,9 @@ class Simulation:
         net_attr = ('name', )
         link_attr = ('name', 'nb_seg', 'lanes', 'lengths', 'v_free',
                      'rho_crit', 'a')
-        link_vms_attr = link_attr + ('vms', 'nb_vms')
-        origin_data = ('name', )
-        onramp_data = origin_data + ('capactiy', )
+        link_vms_attr = ('vms', 'nb_vms')
+        origin_attr = ('name', )
+        onramp_attr = ('capacity', )
 
         # add the platform which the simulation was run on
         data = other_data
@@ -392,6 +397,7 @@ class Simulation:
         link_data = {}
         for link in self.net.links:
             d = {
+                **{a: getattr(link, a) for a in link_attr},
                 'speed': np.hstack(link.speed[:-1]).reshape(link.nb_seg, -1),
                 'density': np.hstack(link.density[:-1]
                                      ).reshape(link.nb_seg, -1),
@@ -399,18 +405,21 @@ class Simulation:
             }
             if isinstance(link, LinkWithVms):
                 d['v_ctrl'] = np.hstack(link.v_ctrl).reshape(link.nb_vms, -1)
+                d.update({a: getattr(link, a) for a in link_vms_attr})
             link_data[link.name] = d
 
         # create origin data
         origin_data = {}
         for origin in self.net.origins:
             d = {
+                **{a: getattr(origin, a) for a in origin_attr},
                 'queue': np.vstack(origin.queue[:-1]).reshape(1, -1),
                 'flow': np.vstack(origin.flow).reshape(1, -1),
                 'demand': np.vstack(origin.demand).reshape(1, -1)
             }
             if isinstance(origin, OnRamp):
                 d['rate'] = np.vstack(origin.rate).reshape(1, -1)
+                d.update({a: getattr(origin, a) for a in onramp_attr})
             origin_data[origin.name] = d
 
         # create the simulation data
@@ -423,3 +432,16 @@ class Simulation:
             }
         }
         savemat(filename, data)
+
+    # @staticmethod
+    # def visualize_from_file(filename: str, ext: str = None) -> None:
+    #     if ext is None or len(ext) == 0:
+    #         idx = filename.rfind('.')
+    #         if idx == -1:
+    #             raise ValueError(
+    #                 f'Invalid filename {filename}: cannot extract extension')
+    #         ext = filename[idx + 1:]
+
+    #     if ext not in ('pkl', 'mat'):
+    #         raise ValueError(
+    #             f'Invalid file extension {ext}; must be \'pkl\' or \'mat\'')
