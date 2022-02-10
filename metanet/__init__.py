@@ -4,12 +4,12 @@ __version__ = '1.0.2'
 try:
     import casadi
 except Exception as ex:
-    raise ImportError('error while importing casadi: ' + str(ex))
+    raise ImportError('error while importing casadi: ' + str(ex)) from ex
 
 try:
     import numpy
 except Exception as ex:
-    raise ImportError('error while importing numpy: ' + str(ex))
+    raise ImportError('error while importing numpy: ' + str(ex)) from ex
 
 
 from .nodes import Node
@@ -21,3 +21,4 @@ from .simulations import Simulation
 from . import control
 from . import functional
 from . import util
+from . import io
