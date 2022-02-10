@@ -251,8 +251,9 @@ class Simulation:
                 delta=self.delta,
                 T=self.T)
 
-    def plot(self, t: np.ndarray = None, axs: np.ndarray = None,
-             sharex: bool = True) -> Tuple['Figure', np.ndarray]:
+    def plot(self, t: np.ndarray = None, fig: 'Figure' = None,
+             axs: np.ndarray = None,
+             sharex: bool = False) -> Tuple['Figure', np.ndarray]:
         '''
         Plots the simulation outcome.
 
@@ -260,6 +261,9 @@ class Simulation:
         ----------
             t : np.ndarray. optional
                 Time vector used for plotting in the x-axis.
+
+            fig : matplotlib.figure, optional
+                Figure where to plot to.
 
             axs : 2d array of matplotlib.axis, optional
                 Axes to be used for plotting. If not given, axes are 
@@ -278,18 +282,17 @@ class Simulation:
                 The axes used for plotting.
         '''
 
-        if axs is None:
+        if fig is None:
             import matplotlib.pyplot as plt
-            from matplotlib.gridspec import GridSpec
-            # create figure
             fig = plt.figure(figsize=(10, 7), constrained_layout=True)
+
+        if axs is None:
+            from matplotlib.gridspec import GridSpec
             gs = GridSpec(4, 2, figure=fig)
             axs = np.array(
                 [fig.add_subplot(gs[i, j]) for i, j in product(
                     range(gs.nrows),
                     range(gs.ncols))]).reshape(gs.nrows, gs.ncols)
-        else:
-            fig = None
 
         if t is None:
             t = np.arange(len(next(iter(self.net.links)).flow)) * self.T
