@@ -410,6 +410,7 @@ class MPC:
                 self.opti.set_value(self.pars[par], pars_val[par])
             for var in self.vars:
                 self.opti.set_initial(self.vars[var], vars_init[var])
+
             try:
                 sol = self.opti.solve()
                 info = {}
@@ -423,6 +424,8 @@ class MPC:
                     raise RuntimeError(
                         'error during handling of first '
                         f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}') from ex2
+                        
+            info['f'] = float(get_value(self.opti.f))
             return {name: get_value(var).reshape(var.shape)
                     for name, var in self.vars.items()}, info
         return _f
@@ -614,14 +617,14 @@ class NlpSolver:
             for link in net.links:
                 p.append(pars_val[f'rho0_{link}'])
                 p.append(pars_val[f'v0_{link}'])
-                x0.append(cs.vec(vars_init[f'rho_{link}']))
-                x0.append(cs.vec(vars_init[f'v_{link}']))
+                x0.append(vars_init[f'rho_{link}'])
+                x0.append(vars_init[f'v_{link}'])
             for onramp, _ in net.onramps:
                 p.append(pars_val[f'r_{onramp}_last'])
-                x0.append(cs.vec(vars_init[f'r_{onramp}']))
+                x0.append(vars_init[f'r_{onramp}'])
             for link, _ in net.links_with_vms:
                 p.append(pars_val[f'v_ctrl_{link}_last'])
-                x0.append(cs.vec(vars_init[f'v_ctrl_{link}']))
+                x0.append(vars_init[f'v_ctrl_{link}'])
             p = cs.vertcat(*[cs.vec(o) for o in p])
             x0 = cs.vertcat(*[cs.vec(o) for o in x0])
             assert p.shape == self.p.shape
@@ -630,7 +633,7 @@ class NlpSolver:
             sol = solver(x0=x0, p=p, lbx=self.lbx, ubx=self.ubx,
                          lbg=self.lbg, ubg=self.ubg)
 
-            info = {}
+            info = {float(sol['f'])}
             status = solver.stats()['return_status']
             if status != 'Solve_Succeeded':
                 info['error'] = status
