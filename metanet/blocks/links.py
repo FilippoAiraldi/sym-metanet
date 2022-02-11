@@ -3,7 +3,7 @@ import numpy as np
 
 from typing import Union, List
 
-from .util import NamedClass, SmartList
+from ..util import NamedClass, SmartList
 
 
 class Link(NamedClass):

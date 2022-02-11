@@ -1,4 +1,4 @@
-from .util import NamedClass, SmartList
+from ..util import NamedClass, SmartList
 
 
 class Origin(NamedClass):

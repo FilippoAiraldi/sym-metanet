@@ -3,8 +3,8 @@ import numpy as np
 
 from typing import Tuple, Dict, Any
 
-from .links import LinkWithVms
-from .origins import OnRamp
+from ..blocks.links import LinkWithVms
+from ..blocks.origins import OnRamp
 from .simulations import Simulation
 
 

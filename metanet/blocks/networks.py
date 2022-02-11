@@ -3,7 +3,7 @@ from itertools import chain
 
 from typing import Iterable, Dict, List, Tuple
 
-from .util import NamedClass
+from ..util import NamedClass
 from .links import Link, LinkWithVms
 from .nodes import Node
 from .origins import Origin, MainstreamOrigin, OnRamp
@@ -79,7 +79,7 @@ class Network(NamedClass):
         if self.__setattr:
             setattr(self, node.name, node)
 
-    def add_nodes(self, nodes: List[Node]) -> None:
+    def add_nodes(self, *nodes: Node) -> None:
         for n in nodes:
             self.add_node(n)
 
@@ -124,7 +124,11 @@ class Network(NamedClass):
         # add turn rate
         self.turnrates[(node_up, link)] = turnrate
 
-    def add_origin(self, origin: Origin, node: None) -> None:
+    def add_links(self, *links: Tuple[Node, Link, Node, float]) -> None:
+        for link in links:
+            self.add_link(*link)
+
+    def add_origin(self, origin: Origin, node: Node) -> None:
         '''
         Add an origin to the node.
 
@@ -139,6 +143,10 @@ class Network(NamedClass):
         self.nodes[node].origin = origin
         if self.__setattr:
             setattr(self, origin.name, origin)
+
+    def add_origins(self, *origins: Tuple[Origin, Node]) -> None:
+        for origin in origins:
+            self.add_origin(*origin)
 
     def add_destination(self, destination: Destination, node: Node) -> None:
         '''
@@ -155,6 +163,11 @@ class Network(NamedClass):
         self.nodes[node].destination = destination
         if self.__setattr:
             setattr(self, destination.name, destination)
+
+    def add_destinations(self,
+                         *destinations: Tuple[Destination, Node]) -> None:
+        for destination in destinations:
+            self.add_destination(*destination)
 
     def plot(self, expanded_view=False,
              reverse_x=False, reverse_y=False) -> None:

@@ -12,13 +12,13 @@ except Exception as ex:
     raise ImportError('error while importing numpy: ' + str(ex)) from ex
 
 
-from .nodes import Node
-from .links import Link, LinkWithVms
-from .origins import OnRamp, MainstreamOrigin
-from .destinations import Destination
-from .networks import Network
-from .simulations import Simulation
-from . import control
-from . import functional
 from . import util
-from . import io
+from .blocks.nodes import Node
+from .blocks.links import Link, LinkWithVms
+from .blocks.origins import OnRamp, MainstreamOrigin
+from .blocks.destinations import Destination
+from .blocks.networks import Network
+from .sim import functional
+from .sim.simulations import Simulation
+from .sim import io
+from .ctrl import control

@@ -5,11 +5,11 @@ import itertools
 
 from typing import Union, Callable, Tuple, List, Dict, Any
 
-from .origins import Origin, OnRamp
-from .links import Link, LinkWithVms
-from .networks import Network
-from .simulations import Simulation
-from .util import pad, repinterl
+from ..blocks.origins import Origin, OnRamp
+from ..blocks.links import Link, LinkWithVms
+from ..blocks.networks import Network
+from ..sim.simulations import Simulation
+from ..util import pad, repinterl
 
 
 ##################################### UTIL ####################################

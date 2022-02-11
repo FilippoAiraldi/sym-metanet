@@ -4,9 +4,9 @@ from itertools import product
 
 from typing import Tuple
 
-from .origins import MainstreamOrigin, OnRamp
-from .links import LinkWithVms
-from .networks import Network
+from ..blocks.origins import MainstreamOrigin, OnRamp
+from ..blocks.links import LinkWithVms
+from ..blocks.networks import Network
 from . import functional as F
 
 
