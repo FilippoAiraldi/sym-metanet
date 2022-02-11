@@ -21,4 +21,4 @@ from .blocks.networks import Network
 from .sim import functional
 from .sim.simulations import Simulation
 from .sim import io
-from .ctrl import control
+from . import ctrl as control # hides the additional subfolders in ctrl
