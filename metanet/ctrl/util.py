@@ -2,7 +2,7 @@ import casadi as cs
 import numpy as np
 from copy import deepcopy
 
-from typing import Union, List, Dict, Callable
+from typing import Union, List, Dict, Callable, Any
 
 from ..blocks.origins import Origin, OnRamp
 from ..blocks.links import Link, LinkWithVms
@@ -193,12 +193,36 @@ def sim2func(sim: Simulation,
     return ((F, args, outs) if return_args else F)
 
 
-def run_sim_with_MPC(sim: Simulation, mpc: Union['MPC', 'NlpSolver'], K: int,
-                     use_tqdm: bool = False, *callbacks: Callable) -> None:
+def run_sim_with_MPC(
+    sim: Simulation,
+    mpc: Union['MPC', 'NlpSolver'],
+    K: int,
+    use_tqdm: bool = False,
+    *callbacks:
+        Callable[[int, Simulation, Dict[str, float], Dict[str, Any]]]) -> None:
     '''
-    experimental: automatically run the simulation with an MPC (not necessarily
-    created from the same sim).
-    Be sure to set the initial conditions before calling this method.
+    cb(k, sim, vars_last, info)
+    Automatically run the simulation with an MPC (not necessarily created with 
+    the same sim). Be sure to set the initial conditions before calling this 
+    method.
+
+    Parameters
+    ----------
+        sim : metanet.Simulation
+            Simulation to run.
+
+        mpc : metanet.control.MPC or metanet.control.NlpSolver 
+            MPC controller to run along with the simulation.
+
+        K : int
+            Total simulation steps.
+
+        use_tqdm : bool, optional
+            Whether to use tqdm to display progress. Defaults to False.
+
+        callbacks : Callable[iter, sim, vars, info]
+            Callback called at the end of each iteration.
+            NB: should also pass the dict of parameters to update their values
     '''
 
     if use_tqdm:
@@ -295,4 +319,4 @@ def run_sim_with_MPC(sim: Simulation, mpc: Union['MPC', 'NlpSolver'], K: int,
 
         # at the end of each iteration, call the callbacks
         for cb in callbacks:
-            cb(k)  # arguments to be defined
+            cb(k, sim, vars_last, info)  # arguments to be defined

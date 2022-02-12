@@ -170,7 +170,7 @@ class MPC:
                     {} if solver_opts is None else solver_opts)
 
     def to_func(self) -> Callable[[Dict[str, float], Dict[str, float]],
-                                  Tuple[Dict[str, float], Dict[str, str]]]:
+                                  Tuple[Dict[str, float], Dict[str, Any]]]:
         '''
         Returns a callable function to automatically run the MPC optimization.
         '''
