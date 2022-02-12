@@ -1,11 +1,13 @@
 import casadi as cs
+import numpy as np
 from copy import deepcopy
 
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Callable
 
 from ..blocks.origins import Origin, OnRamp
 from ..blocks.links import Link, LinkWithVms
 from ..sim.simulations import Simulation
+from ..util import shift
 
 
 def __create_sim2func_args(in_states: bool,
@@ -191,81 +193,106 @@ def sim2func(sim: Simulation,
     return ((F, args, outs) if return_args else F)
 
 
-# def run_sim_with_MPC(sim: Simulation, mpc: Union[MPC, NlpSolver], K: int,
-#                      use_tqdm: bool = False) -> None:
-#     '''
-#     experimental: automatically run the simulation with an MPC.
-#     Be sure to set the initial conditions before calling this method.
-#     '''
+def run_sim_with_MPC(sim: Simulation, mpc: Union['MPC', 'NlpSolver'], K: int,
+                     use_tqdm: bool = False, *callbacks: Callable) -> None:
+    '''
+    experimental: automatically run the simulation with an MPC (not necessarily
+    created from the same sim).
+    Be sure to set the initial conditions before calling this method.
+    '''
 
-#     if use_tqdm:
-#         from tqdm import tqdm
-#     else:
-#         def tqdm(iter, **kwargs):
-#             return iter
+    if use_tqdm:
+        from tqdm import tqdm
+    else:
+        def tqdm(iter, *args, **kwargs):
+            return iter
 
-#     # create functions
-#     F = sim2func(sim, out_nonneg=True)
-#     MPC = mpc.to_func()
-#     M, Np, Nc = mpc.M, mpc.Np, mpc.Nc
+    # create functions
+    F = sim2func(sim, out_nonstate=True, out_nonneg=True)
+    MPC = mpc.to_func()
 
-#     # initialize true and nominal last solutions
-#     vars_last = {
-#         **{f'w_{o}': cs.repmat(o.queue[0], 1, M * Np + 1)
-#            for o in sim.net.origins},
-#         **{f'rho_{l}': cs.repmat(l.density[0], 1, M * Np + 1)
-#            for l in sim.net.links},
-#         **{f'v_{l}': cs.repmat(l.speed[0], 1, M * Np + 1)
-#            for l in sim.net.links},
-#         **{f'r_{o}': np.ones((1, Nc)) for o, _ in sim.net.onramps},
-#     }
+    # save some stuff
+    M, Np, Nc = mpc.M, mpc.Np, mpc.Nc
+    name = sim.net.name
+    origins = list(sim.net.origins.keys())
+    onramps = list(map(lambda o: o[0], sim.net.onramps))
+    links = list(sim.net.links.keys())
+    links_with_vms = list(map(lambda o: o[0], sim.net.links_with_vms))
 
-#     # simulation main loop
-#     for k in tqdm(range(K), total=K):
-#         if k % M == 0:
-#             # get future demands (only in true model)
-#             dist = {}
-#             for origin in sim.net.origins:
-#                 d = origin.demand[k:k + M * Np]
-#                 dist[f'd_{origin}'] = np.pad(d, (0, M * Np - len(d)),
-#                                              mode='edge').reshape(1, -1)
+    # initialize true and nominal last solutions
+    vars_last = {
+        **{f'w_{o}': cs.repmat(o.queue[0], 1, M * Np + 1) for o in origins},
+        **{f'rho_{l}': cs.repmat(l.density[0], 1, M * Np + 1) for l in links},
+        **{f'v_{l}': cs.repmat(l.speed[0], 1, M * Np + 1) for l in links},
+        **{f'r_{o}': np.ones((1, Nc)) for o in onramps},
+        **{f'v_ctrl_{l}': np.full((l.nb_vms, Nc), 0.7 * l.v_free)
+           for l in links_with_vms}
+    }
 
-#             # run MPC
-#             vars_init = {
-#                 var: shift(val, axis=2)
-#                 for var, val in vars_last.items()
-#             }
-#             pars_val = {
-#                 **dist,
-#                 **{f'w0_{o}': o.queue[k] for o in sim.net.origins},
-#                 **{f'rho0_{l}': l.density[k] for l in sim.net.links},
-#                 **{f'v0_{l}': l.speed[k] for l in sim.net.links},
-#                 **{f'r_{o}_last': vars_last[f'r_{o}'][0, 0]
-#                     for o, _ in sim.net.onramps},
-#                 **{f'v_ctrl_{l}_last': vars_last[f'v_ctrl_{l}_last'][:, 0]
-#                     for l, _ in sim.net.links_with_vms},
-#             }
-#             vars_last, info = MPC(vars_init, pars_val)
-#             if 'error' in info:
-#                 tqdm.write(f'{k:{len(str(K))}}: ({sim.net.name}) '
-#                            + info['error'] + '.')
+    # simulation main loop
+    for k in tqdm(range(K), total=K):
+        if k % M == 0:
+            # get future demands (only in true model)
+            dist = {}
+            for origin in origins:
+                d = origin.demand[k:k + M * Np]
+                dist[f'd_{origin}'] = np.pad(d, (0, M * Np - len(d)),
+                                             mode='edge').reshape(1, -1)
 
-#         # set onramp metering rate and vms speed control
-#         for onramp, _ in sim.net.onramps:
-#             onramp.rate[k] = vars_last[f'r_{onramp}'][0, 0]
-#         for link, _ in sim.net.links_with_vms:
-#             v_ctrl = vars_last[f'v_ctrl_{link}'][:, 0]
-#             link.v_ctrl[k] = v_ctrl.reshape((link.nb_vms, 1))
+            # run MPC
+            vars_init = {
+                var: shift(val, axis=2) for var, val in vars_last.items()
+            }
+            pars_val = {
+                **dist,
+                **{f'w0_{o}': o.queue[k] for o in origins},
+                **{f'rho0_{l}': l.density[k] for l in links},
+                **{f'v0_{l}': l.speed[k] for l in links},
+                **{f'r_{o}_last': vars_last[f'r_{o}'][0, 0] for o in onramps},
+                **{f'v_ctrl_{l}_last': vars_last[f'v_ctrl_{l}'][:, 0]
+                    for l in links_with_vms},
+            }
+            vars_last, info = MPC(vars_init, pars_val)
+            if 'error' in info:
+                tqdm.write(f'{k:{len(str(K))}}: ({name}) '
+                           + info['error'] + '.')
 
-#         (sim.net.O1.flow[k], sim.net.O1.queue[k + 1],
-#             sim.net.O2.flow[k], sim.net.O2.queue[k + 1],
-#             sim.net.L1.flow[k], sim.net.L1.density[k + 1],
-#             sim.net.L1.speed[k + 1],
-#             sim.net.L2.flow[k], sim.net.L2.density[k + 1],
-#             sim.net.L2.speed[k + 1]
-#          ) = F(sim.net.O1.queue[k],
-#                sim.net.O2.queue[k],
-#                sim.net.L1.density[k], sim.net.L1.speed[k],
-#                sim.net.L2.density[k], sim.net.L2.speed[k],
-#                sim.net.O2.rate[k],
-#                sim.net.O1.demand[k], sim.net.O2.demand[k])
+        # set onramp metering rate and vms speed control
+        for onramp in onramps:
+            onramp.rate[k] = vars_last[f'r_{onramp}'][0, 0]
+        for l in links_with_vms:
+            l.v_ctrl[k] = vars_last[f'v_ctrl_{l}'][:, 0].reshape((l.nb_vms, 1))
+
+        # example of F args and outs
+        # args: w_O1;w_O2|rho_L1[4],v_L1[4];rho_L2[2],v_L2[2]|r_O2;v_ctrl_L1[2]|d_O1;d_O2
+        # outs: q_O1,w+_O1;q_O2,w+_O2|q_L1[4],rho+_L1[4],v+_L1[4];q_L2[2],rho+_L2[2],v+_L2[2]
+
+        x, u, d = [], [], []
+        for origin in origins:
+            x.append(origin.queue[k])
+        for link in links:
+            x.append(link.density[k])
+            x.append(link.speed[k])
+        for onramp in onramps:
+            u.append(onramp.rate[k])
+        for link in links_with_vms:
+            u.append(link.v_ctrl[k])
+        for origin in origins:
+            d.append(origin.demand[k])
+
+        outs = F(*x, *u, *d)
+
+        i = 0
+        for origin in origins:
+            origin.flow[k] = outs[i]
+            origin.queue[k + 1] = outs[i + 1]
+            i += 2
+        for link in links:
+            link.flow[k] = outs[i]
+            link.density[k + 1] = outs[i + 1]
+            link.speed[k + 1] = outs[i + 2]
+            i += 3
+
+        # at the end of each iteration, call the callbacks
+        for cb in callbacks:
+            cb(k)  # arguments to be defined

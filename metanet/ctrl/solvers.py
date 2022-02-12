@@ -363,8 +363,9 @@ class NlpSolver:
         self.x = cs.vertcat(*(cs.vec(o) for o in self.vars.values()))
         self.p = cs.vertcat(*(cs.vec(o) for o in self.pars.values()))
         for attr in ('lbx', 'ubx', 'g', 'lbg', 'ubg'):
-            setattr(self, attr,
-                    cs.vertcat(*(cs.vec(o) for o in getattr(self, attr))))
+            v = getattr(self, attr)
+            if isinstance(v, list):
+                setattr(self, attr, cs.vertcat(*(cs.vec(o) for o in v)))
 
         # build solver
         nlp = {'x': self.x, 'f': self.f, 'g': self.g, 'p': self.p}
@@ -402,7 +403,7 @@ class NlpSolver:
             sol = solver(x0=x0, p=p, lbx=self.lbx, ubx=self.ubx,
                          lbg=self.lbg, ubg=self.ubg)
 
-            info = {float(sol['f'])}
+            info = {'f': float(sol['f'])}
             status = solver.stats()['return_status']
             if status != 'Solve_Succeeded':
                 info['error'] = status

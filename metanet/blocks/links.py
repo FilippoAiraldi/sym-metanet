@@ -1,7 +1,7 @@
 import casadi as cs
 import numpy as np
 
-from typing import Union, List
+from typing import List
 
 from ..util import NamedClass, SmartList
 
@@ -89,18 +89,20 @@ class LinkWithVms(Link):
                              'segment with vms. Use a simple Link then.')
         self.nb_vms = len(self.vms)
 
-    def v_ctrl_at(self, k: int, seg: Union[int, slice] = None):
+    def v_ctrl_at(self, k: int, seg: int = None, raises: bool = True):
         '''
         Returns the control speed at time k for a segment (infinity if the 
-        segment has no vms). If None, returns for all segments.
+        segment has no vms). If None, returns for all segments with vms.
         '''
-
         if seg is None:
             seg = slice(None, None, None)
         elif isinstance(seg, int):
-            return (self.v_ctrl[k][self.vms.index(seg)]
-                    if self.has_vms[seg] else
-                    cs.inf)
+            if raises:
+                return self.v_ctrl[k][self.vms.index(seg)]
+            else:
+                return (self.v_ctrl[k][self.vms.index(seg)]
+                        if self.has_vms[seg] else
+                        cs.inf)
 
         # seg is a slice
         return cs.vertcat(*[self.v_ctrl_at(k, s)
