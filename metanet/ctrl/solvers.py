@@ -169,35 +169,61 @@ class MPC:
                     {} if plugin_opts is None else plugin_opts,
                     {} if solver_opts is None else solver_opts)
 
-    def to_func(self) -> Callable[[Dict[str, float], Dict[str, float]],
-                                  Tuple[Dict[str, float], Dict[str, Any]]]:
-        '''
-        Returns a callable function to automatically run the MPC optimization.
-        '''
-        def _f(vars_init: Dict[str, float], pars_val: Dict[str, float]):
-            for par in self.pars:
-                self.opti.set_value(self.pars[par], pars_val[par])
-            for var in self.vars:
-                self.opti.set_initial(self.vars[var], vars_init[var])
+    def __call__(self, vars_init: Dict[str, float],
+                 pars_val: Dict[str, float]
+                 ) -> Tuple[Dict[str, float], Dict[str, Any]]:
+        for par in self.pars:
+            self.opti.set_value(self.pars[par], pars_val[par])
+        for var in self.vars:
+            self.opti.set_initial(self.vars[var], vars_init[var])
 
+        try:
+            sol = self.opti.solve()
+            info = {}
+            get_value = lambda o: sol.value(o)
+        except Exception as ex1:
             try:
-                sol = self.opti.solve()
-                info = {}
-                get_value = lambda o: sol.value(o)
-            except Exception as ex1:
-                try:
-                    info = {'error': self.opti.debug.stats()['return_status']}
-                    # + ' (' + str(ex1).replace('\n', ' ') + ')'}
-                    get_value = lambda o: self.opti.debug.value(o)
-                except Exception as ex2:
-                    raise RuntimeError(
-                        'error during handling of first '
-                        f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}') from ex2
+                info = {'error': self.opti.debug.stats()['return_status']}
+                # + ' (' + str(ex1).replace('\n', ' ') + ')'}
+                get_value = lambda o: self.opti.debug.value(o)
+            except Exception as ex2:
+                raise RuntimeError(
+                    'error during handling of first '
+                    f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}') from ex2
 
-            info['f'] = float(get_value(self.opti.f))
-            return {name: get_value(var).reshape(var.shape)
-                    for name, var in self.vars.items()}, info
-        return _f
+        info['f'] = float(get_value(self.opti.f))
+        return {name: get_value(var).reshape(var.shape)
+                for name, var in self.vars.items()}, info
+
+    # def to_func(self) -> Callable[[Dict[str, float], Dict[str, float]],
+    #                               Tuple[Dict[str, float], Dict[str, Any]]]:
+    #     '''
+    #     Returns a callable function to automatically run the MPC optimization.
+    #     '''
+    #     def _f(vars_init: Dict[str, float], pars_val: Dict[str, float]):
+    #         for par in self.pars:
+    #             self.opti.set_value(self.pars[par], pars_val[par])
+    #         for var in self.vars:
+    #             self.opti.set_initial(self.vars[var], vars_init[var])
+
+    #         try:
+    #             sol = self.opti.solve()
+    #             info = {}
+    #             get_value = lambda o: sol.value(o)
+    #         except Exception as ex1:
+    #             try:
+    #                 info = {'error': self.opti.debug.stats()['return_status']}
+    #                 # + ' (' + str(ex1).replace('\n', ' ') + ')'}
+    #                 get_value = lambda o: self.opti.debug.value(o)
+    #             except Exception as ex2:
+    #                 raise RuntimeError(
+    #                     'error during handling of first '
+    #                     f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}') from ex2
+
+    #         info['f'] = float(get_value(self.opti.f))
+    #         return {name: get_value(var).reshape(var.shape)
+    #                 for name, var in self.vars.items()}, info
+    #     return _f
 
 
 class NlpSolver:
@@ -219,11 +245,12 @@ class NlpSolver:
         self.sim = sim
         self.Np, self.Nc, self.M = Np, Nc, M
         self.solver_name = solver
-        self.solver_opts = {} if solver_opts is None else solver_opts
+        self.opts = {} if solver_opts is None else solver_opts
         self.vars, self.inps_ext, self.pars = vars, inps_ext, pars
         self.lbx, self.ubx = lbx, ubx
         self.g, self.lbg, self.ubg = g, lbg, ubg
         self.f = f
+        self._is_init = False
 
     def __create_vars_and_pars(self, net: Network, Np: int, Nc: int,
                                M: int,
@@ -357,77 +384,153 @@ class NlpSolver:
         self.g.append(con)
         self.ubg.append(ub)
 
-    def to_func(self) -> Callable[[Dict[str, float], Dict[str, float]],
-                                  Tuple[Dict[str, float], Dict[str, str]]]:
+    def __initialize(self) -> None:
         # flatten into vectos
         self.x = cs.vertcat(*(cs.vec(o) for o in self.vars.values()))
         self.p = cs.vertcat(*(cs.vec(o) for o in self.pars.values()))
         for attr in ('lbx', 'ubx', 'g', 'lbg', 'ubg'):
-            v = getattr(self, attr)
-            if isinstance(v, list):
-                setattr(self, attr, cs.vertcat(*(cs.vec(o) for o in v)))
+            setattr(self, attr,
+                    cs.vertcat(*(cs.vec(o) for o in getattr(self, attr))))
 
         # build solver
         nlp = {'x': self.x, 'f': self.f, 'g': self.g, 'p': self.p}
-        solver = cs.nlpsol('solver', self.solver_name, nlp, self.solver_opts)
-        self.solver = solver
+        self.solver = cs.nlpsol('solver', self.solver_name, nlp, self.opts)
+        self._is_init = True
+
+    def __call__(self, vars_init: Dict[str, float],
+                 pars_val: Dict[str, float]
+                 ) -> Tuple[Dict[str, float], Dict[str, Any]]:
+        if not self._is_init:
+            self.__initialize()
 
         # prepare stuff
         Nx, Nc = self.M * self.Np + 1, self.Nc
         net = self.sim.net
+        solver = self.solver
 
-        def _f(vars_init: Dict[str, float], pars_val: Dict[str, float]):
-            # sourcery skip: for-append-to-extend, list-comprehension, merge-list-appends-into-extend
-            # same order as creation
-            p, x0 = [], []
-            for origin in net.origins:
-                p.append(pars_val[f'd_{origin}'])
-                p.append(pars_val[f'w0_{origin}'])
-                x0.append(vars_init[f'w_{origin}'])
-            for link in net.links:
-                p.append(pars_val[f'rho0_{link}'])
-                p.append(pars_val[f'v0_{link}'])
-                x0.append(vars_init[f'rho_{link}'])
-                x0.append(vars_init[f'v_{link}'])
-            for onramp, _ in net.onramps:
-                p.append(pars_val[f'r_{onramp}_last'])
-                x0.append(vars_init[f'r_{onramp}'])
-            for link, _ in net.links_with_vms:
-                p.append(pars_val[f'v_ctrl_{link}_last'])
-                x0.append(vars_init[f'v_ctrl_{link}'])
-            p = cs.vertcat(*[cs.vec(o) for o in p])
-            x0 = cs.vertcat(*[cs.vec(o) for o in x0])
-            assert p.shape == self.p.shape
-            assert x0.shape == self.x.shape
+        # create parameters and init x vectors
+        # sourcery skip: merge-list-appends-into-extend
+        p, x0 = [], []
+        for origin in net.origins:
+            p.append(pars_val[f'd_{origin}'])
+            p.append(pars_val[f'w0_{origin}'])
+            x0.append(vars_init[f'w_{origin}'])
+        for link in net.links:
+            p.append(pars_val[f'rho0_{link}'])
+            p.append(pars_val[f'v0_{link}'])
+            x0.append(vars_init[f'rho_{link}'])
+            x0.append(vars_init[f'v_{link}'])
+        for onramp, _ in net.onramps:
+            p.append(pars_val[f'r_{onramp}_last'])
+            x0.append(vars_init[f'r_{onramp}'])
+        for link, _ in net.links_with_vms:
+            p.append(pars_val[f'v_ctrl_{link}_last'])
+            x0.append(vars_init[f'v_ctrl_{link}'])
+        p = cs.vertcat(*[cs.vec(o) for o in p])
+        x0 = cs.vertcat(*[cs.vec(o) for o in x0])
 
-            sol = solver(x0=x0, p=p, lbx=self.lbx, ubx=self.ubx,
-                         lbg=self.lbg, ubg=self.ubg)
+        # call solver
+        sol = solver(x0=x0, p=p, lbx=self.lbx, ubx=self.ubx,
+                     lbg=self.lbg, ubg=self.ubg)
 
-            info = {'f': float(sol['f'])}
-            status = solver.stats()['return_status']
-            if status != 'Solve_Succeeded':
-                info['error'] = status
+        # create info
+        info = {'f': float(sol['f'])}
+        status = solver.stats()['return_status']
+        if status != 'Solve_Succeeded':
+            info['error'] = status
 
-            x_opt = sol['x']
-            i, out = 0, {}
-            for origin in net.origins:
-                out[f'w_{origin}'] = x_opt[i:i + Nx].reshape((1, Nx))
-                i += Nx
-            for link in net.links:
-                out[f'rho_{link}'] = x_opt[i:i + link.nb_seg * Nx
-                                           ].reshape((link.nb_seg, Nx))
-                i += link.nb_seg * Nx
-                out[f'v_{link}'] = x_opt[i:i + link.nb_seg * Nx
-                                         ].reshape((link.nb_seg, Nx))
-                i += link.nb_seg * Nx
-            for ornamp, _ in net.onramps:
-                out[f'r_{ornamp}'] = x_opt[i:i + Nc
-                                           ].reshape((1, Nc))
-                i += Nc
-            for link, _ in net.links_with_vms:
-                out[f'v_ctrl_{link}'] = x_opt[i:i + link.nb_vms * Nc
-                                              ].reshape((link.nb_vms, Nc))
-                i += link.nb_vms * Nc
-            return out, info
+        # create output variables
+        x_opt = sol['x']
+        i, out = 0, {}
+        for origin in net.origins:
+            out[f'w_{origin}'] = x_opt[i:i + Nx].reshape((1, Nx))
+            i += Nx
+        for link in net.links:
+            out[f'rho_{link}'] = x_opt[i:i + link.nb_seg * Nx
+                                       ].reshape((link.nb_seg, Nx))
+            i += link.nb_seg * Nx
+            out[f'v_{link}'] = x_opt[i:i + link.nb_seg * Nx
+                                     ].reshape((link.nb_seg, Nx))
+            i += link.nb_seg * Nx
+        for ornamp, _ in net.onramps:
+            out[f'r_{ornamp}'] = x_opt[i:i + Nc
+                                       ].reshape((1, Nc))
+            i += Nc
+        for link, _ in net.links_with_vms:
+            out[f'v_ctrl_{link}'] = x_opt[i:i + link.nb_vms * Nc
+                                          ].reshape((link.nb_vms, Nc))
+            i += link.nb_vms * Nc
+        return out, info
 
-        return _f
+    # def to_func(self) -> Callable[[Dict[str, float], Dict[str, float]],
+    #                               Tuple[Dict[str, float], Dict[str, str]]]:
+    #     # flatten into vectos
+    #     self.x = cs.vertcat(*(cs.vec(o) for o in self.vars.values()))
+    #     self.p = cs.vertcat(*(cs.vec(o) for o in self.pars.values()))
+    #     for attr in ('lbx', 'ubx', 'g', 'lbg', 'ubg'):
+    #         v = getattr(self, attr)
+    #         if isinstance(v, list):
+    #             setattr(self, attr, cs.vertcat(*(cs.vec(o) for o in v)))
+
+    #     # build solver
+    #     nlp = {'x': self.x, 'f': self.f, 'g': self.g, 'p': self.p}
+    #     solver = cs.nlpsol('solver', self.solver_name, nlp, self.opts)
+    #     self.solver = solver
+
+    #     # prepare stuff
+    #     Nx, Nc = self.M * self.Np + 1, self.Nc
+    #     net = self.sim.net
+
+    #     def _f(vars_init: Dict[str, float], pars_val: Dict[str, float]):
+    #         # sourcery skip: for-append-to-extend, list-comprehension, merge-list-appends-into-extend
+    #         # same order as creation
+    #         p, x0 = [], []
+    #         for origin in net.origins:
+    #             p.append(pars_val[f'd_{origin}'])
+    #             p.append(pars_val[f'w0_{origin}'])
+    #             x0.append(vars_init[f'w_{origin}'])
+    #         for link in net.links:
+    #             p.append(pars_val[f'rho0_{link}'])
+    #             p.append(pars_val[f'v0_{link}'])
+    #             x0.append(vars_init[f'rho_{link}'])
+    #             x0.append(vars_init[f'v_{link}'])
+    #         for onramp, _ in net.onramps:
+    #             p.append(pars_val[f'r_{onramp}_last'])
+    #             x0.append(vars_init[f'r_{onramp}'])
+    #         for link, _ in net.links_with_vms:
+    #             p.append(pars_val[f'v_ctrl_{link}_last'])
+    #             x0.append(vars_init[f'v_ctrl_{link}'])
+    #         p = cs.vertcat(*[cs.vec(o) for o in p])
+    #         x0 = cs.vertcat(*[cs.vec(o) for o in x0])
+
+    #         sol = solver(x0=x0, p=p, lbx=self.lbx, ubx=self.ubx,
+    #                      lbg=self.lbg, ubg=self.ubg)
+
+    #         info = {'f': float(sol['f'])}
+    #         status = solver.stats()['return_status']
+    #         if status != 'Solve_Succeeded':
+    #             info['error'] = status
+
+    #         x_opt = sol['x']
+    #         i, out = 0, {}
+    #         for origin in net.origins:
+    #             out[f'w_{origin}'] = x_opt[i:i + Nx].reshape((1, Nx))
+    #             i += Nx
+    #         for link in net.links:
+    #             out[f'rho_{link}'] = x_opt[i:i + link.nb_seg * Nx
+    #                                        ].reshape((link.nb_seg, Nx))
+    #             i += link.nb_seg * Nx
+    #             out[f'v_{link}'] = x_opt[i:i + link.nb_seg * Nx
+    #                                      ].reshape((link.nb_seg, Nx))
+    #             i += link.nb_seg * Nx
+    #         for ornamp, _ in net.onramps:
+    #             out[f'r_{ornamp}'] = x_opt[i:i + Nc
+    #                                        ].reshape((1, Nc))
+    #             i += Nc
+    #         for link, _ in net.links_with_vms:
+    #             out[f'v_ctrl_{link}'] = x_opt[i:i + link.nb_vms * Nc
+    #                                           ].reshape((link.nb_vms, Nc))
+    #             i += link.nb_vms * Nc
+    #         return out, info
+
+    #     return _f
