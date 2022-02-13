@@ -195,11 +195,11 @@ def sim2func(sim: Simulation,
 
 def run_sim_with_MPC(
     sim: Simulation,
-    mpc: Union['MPC', 'NlpSolver'],
+    MPC: Union['MPC', 'NlpSolver'],
     K: int,
     use_tqdm: bool = False,
-    *callbacks:
-        Callable[[int, Simulation, Dict[str, float], Dict[str, Any]]]) -> None:
+    *cbs: Callable[[int, Simulation, Dict[str, float], Dict[str, Any]], None]
+) -> None:
     '''
     cb(k, sim, vars_last, info)
     Automatically run the simulation with an MPC (not necessarily created with 
@@ -220,8 +220,8 @@ def run_sim_with_MPC(
         use_tqdm : bool, optional
             Whether to use tqdm to display progress. Defaults to False.
 
-        callbacks : Callable[iter, sim, vars, info]
-            Callback called at the end of each iteration.
+        cbs : Callable[iter, sim, vars, info]
+            Callbacks called at the end of each iteration.
             NB: should also pass the dict of parameters to update their values
     '''
 
@@ -233,7 +233,6 @@ def run_sim_with_MPC(
 
     # create functions
     F = sim2func(sim, out_nonstate=True, out_nonneg=True)
-    MPC = mpc.to_func()
 
     # save some stuff
     M, Np, Nc = mpc.M, mpc.Np, mpc.Nc
@@ -318,5 +317,46 @@ def run_sim_with_MPC(
             i += 3
 
         # at the end of each iteration, call the callbacks
-        for cb in callbacks:
+        for cb in cbs:
             cb(k, sim, vars_last, info)  # arguments to be defined
+
+
+def multistart(MPC: Union['MPC', 'NlpSolver'],
+               vars_init: Dict[str, float], pars_val: Dict[str, float],
+               n: int = 10, noise: str = 'norm', mul: float = 0.33):
+    # add noise to the initial conditions
+    rng = np.random.default_rng()
+    if noise == 'norm':
+        def corrupt(x):
+            std = mul * np.max(np.abs(x) + 0.25)
+            return x + rng.normal(scale=std, size=x.shape)
+    elif noise == 'unif':
+        def corrupt(x):
+            half = (mul * np.max(np.abs(x) + 0.25)) / 2
+            return x + rng.uniform(low=-half, high=half, size=x.shape)
+    else:
+        raise ValueError(
+            f'Noise expected to be \'norm\' or \'unif\'; got {noise} instead.')
+
+    vars_init_noisy = [{k: corrupt(v) for k, v in vars_init.items()}
+                       for _ in range(n - 1)]
+    vars_init_noisy.insert(0, vars_init)  # remember to include original
+
+    # import multiprocessing
+    # pool_obj = multiprocessing.Pool()
+    # results = pool_obj.starmap(MPC, args, chunksize=1)
+    # pool_obj.close()
+    # pool_obj.join()
+    # return results
+
+    # from joblib import Parallel, delayed
+    # r = Parallel(n_jobs=n)(delayed(MPC)(vars[i], pars_val) for i in range(n))
+
+    f_best, vars_best, info_best = float('+inf'), None, None
+    for i in range(n):
+        vars, info = MPC(vars_init_noisy[i], pars_val)
+        f = info['f']
+        if f < f_best:
+            f_best, vars_best, info_best = f, vars, info
+
+    return vars_best, info_best
