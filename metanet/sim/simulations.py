@@ -2,12 +2,13 @@ import casadi as cs
 import numpy as np
 from itertools import product
 
-from typing import Tuple
+from typing import Tuple, Dict, Union
 
-from ..blocks.origins import MainstreamOrigin, OnRamp
-from ..blocks.links import LinkWithVms
+from ..blocks.origins import Origin, MainstreamOrigin, OnRamp
+from ..blocks.links import Link, LinkWithVms
 from ..blocks.networks import Network
 from . import functional as F
+from ..util import SmartList
 
 
 class Simulation:
@@ -83,8 +84,11 @@ class Simulation:
                     f'{destination.name}; got {len(nodedata.links_out)} '
                     'exiting links instead.')
 
-    def set_init_cond(self, links_init=None, origins_init=None,
-                      reset=False):
+    def set_init_cond(
+            self, links_init: Dict[Link, Tuple[np.ndarray, np.ndarray]],
+            origins_init: Dict[Origin, np.ndarray],
+            ctrl_init: Dict[Union[LinkWithVms, OnRamp], np.ndarray],
+            reset_demands: bool = False) -> None:
         '''
         Reset internal variables and sets the initial conditions for the
         model's simulation.
@@ -92,27 +96,39 @@ class Simulation:
         Parameters
         ----------
             links_init : dict[metanet.Link, (array, array)], optional
-                Dictionary initial conditions from link to (density, speed).
+                Dictionary holding initial conditions (density, speed) for each
+                link. 
 
-            origins_init : dict[metanet.Origin, float], optional
-                Dictionary initial conditions from origin to queue.
+            origins_init : dict[metanet.Origin, array], optional
+                Dictionary holding initial conditions (queue) for each origin.
 
-            reset : bool, optional
-                Resets all the internal quantities. Defaults to False.
+            ctrl_init : dict[metanet.LinkVms or Onramp, array], optional
+                Dictionary holding initial control actions for each link with 
+                vms and/or ramp. 
+
+            reset_demands : bool, optional
+                Whether to reset also the demands. Defaults to False.
         '''
 
-        if links_init is not None:
-            for link, (rho, v) in links_init.items():
-                if reset:
-                    link.reset()
-                link.density[-1] = rho.reshape((link.nb_seg, 1))
-                link.speed[-1] = v.reshape((link.nb_seg, 1))
-
-        if origins_init is not None:
-            for origin, w in origins_init.items():
-                if reset:
-                    origin.reset()
-                origin.queue[-1] = w.reshape((1, 1))
+        for link in self.net.links:
+            link.density.clear()
+            link.speed.clear()
+            link.flow.clear()
+            rho, v = links_init[link]
+            link.density[0] = rho.reshape((link.nb_seg, 1))
+            link.speed[0] = v.reshape((link.nb_seg, 1))
+            if isinstance(link, LinkWithVms):
+                link.v_ctrl.clear()
+                link.v_ctrl[0] = ctrl_init[link].reshape((link.nb_vms, 1))
+        for origin in self.net.origins:
+            origin.queue.clear()
+            origin.flow.clear()
+            if reset_demands:
+                origin.demand.clear()
+            origin.queue[0] = origins_init[origin].reshape((1, 1))
+            if isinstance(origin, OnRamp):
+                origin.rate.clear()
+                origin.rate[0] = ctrl_init[origin].reshape((1, 1))
 
     def step(self, k: int):
         '''
@@ -252,8 +268,9 @@ class Simulation:
                 T=self.T)
 
     def plot(self, t: np.ndarray = None, fig: 'Figure' = None,
-             axs: np.ndarray = None,
-             sharex: bool = False) -> Tuple['Figure', np.ndarray]:
+             axs: np.ndarray = None, sharex: bool = False,
+             add_labels: bool = True,
+             **plot_kwargs) -> Tuple['Figure', np.ndarray]:
         '''
         Plots the simulation outcome.
 
@@ -268,6 +285,9 @@ class Simulation:
             axs : 2d array of matplotlib.axis, optional
                 Axes to be used for plotting. If not given, axes are 
                 automatically constructed.
+
+            add_labels : bool, optional
+                Whether to automatically add labels.
 
             sharex : bool, optional
                 Whether the axes should share the x. Defaults to True.
@@ -297,32 +317,41 @@ class Simulation:
         if t is None:
             t = np.arange(len(next(iter(self.net.links)).flow)) * self.T
 
+        def plot(loc, x, c, lbl):
+            c = 'C' + str(c)
+            if add_labels:
+                return axs[loc].plot(t, x, color=c, label=lbl, **plot_kwargs)
+            return axs[loc].plot(t, x, color=c, **plot_kwargs)
+
         # add plots
         any_onramp, any_vms = False, False
+        c_idx = 0
+
         for link in self.net.links:
             v = np.hstack(link.speed[:-1])
             rho = np.hstack(link.density[:-1])
             q = np.hstack(link.flow)
             for i in range(link.nb_seg):
-                axs[0, 0].plot(t, v[i], label=f'$v_{{{link.name}, {i + 1}}}$')
-                axs[0, 1].plot(t, q[i], label=f'$q_{{{link.name}, {i + 1}}}$')
-                axs[1, 0].plot(t, rho[i],
-                               label=f'$\\rho_{{{link.name}, {i + 1}}}$')
+                plot((0, 0), v[i], c_idx + i, f'$v_{{{link.name}, {i + 1}}}$')
+                plot((0, 1), q[i], c_idx + i, f'$q_{{{link.name}, {i + 1}}}$')
+                plot((1, 0), rho[i], c_idx + i, f'$\\rho_{{{link.name}, {i + 1}}}$')
             if isinstance(link, LinkWithVms):
                 any_vms = True
                 v_ctrl = np.hstack(link.v_ctrl)
                 for i, s in enumerate(link.vms):
-                    axs[3, 1].plot(t, v_ctrl[i],
-                                   label=f'$v^{{ctrl}}_{{{link.name}, {s + 1}}}$')
-        for origin in self.net.origins:
+                    plot((3, 1), v_ctrl[i], i,
+                            f'$v^{{ctrl}}_{{{link.name}, {s + 1}}}$')
+            c_idx += link.nb_seg
+
+        for i, origin in enumerate(self.net.origins):
             w = np.vstack(origin.queue[:-1])
             q = np.vstack(origin.flow)
-            axs[2, 0].plot(t, q, label=f'$q_{{{origin.name}}}$')
-            axs[2, 1].plot(t, w, label=f'$\\omega_{{{origin.name}}}$')
+            plot((2, 0), q, i, f'$q_{{{origin.name}}}$')
+            plot((2, 1), w, i, f'$\\omega_{{{origin.name}}}$')
             if isinstance(origin, OnRamp):
                 any_onramp = True
                 r = np.vstack(origin.rate)
-                axs[3, 0].plot(t, r, label=origin.name)
+                plot((3, 0), r, i, origin.name)
 
         excluded = {(1, 1)}
         axs[0, 0].set_ylabel('speed (km/h)')
