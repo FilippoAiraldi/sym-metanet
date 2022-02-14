@@ -314,11 +314,14 @@ class Simulation:
                     range(gs.nrows),
                     range(gs.ncols))]).reshape(gs.nrows, gs.ncols)
 
+        maxs = np.zeros(axs.shape)
+
         if t is None:
             t = np.arange(len(next(iter(self.net.links)).flow)) * self.T
 
         def plot(loc, x, c, lbl):
             c = 'C' + str(c)
+            maxs[loc] = max(maxs[loc], x.max())
             if add_labels:
                 return axs[loc].plot(t, x, color=c, label=lbl, **plot_kwargs)
             return axs[loc].plot(t, x, color=c, **plot_kwargs)
@@ -334,39 +337,43 @@ class Simulation:
             for i in range(link.nb_seg):
                 plot((0, 0), v[i], c_idx + i, f'$v_{{{link.name}, {i + 1}}}$')
                 plot((0, 1), q[i], c_idx + i, f'$q_{{{link.name}, {i + 1}}}$')
-                plot((1, 0), rho[i], c_idx + i, f'$\\rho_{{{link.name}, {i + 1}}}$')
+                plot((1, 0), rho[i], c_idx + i,
+                     f'$\\rho_{{{link.name}, {i + 1}}}$')
             if isinstance(link, LinkWithVms):
                 any_vms = True
                 v_ctrl = np.hstack(link.v_ctrl)
                 for i, s in enumerate(link.vms):
                     plot((3, 1), v_ctrl[i], i,
-                            f'$v^{{ctrl}}_{{{link.name}, {s + 1}}}$')
+                         f'$v^{{ctrl}}_{{{link.name}, {s + 1}}}$')
             c_idx += link.nb_seg
 
         for i, origin in enumerate(self.net.origins):
             w = np.vstack(origin.queue[:-1])
             q = np.vstack(origin.flow)
-            plot((2, 0), q, i, f'$q_{{{origin.name}}}$')
+            d = np.vstack(origin.demand)
+            plot((2, 0), d, i, origin.name)
+            plot((3, 0), q, i, f'$q_{{{origin.name}}}$')
             plot((2, 1), w, i, f'$\\omega_{{{origin.name}}}$')
             if isinstance(origin, OnRamp):
                 any_onramp = True
                 r = np.vstack(origin.rate)
-                plot((3, 0), r, i, origin.name)
+                plot((3, 1), r, i, origin.name)
 
-        excluded = {(1, 1)}
+        excluded = set()
         axs[0, 0].set_ylabel('speed (km/h)')
         axs[0, 1].set_ylabel('flow (veh/h)')
         axs[1, 0].set_ylabel('density (veh/km)')
-        axs[2, 0].set_ylabel('origin flows (veh/h)')
+        axs[2, 0].set_ylabel('origin demand (veh/h)')
         axs[2, 1].set_ylabel('queue length (veh)')
+        axs[3, 0].set_ylabel('origin flow (veh/h)')
         if any_onramp:
-            axs[3, 0].set_ylabel('metering rate')
-        else:
-            excluded.add((3, 0))
-        if any_vms:
-            axs[3, 1].set_ylabel('dynamic speed limit (km/h)')
+            axs[3, 1].set_ylabel('metering rate')
         else:
             excluded.add((3, 1))
+        if any_vms:
+            axs[1, 1].set_ylabel('dynamic speed limit (km/h)')
+        else:
+            excluded.add((1, 1))
 
         for i, j in product(range(axs.shape[0]), range(axs.shape[1])):
             if (i, j) in excluded:
@@ -376,7 +383,9 @@ class Simulation:
                     axs[i, j].sharex(axs[0, 0])
                 axs[i, j].set_xlabel('time (h)')
                 axs[i, j].set_xlim(0, t[-1])
-                axs[i, j].set_ylim(0, axs[i, j].get_ylim()[1])
+                axs[i, j].autoscale_view()
+                axs[i, j].set_ylim(0, max(axs[i, j].get_ylim()[1],
+                                          maxs[i, j] * 1.1))
                 axs[i, j].legend()
 
         return fig, axs
