@@ -199,6 +199,7 @@ def run_sim_with_MPC(
     K: int,
     sim_true: Simulation = None,
     use_mpc: bool = True,
+    n_multistarts: int = 1,
     use_tqdm: bool = False,
     *cbs: Callable[[int, Simulation, Dict[str, float], Dict[str, Any]], None]
 ) -> None:
@@ -225,8 +226,12 @@ def run_sim_with_MPC(
             provided, it is assumed that 'sim' is governed by the true 
             dynamics. Defaults to None.
 
+        n_multistarts : int, optional 
+            Runs the MPC from multiple initial points. Defaults to None, i.e., 
+            no multistart.
+
         use_mpc : bool, optional 
-            Ca be used to disable completely the MPC. Defaults to True.
+            Can be used to disable completely the MPC. Defaults to True.
 
         use_tqdm : bool, optional
             Whether to use tqdm to display progress. Defaults to False.
@@ -243,6 +248,9 @@ def run_sim_with_MPC(
         def tqdm(iter, *args, **kwargs):
             return iter
         tqdm_write = print
+
+    if n_multistarts <= 0:
+        raise ValueError('Invalid number of multistarts. Must be positive.')
 
     # create functions
     F = sim2func(sim if sim_true is None else sim_true,
@@ -262,7 +270,7 @@ def run_sim_with_MPC(
         **{f'rho_{l}': cs.repmat(l.density[0], 1, M * Np + 1) for l in links},
         **{f'v_{l}': cs.repmat(l.speed[0], 1, M * Np + 1) for l in links},
         **{f'r_{o}': cs.repmat(o.rate[0], 1, Nc) for o in onramps},
-        ** {f'v_ctrl_{l}': cs.repmat(l.v_ctrl[0], 1, Nc) for l in links_vms}
+        **{f'v_ctrl_{l}': cs.repmat(l.v_ctrl[0], 1, Nc) for l in links_vms}
     }
 
     # simulation main loop
@@ -288,7 +296,8 @@ def run_sim_with_MPC(
                 **{f'v_ctrl_{l}_last': vars_last[f'v_ctrl_{l}'][:, 0]
                     for l in links_vms},
             }
-            vars_last, info = MPC(vars_init, pars_val)
+            vars_last, info = multistart(MPC, vars_init, pars_val, 
+                                         n=n_multistarts)
             if 'error' in info:
                 tqdm_write(f'{k:{len(str(K))}}: ({name}) '
                            + info['error'] + '.')
