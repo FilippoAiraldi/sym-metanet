@@ -7,7 +7,7 @@ from typing import Union, List, Dict, Callable, Any
 from ..blocks.origins import Origin, OnRamp
 from ..blocks.links import Link, LinkWithVms
 from ..sim.simulations import Simulation
-from ..util import shift
+from ..util import shift, SmartList
 
 
 def __create_sim2func_args(in_states: bool,
@@ -193,6 +193,55 @@ def sim2func(sim: Simulation,
     return ((F, args, outs) if return_args else F)
 
 
+def steadystate(sim: Simulation, eps: float = 1e-2):
+    # check that the sim is in initial conditions
+    if len(next(iter(sim.net.links)).density) != 1:
+        raise ValueError('In order to compute the steady-state, the '
+                         'simulation must be in initial conditions.')
+
+    # example of F args and outs
+    # args: w_O1;w_O2|rho_L1[4],v_L1[4];rho_L2[2],v_L2[2]|r_O2;v_ctrl_L1[2]|d_O1;d_O2
+    # outs: w+_O1;w+_O2|rho+_L1[4],v+_L1[4];rho+_L2[2],v+_L2[2]
+    F = sim2func(sim, out_nonneg=True)
+
+    # loop until convergence is achieved
+    k, err = 0, float('inf')
+    x = []
+    u = [*[onramp.rate[0] for onramp, _ in sim.net.onramps],
+         *[link.v_ctrl[0] for link, _ in sim.net.links_with_vms]]
+    d = [origin.demand[0] for origin in sim.net.origins]
+    while err >= eps:
+        err = 0
+
+        # perform step
+        x.clear()
+        x.extend(origin.queue[k] for origin in sim.net.origins)
+        for link in sim.net.links:
+            x.extend((link.density[k], link.speed[k]))
+        outs = F(*x, *u, *d)
+        i = 0
+        for origin in sim.net.origins:
+            origin.queue[k + 1] = outs[i]
+            i += 1
+            err += np.sum(np.abs(origin.queue[k + 1] - origin.queue[k]))
+        for link in sim.net.links:
+            link.density[k + 1] = outs[i]
+            link.speed[k + 1] = outs[i + 1]
+            i += 2
+            err += np.sum(np.abs(link.density[k + 1]
+                                 - link.density[k])) / link.nb_seg
+            err += np.sum(np.abs(link.speed[k + 1]
+                                 - link.speed[k])) / link.nb_seg
+        k += 1
+
+    # restore simulation quantities
+    for link in sim.net.links:
+        link.density = SmartList.from_list([link.density[-1]])
+        link.speed = SmartList.from_list([link.speed[-1]])
+    for origin in sim.net.origins:
+        origin.queue = SmartList.from_list([origin.queue[-1]])
+
+
 def run_sim_with_MPC(
     sim: Simulation,
     MPC: Union['MPC', 'NlpSolver'],
@@ -200,7 +249,8 @@ def run_sim_with_MPC(
     sim_true: Simulation = None,
     use_mpc: bool = True,
     n_multistarts: int = 1,
-    use_tqdm: bool = False,
+    demands_known: bool = True,
+    use_tqdm: bool = True,
     *cbs: Callable[[int, Simulation, Dict[str, float], Dict[str, Any]], None]
 ) -> None:
     '''
@@ -230,11 +280,15 @@ def run_sim_with_MPC(
             Runs the MPC from multiple initial points. Defaults to None, i.e., 
             no multistart.
 
+        demands_known : bool, optional
+            Whether the future demands are known, or only the current value can
+            be used. Defaults to True.
+
         use_mpc : bool, optional 
             Can be used to disable completely the MPC. Defaults to True.
 
         use_tqdm : bool, optional
-            Whether to use tqdm to display progress. Defaults to False.
+            Whether to use tqdm to display progress. Defaults to True.
 
         cbs : Callable[iter, sim, vars, info]
             Callbacks called at the end of each iteration.
@@ -276,12 +330,16 @@ def run_sim_with_MPC(
     # simulation main loop
     for k in tqdm(range(K), total=K):
         if k % M == 0 and use_mpc:
-            # get future demands (only in true model)
+            # get demands (future, if known; otherwise, current)
             dist = {}
             for origin in origins:
-                d = origin.demand[k:k + M * Np]
-                dist[f'd_{origin}'] = np.pad(d, (0, M * Np - len(d)),
-                                             mode='edge').reshape(1, -1)
+                if demands_known:
+                    d = origin.demand[k:k + M * Np]
+                    dist[f'd_{origin}'] = np.pad(d, (0, M * Np - len(d)),
+                                                 mode='edge').reshape(1, -1)
+                else:
+                    dist[f'd_{origin}'] = np.tile(origin.demand[k],
+                                                  (1, M * Np))
 
             # run MPC
             vars_init = {
@@ -296,7 +354,7 @@ def run_sim_with_MPC(
                 **{f'v_ctrl_{l}_last': vars_last[f'v_ctrl_{l}'][:, 0]
                     for l in links_vms},
             }
-            vars_last, info = multistart(MPC, vars_init, pars_val, 
+            vars_last, info = multistart(MPC, vars_init, pars_val,
                                          n=n_multistarts)
             if 'error' in info:
                 tqdm_write(f'{k:{len(str(K))}}/{k / K * 100:2.1f}% ({name}): '
@@ -345,17 +403,19 @@ def run_sim_with_MPC(
 
 def multistart(MPC: Union['MPC', 'NlpSolver'],
                vars_init: Dict[str, float], pars_val: Dict[str, float],
-               n: int = 10, noise: str = 'norm', mul: float = 0.33):
+               n: int = 10, noise: str = 'norm', mul: float = 0.1):
     # add noise to the initial conditions
     rng = np.random.default_rng()
     if noise == 'norm':
         def corrupt(x):
             std = mul * np.max(np.abs(x) + 0.25)
-            return x + rng.normal(scale=std, size=x.shape)
+            y = x + rng.normal(scale=std, size=x.shape)
+            return np.clip(y, 0, None)
     elif noise == 'unif':
         def corrupt(x):
             half = (mul * np.max(np.abs(x) + 0.25)) / 2
-            return x + rng.uniform(low=-half, high=half, size=x.shape)
+            y = x + rng.uniform(low=-half, high=half, size=x.shape)
+            return np.clip(y, 0, None)
     else:
         raise ValueError(
             f'Noise expected to be \'norm\' or \'unif\'; got {noise} instead.')
