@@ -193,7 +193,8 @@ def sim2func(sim: Simulation,
     return ((F, args, outs) if return_args else F)
 
 
-def steadystate(sim: Simulation, eps: float = 1e-2):
+def steadystate(sim: Simulation, eps: float = 1e-2,
+                sim_true: Simulation = None):
     # check that the sim is in initial conditions
     if len(next(iter(sim.net.links)).density) != 1:
         raise ValueError('In order to compute the steady-state, the '
@@ -202,7 +203,7 @@ def steadystate(sim: Simulation, eps: float = 1e-2):
     # example of F args and outs
     # args: w_O1;w_O2|rho_L1[4],v_L1[4];rho_L2[2],v_L2[2]|r_O2;v_ctrl_L1[2]|d_O1;d_O2
     # outs: w+_O1;w+_O2|rho+_L1[4],v+_L1[4];rho+_L2[2],v+_L2[2]
-    F = sim2func(sim, out_nonneg=True)
+    F = sim2func(sim if sim_true is None else sim_true, out_nonneg=True)
 
     # loop until convergence is achieved
     k, err = 0, float('inf')
