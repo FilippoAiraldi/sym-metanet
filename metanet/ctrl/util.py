@@ -197,6 +197,8 @@ def run_sim_with_MPC(
     sim: Simulation,
     MPC: Union['MPC', 'NlpSolver'],
     K: int,
+    sim_true: Simulation = None,
+    use_mpc: bool = True,
     use_tqdm: bool = False,
     *cbs: Callable[[int, Simulation, Dict[str, float], Dict[str, Any]], None]
 ) -> None:
@@ -209,13 +211,22 @@ def run_sim_with_MPC(
     Parameters
     ----------
         sim : metanet.Simulation
-            Simulation to run.
+            Simulation to run (will contain the results).
 
         mpc : metanet.control.MPC or metanet.control.NlpSolver 
             MPC controller to run along with the simulation.
 
         K : int
             Total simulation steps.
+
+        sim_true : metanet.Simulation, optional
+            If provided, the true system dynamics will be taken from this 
+            simulation, while results will still be saved in 'sim'. If not 
+            provided, it is assumed that 'sim' is governed by the true 
+            dynamics. Defaults to None.
+
+        use_mpc : bool, optional 
+            Ca be used to disable completely the MPC. Defaults to True.
 
         use_tqdm : bool, optional
             Whether to use tqdm to display progress. Defaults to False.
@@ -227,34 +238,36 @@ def run_sim_with_MPC(
 
     if use_tqdm:
         from tqdm import tqdm
+        tqdm_write = tqdm.write
     else:
         def tqdm(iter, *args, **kwargs):
             return iter
+        tqdm_write = print
 
     # create functions
-    F = sim2func(sim, out_nonstate=True, out_nonneg=True)
+    F = sim2func(sim if sim_true is None else sim_true,
+                 out_nonstate=True, out_nonneg=True)
 
     # save some stuff
-    M, Np, Nc = mpc.M, mpc.Np, mpc.Nc
+    M, Np, Nc = MPC.M, MPC.Np, MPC.Nc
     name = sim.net.name
     origins = list(sim.net.origins.keys())
     onramps = list(map(lambda o: o[0], sim.net.onramps))
     links = list(sim.net.links.keys())
-    links_with_vms = list(map(lambda o: o[0], sim.net.links_with_vms))
+    links_vms = list(map(lambda o: o[0], sim.net.links_with_vms))
 
     # initialize true and nominal last solutions
     vars_last = {
         **{f'w_{o}': cs.repmat(o.queue[0], 1, M * Np + 1) for o in origins},
         **{f'rho_{l}': cs.repmat(l.density[0], 1, M * Np + 1) for l in links},
         **{f'v_{l}': cs.repmat(l.speed[0], 1, M * Np + 1) for l in links},
-        **{f'r_{o}': np.ones((1, Nc)) for o in onramps},
-        **{f'v_ctrl_{l}': np.full((l.nb_vms, Nc), 0.7 * l.v_free)
-           for l in links_with_vms}
+        **{f'r_{o}': cs.repmat(o.rate[0], 1, Nc) for o in onramps},
+        ** {f'v_ctrl_{l}': cs.repmat(l.v_ctrl[0], 1, Nc) for l in links_vms}
     }
 
     # simulation main loop
     for k in tqdm(range(K), total=K):
-        if k % M == 0:
+        if k % M == 0 and use_mpc:
             # get future demands (only in true model)
             dist = {}
             for origin in origins:
@@ -273,17 +286,17 @@ def run_sim_with_MPC(
                 **{f'v0_{l}': l.speed[k] for l in links},
                 **{f'r_{o}_last': vars_last[f'r_{o}'][0, 0] for o in onramps},
                 **{f'v_ctrl_{l}_last': vars_last[f'v_ctrl_{l}'][:, 0]
-                    for l in links_with_vms},
+                    for l in links_vms},
             }
             vars_last, info = MPC(vars_init, pars_val)
             if 'error' in info:
-                tqdm.write(f'{k:{len(str(K))}}: ({name}) '
+                tqdm_write(f'{k:{len(str(K))}}: ({name}) '
                            + info['error'] + '.')
 
         # set onramp metering rate and vms speed control
         for onramp in onramps:
             onramp.rate[k] = vars_last[f'r_{onramp}'][0, 0]
-        for l in links_with_vms:
+        for l in links_vms:
             l.v_ctrl[k] = vars_last[f'v_ctrl_{l}'][:, 0].reshape((l.nb_vms, 1))
 
         # example of F args and outs
@@ -298,7 +311,7 @@ def run_sim_with_MPC(
             x.append(link.speed[k])
         for onramp in onramps:
             u.append(onramp.rate[k])
-        for link in links_with_vms:
+        for link in links_vms:
             u.append(link.v_ctrl[k])
         for origin in origins:
             d.append(origin.demand[k])

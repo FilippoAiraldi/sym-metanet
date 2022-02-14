@@ -86,6 +86,7 @@ class SmartList(list):
     '''
     A list that appends when the user assigns the k-th element to it (where k 
     is the length of the list before assignment) instead of throwing.
+    Does not intentionally handle negative indices.
     '''
 
     def __setitem__(self, idx: Union[int, slice], val: Any) -> None:
