@@ -299,7 +299,7 @@ def run_sim_with_MPC(
             vars_last, info = multistart(MPC, vars_init, pars_val, 
                                          n=n_multistarts)
             if 'error' in info:
-                tqdm_write(f'{k:{len(str(K))}}/{k / K * 100:2.1f}%: ({name}) '
+                tqdm_write(f'{k:{len(str(K))}}/{k / K * 100:2.1f}% ({name}): '
                            + info['error'] + '.')
 
         # set onramp metering rate and vms speed control
