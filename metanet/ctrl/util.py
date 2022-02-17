@@ -195,6 +195,24 @@ def sim2func(sim: Simulation,
 
 def steadystate(sim: Simulation, eps: float = 1e-2,
                 sim_true: Simulation = None):
+    '''
+    Computes steady-state conditions from initial conditions, by simply 
+    simulating and checking for convergence.
+
+    Parameters
+    ----------
+        sim : metanet.Simulation
+            Simulation to be put in steady-state (will contain the results). 
+            Must be at initial conditions, i.e., quantities with length 1.
+
+        eps : float
+            Steady-state convergence mean error.
+
+        sim_true : metanet.Simulation, optional
+            If provided, the dynamics of this simulation will be driven to 
+            steady-state, while results will be saved to 'sim'. Defaults to 
+            None.
+    '''
     # check that the sim is in initial conditions
     if len(next(iter(sim.net.links)).density) != 1:
         raise ValueError('In order to compute the steady-state, the '
@@ -255,7 +273,6 @@ def run_sim_with_MPC(
     *cbs: Callable[[int, Simulation, Dict[str, float], Dict[str, Any]], None]
 ) -> None:
     '''
-    cb(k, sim, vars_last, info)
     Automatically run the simulation with an MPC (not necessarily created with 
     the same sim). Be sure to set the initial conditions before calling this 
     method.
@@ -404,7 +421,7 @@ def run_sim_with_MPC(
 
 def multistart(MPC: Union['MPC', 'NlpSolver'],
                vars_init: Dict[str, float], pars_val: Dict[str, float],
-               n: int = 10, noise: str = 'norm', mul: float = 0.1):
+               n: int = 10, noise: str = 'norm', mul: float = 0.25):
     # add noise to the initial conditions
     rng = np.random.default_rng()
     if noise == 'norm':
@@ -433,7 +450,7 @@ def multistart(MPC: Union['MPC', 'NlpSolver'],
     # return results
 
     # from joblib import Parallel, delayed
-    # r = Parallel(n_jobs=n)(delayed(MPC)(vars[i], pars_val) for i in range(n))
+    # r = Parallel(n_jobs=-1)(delayed(MPC)(vars[i], pars_val) for i in range(n))
 
     f_best, vars_best, info_best = float('+inf'), None, None
     for i in range(n):
