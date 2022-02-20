@@ -322,7 +322,8 @@ class NlpSolMPC(SolverBase):
 
         return g, lbg, ubg
 
-    def add_slack(self, name: str, *size: int) -> cs.SX:
+    def add_slack(self, name: str, size: Tuple[int,...], 
+                  lb: float = 0, ub: float = np.inf) -> cs.SX:
         '''
         Adds a new slack variable to the problem.
 
@@ -332,8 +333,11 @@ class NlpSolMPC(SolverBase):
                 Name of the slack variable. Must be unique among all other 
                 variables.
 
-            size : int, ...
+            size : tuple[int, ...]
                 Size of the slack variable.
+
+            lb, ub : float, optional
+                Lower and upper bounds to the slack variable.
 
         Returns
         -------
@@ -351,8 +355,8 @@ class NlpSolMPC(SolverBase):
         self.slacks[name] = slack
 
         # create bounds for the slack variable (cannot be negative)
-        self.lbx.append(np.zeros(size))
-        self.ubx.append(np.full(size, np.inf))
+        self.lbx.append(np.full(size, lb))
+        self.ubx.append(np.full(size, ub))
         return slack
 
     def add_constraint(self,
