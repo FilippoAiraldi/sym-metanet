@@ -267,7 +267,6 @@ def run_sim_with_MPC(
     K: int,
     sim_true: Simulation = None,
     use_mpc: bool = True,
-    n_multistarts: int = 1,
     demands_known: bool = True,
     use_tqdm: bool = True,
     *cbs: Callable[[int, Simulation, Dict[str, float], Dict[str, Any]], None]
@@ -294,10 +293,6 @@ def run_sim_with_MPC(
             provided, it is assumed that 'sim' is governed by the true 
             dynamics. Defaults to None.
 
-        n_multistarts : int, optional 
-            Runs the MPC from multiple initial points. Defaults to None, i.e., 
-            no multistart.
-
         demands_known : bool, optional
             Whether the future demands are known, or only the current value can
             be used. Defaults to True.
@@ -321,9 +316,6 @@ def run_sim_with_MPC(
             return iter
         tqdm_write = print
 
-    if n_multistarts <= 0:
-        raise ValueError('Invalid number of multistarts. Must be positive.')
-
     # create functions
     F = sim2func(sim if sim_true is None else sim_true,
                  out_nonstate=True, out_nonneg=True)
@@ -337,43 +329,46 @@ def run_sim_with_MPC(
     links_vms = list(map(lambda o: o[0], sim.net.links_with_vms))
 
     # initialize true and nominal last solutions
-    vars_last = {
-        **{f'w_{o}': cs.repmat(o.queue[0], 1, M * Np + 1) for o in origins},
-        **{f'rho_{l}': cs.repmat(l.density[0], 1, M * Np + 1) for l in links},
-        **{f'v_{l}': cs.repmat(l.speed[0], 1, M * Np + 1) for l in links},
-        **{f'r_{o}': cs.repmat(o.rate[0], 1, Nc) for o in onramps},
-        **{f'v_ctrl_{l}': cs.repmat(l.v_ctrl[0], 1, Nc) for l in links_vms}
-    }
+    vars_last = {}
+    for origin in origins:
+        vars_last[f'w_{origin}'] = cs.repmat(origin.queue[0], 1, M * Np + 1)
+    for link in links:
+        vars_last[f'rho_{link}'] = cs.repmat(link.density[0], 1, M * Np + 1)
+        vars_last[f'v_{link}'] = cs.repmat(link.speed[0], 1, M * Np + 1)
+    for onramp in onramps:
+        vars_last[f'r_{onramp}'] = cs.repmat(onramp.rate[0], 1, Nc)
+    for link in links_vms:
+        vars_last[f'v_ctrl_{l}'] = cs.repmat(link.v_ctrl[0], 1, Nc)
+
+    # initialize function to retrieve demands
+    if demands_known:
+        def get_demand(orig: Origin, k: int) -> np.ndarray:
+            d = orig.demand[k:k + M * Np]
+            return np.pad(d, (0, M * Np - len(d)), mode='edge').reshape(1, -1)
+    else:
+        get_demand = lambda orig, k: np.tile(orig.demand[k], (1, M * Np))
 
     # simulation main loop
     for k in tqdm(range(K), total=K):
         if k % M == 0 and use_mpc:
-            # get demands (future, if known; otherwise, current)
-            dist = {}
-            for origin in origins:
-                if demands_known:
-                    d = origin.demand[k:k + M * Np]
-                    dist[f'd_{origin}'] = np.pad(d, (0, M * Np - len(d)),
-                                                 mode='edge').reshape(1, -1)
-                else:
-                    dist[f'd_{origin}'] = np.tile(origin.demand[k],
-                                                  (1, M * Np))
-
-            # run MPC
+            # create MPC inputs
             vars_init = {
                 var: shift(val, axis=2) for var, val in vars_last.items()
             }
-            pars_val = {
-                **dist,
-                **{f'w0_{o}': o.queue[k] for o in origins},
-                **{f'rho0_{l}': l.density[k] for l in links},
-                **{f'v0_{l}': l.speed[k] for l in links},
-                **{f'r_{o}_last': vars_last[f'r_{o}'][0, 0] for o in onramps},
-                **{f'v_ctrl_{l}_last': vars_last[f'v_ctrl_{l}'][:, 0]
-                    for l in links_vms},
-            }
-            vars_last, info = multistart(MPC, vars_init, pars_val,
-                                         n=n_multistarts)
+            pars_val = {}
+            for origin in origins:
+                pars_val[f'd_{origin}'] = get_demand(origin, k)
+                pars_val[f'w0_{origin}'] = origin.queue[k]
+            for link in links:
+                pars_val[f'rho0_{link}'] = link.density[k]
+                pars_val[f'v0_{link}'] = link.speed[k]
+            for onramp in onramps:
+                pars_val[f'r_{onramp}_last'] = vars_last[f'r_{onramp}'][0, 0]
+            for l in links_vms:
+                pars_val[f'v_ctrl_{l}_last'] = vars_last[f'v_ctrl_{l}'][:, 0]
+
+            # run MPC
+            vars_last, info = MPC(vars_init, pars_val)
             if 'error' in info:
                 tqdm_write(f'{k:{len(str(K))}}/{k / K * 100:2.1f}% ({name}): '
                            + info['error'] + '.')
@@ -417,46 +412,3 @@ def run_sim_with_MPC(
         # at the end of each iteration, call the callbacks
         for cb in cbs:
             cb(k, sim, vars_last, info)  # arguments to be defined
-
-
-def multistart(MPC: Union['MPC', 'NlpSolver'],
-               vars_init: Dict[str, float], pars_val: Dict[str, float],
-               n: int = 10, noise: str = 'norm', mul: float = 0.25):
-    # add noise to the initial conditions
-    rng = np.random.default_rng()
-    if noise == 'norm':
-        def corrupt(x):
-            std = mul * np.max(np.abs(x) + 0.25)
-            y = x + rng.normal(scale=std, size=x.shape)
-            return np.clip(y, 0, None)
-    elif noise == 'unif':
-        def corrupt(x):
-            half = (mul * np.max(np.abs(x) + 0.25)) / 2
-            y = x + rng.uniform(low=-half, high=half, size=x.shape)
-            return np.clip(y, 0, None)
-    else:
-        raise ValueError(
-            f'Noise expected to be \'norm\' or \'unif\'; got {noise} instead.')
-
-    vars_init_noisy = [{k: corrupt(v) for k, v in vars_init.items()}
-                       for _ in range(n - 1)]
-    vars_init_noisy.insert(0, vars_init)  # remember to include original
-
-    # import multiprocessing
-    # pool_obj = multiprocessing.Pool()
-    # results = pool_obj.starmap(MPC, args, chunksize=1)
-    # pool_obj.close()
-    # pool_obj.join()
-    # return results
-
-    # from joblib import Parallel, delayed
-    # r = Parallel(n_jobs=-1)(delayed(MPC)(vars[i], pars_val) for i in range(n))
-
-    f_best, vars_best, info_best = float('+inf'), None, None
-    for i in range(n):
-        vars, info = MPC(vars_init_noisy[i], pars_val)
-        f = info['f']
-        if f < f_best:
-            f_best, vars_best, info_best = f, vars, info
-
-    return vars_best, info_best
