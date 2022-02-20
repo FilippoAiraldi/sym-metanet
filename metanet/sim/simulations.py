@@ -8,7 +8,6 @@ from ..blocks.origins import Origin, MainstreamOrigin, OnRamp
 from ..blocks.links import Link, LinkWithVms
 from ..blocks.networks import Network
 from . import functional as F
-from ..util import SmartList
 
 
 class Simulation:
@@ -28,7 +27,7 @@ class Simulation:
                 Simulation time-step.
 
             eta, tau, kappa, delta : float
-                Model parameters. TODO: better description.
+                Model parameters.
 
             rho_max : float
                 Maximum density of the network.
@@ -52,6 +51,9 @@ class Simulation:
         self.__check_normalized_turnrates()
         self.__check_main_origins_and_destinations()
         self.net._check_unique_names()
+
+        # container for other quantities to be saved
+        self.others = {}
 
     def __check_normalized_turnrates(self):
         # check turnrates are normalized
@@ -267,9 +269,13 @@ class Simulation:
                 delta=self.delta,
                 T=self.T)
 
-    def plot(self, t: np.ndarray = None, fig: 'Figure' = None,
-             axs: np.ndarray = None, sharex: bool = False,
+    def plot(self, 
+             t: np.ndarray = None, 
+             fig: 'Figure' = None,
+             axs: np.ndarray = None, 
+             sharex: bool = False,
              add_labels: bool = True,
+             plot_other_data: bool = False,
              **plot_kwargs) -> Tuple['Figure', np.ndarray]:
         '''
         Plots the simulation outcome.
@@ -291,6 +297,10 @@ class Simulation:
 
             sharex : bool, optional
                 Whether the axes should share the x. Defaults to True.
+            
+            plot_other_data : bool, optional
+                Includes plotting of other quantities saved in 'self.others'
+                during simulation run. Defaults to False.
 
         Returns
         -------
@@ -308,7 +318,7 @@ class Simulation:
 
         if axs is None:
             from matplotlib.gridspec import GridSpec
-            gs = GridSpec(4, 2, figure=fig)
+            gs = GridSpec(5 if plot_other_data else 4, 2, figure=fig)
             axs = np.array(
                 [fig.add_subplot(gs[i, j]) for i, j in product(
                     range(gs.nrows),
@@ -359,6 +369,10 @@ class Simulation:
                 r = np.vstack(origin.rate)
                 plot((3, 1), r, i, origin.name)
 
+        if plot_other_data:
+            for i, (name, data) in enumerate(self.others.items()):
+                plot((4, 1), np.squeeze(data), i, f'${name}$')
+
         excluded = set()
         axs[0, 0].set_ylabel('speed (km/h)')
         axs[0, 1].set_ylabel('flow (veh/h)')
@@ -374,6 +388,8 @@ class Simulation:
             axs[1, 1].set_ylabel('dynamic speed limit (km/h)')
         else:
             excluded.add((1, 1))
+        if plot_other_data:
+            excluded.add((4, 0))
 
         for i, j in product(range(axs.shape[0]), range(axs.shape[1])):
             if (i, j) in excluded:

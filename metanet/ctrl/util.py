@@ -328,6 +328,10 @@ def run_sim_with_MPC(
     links = list(sim.net.links.keys())
     links_vms = list(map(lambda o: o[0], sim.net.links_with_vms))
 
+    # create a buffer where to save other dynamic data (slacks)
+    for slack in MPC.slacks:
+        sim.others[slack] = []
+
     # initialize true and nominal last solutions
     vars_last = {}
     for origin in origins:
@@ -339,6 +343,8 @@ def run_sim_with_MPC(
         vars_last[f'r_{onramp}'] = cs.repmat(onramp.rate[0], 1, Nc)
     for link in links_vms:
         vars_last[f'v_ctrl_{l}'] = cs.repmat(link.v_ctrl[0], 1, Nc)
+    for slackname, slack in MPC.slacks.items():
+        vars_last[slackname] = cs.repmat(0, *slack.shape)
 
     # initialize function to retrieve demands
     if demands_known:
@@ -379,10 +385,10 @@ def run_sim_with_MPC(
         for l in links_vms:
             l.v_ctrl[k] = vars_last[f'v_ctrl_{l}'][:, 0].reshape((l.nb_vms, 1))
 
+        # step the system
         # example of F args and outs
         # args: w_O1;w_O2|rho_L1[4],v_L1[4];rho_L2[2],v_L2[2]|r_O2;v_ctrl_L1[2]|d_O1;d_O2
         # outs: q_O1,w+_O1;q_O2,w+_O2|q_L1[4],rho+_L1[4],v+_L1[4];q_L2[2],rho+_L2[2],v+_L2[2]
-
         x, u, d = [], [], []
         for origin in origins:
             x.append(origin.queue[k])
@@ -408,6 +414,10 @@ def run_sim_with_MPC(
             link.density[k + 1] = outs[i + 1]
             link.speed[k + 1] = outs[i + 2]
             i += 3
+
+        # save other dynamic quantities (slacks, etc.)
+        for slack in MPC.slacks:
+            sim.others[slack].append(np.array(vars_last[slackname]))
 
         # at the end of each iteration, call the callbacks
         for cb in cbs:
