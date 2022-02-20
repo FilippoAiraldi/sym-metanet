@@ -70,29 +70,3 @@ def slacks_penalty(sim: Simulation,
     '''
     slacks = filter(lambda o: o[0].startswith('slack_'), vars.items())
     return sum(cs.dot(w, slack) for w, (_, slack) in zip(weights, slacks))
-
-
-def TTS_with_input_penalty(
-        sim: Simulation, vars: Dict[str, cs.SX], pars: Dict[str, cs.SX],
-        weight_r: float = None, weigth_vms: float = None) -> cs.SX:
-    # variability of rates
-    var_r = 0
-    if weight_r is None:
-        weight_r = 0
-    elif weight_r != 0:
-        for o, _ in sim.net.onramps:
-            r = cs.horzcat(pars[f'r_{o}_last'], vars[f'r_{o}'])
-            var_r += cs.diff(r, 1, 1)**2
-
-    # variability of vms
-    var_vms = 0
-    if weigth_vms is None:
-        weigth_vms = 0
-    elif weigth_vms != 0:
-        for l, _ in sim.net.links_with_vms:
-            v_ctrl = cs.horzcat(pars[f'v_ctrl_{l}_last'], vars[f'v_ctrl_{l}'])
-            var_vms += cs.sum1((cs.diff(v_ctrl, 1, 1) / l.v_free)**2)
-
-    # total cost
-    return (TTS(sim, vars, pars)
-            + weight_r * cs.sum2(var_r) + weigth_vms * cs.sum2(var_vms))

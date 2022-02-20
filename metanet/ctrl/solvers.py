@@ -773,11 +773,11 @@ class NlpSolMPC(SolverBase):
         slack = cs.SX.sym(name, *size)
         self.vars[name] = slack
 
-        # create bounds for the slack variable
+        # create bounds for the slack variable (cannot be negative)
         self.lbx.append(np.zeros(size))
         self.ubx.append(np.full(size, np.inf))
 
-        # add variable also to another dictionary
+        # add variable also to dictionary of all slacks
         if not hasattr(self, 'slacks'):
             self.slacks = {}
         self.slacks[name] = slack
