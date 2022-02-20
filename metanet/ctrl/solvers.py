@@ -616,14 +616,13 @@ class NlpSolMPC(SolverBase):
             sim.net, Np, Nc, M, disable_onramps, disable_vms)
         g, lbg, ubg = self.__create_constraints(
             sim, vars, inps_ext, pars, Np, M)
-        f = cost(sim, vars, pars)
 
         # save to self
+        self.cost = cost
         self.vars = vars
         self.vars, self.inps_ext, self.pars = vars, inps_ext, pars
         self.lbx, self.ubx = lbx, ubx
         self.g, self.lbg, self.ubg = g, lbg, ubg
-        self.f = f
 
     def __create_vars_and_pars(self, net: Network, Np: int, Nc: int,
                                M: int,
@@ -747,29 +746,75 @@ class NlpSolMPC(SolverBase):
 
         return g, lbg, ubg
 
-    def add_constraint(self, lb: float, con: cs.SX, ub: float) -> None:
+    def add_slack(self, name: str, *size: int) -> cs.SX:
+        '''
+        Adds a new slack variable to the problem.
+
+        Params
+        ------
+            name : str
+                Name of the slack variable. Must be unique among all other 
+                variables.
+
+            size : int, ...
+                Size of the slack variable.
+
+        Returns
+        -------
+            slack variable : cs.SX
+                The new variable
+        '''
+        # check name is unique
+        name = 'slack_' + str(name)
+        if name in self.vars:
+            raise ValueError(f'\'{name}\' is already a variable.')
+
+        # create and add variable to internal dict
+        slack = cs.SX.sym(name, *size)
+        self.vars[name] = slack
+
+        # create bounds for the slack variable
+        self.lbx.append(np.zeros(size))
+        self.ubx.append(np.full(size, np.inf))
+
+        # add variable also to another dictionary
+        if not hasattr(self, 'slacks'):
+            self.slacks = {}
+        self.slacks[name] = slack
+        return slack
+
+    def add_constraint(self,
+                       lb: Union[float, np.ndarray, cs.SX],
+                       con: cs.SX,
+                       ub: Union[float, np.ndarray, cs.SX]) -> None:
         '''
         Adds a constraint lb <= con <= ub  to the problem.
 
         Parameters
         ----------
-            lb, ub : float
+            lb, ub : float, numpy array or casadi array
                 left-hand and right-hand sides of the constraint expression.
 
             con : casadi.SX
                 Symbolic expression of the constraints. Must be formulated with
                 the same variable of the MPC.
         '''
-        if isinstance(lb, (float, int)):
-            lb = np.full(con.shape, lb)
-        if isinstance(ub, (float, int)):
-            ub = np.full(con.shape, ub)
+
+        # CAN WE PUT VARIABLES IN UBG? IF NOT, then they must be floats or np.arrays
+
+        if isinstance(lb, (float, int)) or lb.shape in ((1, 1), (1,)):
+            lb = cs.repmat(lb, con.shape)
+        if isinstance(ub, (float, int)) or ub.shape in ((1, 1), (1,)):
+            ub = cs.repmat(ub, con.shape)
         assert lb.shape == con.shape == ub.shape
         self.lbg.append(lb)
         self.g.append(con)
         self.ubg.append(ub)
 
     def once_before_solver(self) -> None:
+        # compute cost
+        self.f = self.cost(self.sim, self.vars, self.pars)
+
         # flatten into vectos
         self.x = cs.vertcat(*(cs.vec(o) for o in self.vars.values()))
         self.p = cs.vertcat(*(cs.vec(o) for o in self.pars.values()))
@@ -855,6 +900,8 @@ class NlpSolMPC(SolverBase):
             x0.append(self.perturb(vars_init[f'v_ctrl_{link}'], ub=link.v_free)
                       if perturb else
                       vars_init[f'v_ctrl_{link}'])
+        if hasattr(self, 'slacks'):
+            x0.extend(np.zeros(slack.shape) for slack in self.slacks.values())
         p = cs.vertcat(*[cs.vec(o) for o in p])
         x0 = cs.vertcat(*[cs.vec(o) for o in x0])
         return p, x0
@@ -1120,24 +1167,3 @@ class OptiMPC(SolverBase):
         return {name: val.reshape(self.vars[name].shape)
                 for name, val in
                 zip(self.opti_fun.name_out()[1:], sol[1:])}, info
-
-        # # create parameters and init x vectors (perturbed)
-        # p, x0 = self._process_solver_inputs(vars_init, pars_val, perturb=False)
-        # x0s = [x0]  # include original
-        # x0s.extend(
-        #     self._process_solver_inputs(vars_init, pars_val, perturb=False)[1]
-        #     for _ in range(self.n_multistart - 1)
-        # )
-
-        # # call solver in parallel
-        # from joblib import Parallel, delayed
-        # sols = Parallel(n_jobs=-1)(
-        #     delayed(self.solver)(
-        #         **dict(x0=x0, p=p, lbx=self.lbx, ubx=self.ubx,
-        #                lbg=self.lbg, ubg=self.ubg)) for x0 in x0s)
-
-        # # pick best solution
-        # i_best = np.argmin(map(lambda sol: sol['f'], sols))
-
-        # # make transformations to solution dict
-        # return self._process_solver_output(sols[i_best])
