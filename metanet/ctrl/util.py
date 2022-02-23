@@ -270,7 +270,7 @@ def run_sim_with_MPC(
     demands_known: bool = True,
     use_tqdm: bool = True,
     *cbs: Callable[[int, Simulation, Dict[str, float], Dict[str, Any]], None]
-) -> None:
+) -> float:
     '''
     Automatically run the simulation with an MPC (not necessarily created with 
     the same sim). Be sure to set the initial conditions before calling this 
@@ -306,6 +306,11 @@ def run_sim_with_MPC(
         cbs : Callable[iter, sim, vars, info]
             Callbacks called at the end of each iteration.
             NB: should also pass the dict of parameters to update their values
+
+    Returns
+    -------
+        exec time : float
+            Execution time in seconds
     '''
 
     if use_tqdm:
@@ -315,6 +320,7 @@ def run_sim_with_MPC(
         def tqdm(iter, *args, **kwargs):
             return iter
         tqdm_write = print
+    import time
 
     # create functions
     F = sim2func(sim if sim_true is None else sim_true,
@@ -344,7 +350,7 @@ def run_sim_with_MPC(
     for link in links_vms:
         vars_last[f'v_ctrl_{l}'] = cs.repmat(link.v_ctrl[0], 1, Nc)
     for slackname, slack in MPC.slacks.items():
-        vars_last[slackname] = cs.repmat(0, *slack.shape)
+        vars_last[slackname] = np.zeros(slack.shape)
 
     # initialize function to retrieve demands
     if demands_known:
@@ -355,23 +361,30 @@ def run_sim_with_MPC(
         get_demand = lambda orig, k: np.tile(orig.demand[k], (1, M * Np))
 
     # simulation main loop
+    start_time = time.time()
     for k in tqdm(range(K), total=K):
         if k % M == 0 and use_mpc:
             # create MPC inputs
-            vars_init = {
-                var: shift(val, axis=2) for var, val in vars_last.items()
-            }
-            pars_val = {}
-            for origin in origins:
-                pars_val[f'd_{origin}'] = get_demand(origin, k)
-                pars_val[f'w0_{origin}'] = origin.queue[k]
-            for link in links:
-                pars_val[f'rho0_{link}'] = link.density[k]
-                pars_val[f'v0_{link}'] = link.speed[k]
-            for onramp in onramps:
-                pars_val[f'r_{onramp}_last'] = vars_last[f'r_{onramp}'][0, 0]
+            vars_init, pars_val = {}, {}
+            for o in origins:
+                vars_init[f'w_{o}'] = shift(vars_last[f'w_{o}'], n=M, axis=2)
+                pars_val[f'd_{o}'] = get_demand(o, k)
+                pars_val[f'w0_{o}'] = o.queue[k]
+            for l in links:
+                vars_init[f'rho_{l}'] = shift(vars_last[f'rho_{l}'], n=M,
+                                              axis=2)
+                vars_init[f'v_{l}'] = shift(vars_last[f'v_{l}'], n=M, axis=2)
+                pars_val[f'rho0_{l}'] = l.density[k]
+                pars_val[f'v0_{l}'] = l.speed[k]
+            for o in onramps:
+                vars_init[f'r_{o}'] = shift(vars_last[f'r_{o}'], n=1, axis=2)
+                pars_val[f'r_{o}_last'] = vars_last[f'r_{o}'][0, 0]
             for l in links_vms:
+                vars_init[f'v_ctrl_{l}'] = shift(vars_last[f'v_ctrl_{l}'], n=1,
+                                                 axis=2)
                 pars_val[f'v_ctrl_{l}_last'] = vars_last[f'v_ctrl_{l}'][:, 0]
+            for slackname, slack in MPC.slacks.items():
+                vars_init[slackname] = np.zeros(slack.shape)
 
             # run MPC
             vars_last, info = MPC(vars_init, pars_val)
@@ -422,3 +435,5 @@ def run_sim_with_MPC(
         # at the end of each iteration, call the callbacks
         for cb in cbs:
             cb(k, sim, vars_last, info)  # arguments to be defined
+
+    return time.time() - start_time
