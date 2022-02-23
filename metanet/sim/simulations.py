@@ -1,6 +1,6 @@
 import casadi as cs
 import numpy as np
-from itertools import product
+from itertools import product, cycle
 
 from typing import Tuple, Dict, Union
 
@@ -8,6 +8,9 @@ from ..blocks.origins import Origin, MainstreamOrigin, OnRamp
 from ..blocks.links import Link, LinkWithVms
 from ..blocks.networks import Network
 from . import functional as F
+
+
+colors = ['#0072BD', '#D95319', '#EDB120', '#7E2F8E', '#77AC30', '#A2142F']
 
 
 class Simulation:
@@ -269,10 +272,10 @@ class Simulation:
                 delta=self.delta,
                 T=self.T)
 
-    def plot(self, 
-             t: np.ndarray = None, 
+    def plot(self,
+             t: np.ndarray = None,
              fig: 'Figure' = None,
-             axs: np.ndarray = None, 
+             axs: np.ndarray = None,
              sharex: bool = False,
              add_labels: bool = True,
              plot_other_data: bool = False,
@@ -297,7 +300,7 @@ class Simulation:
 
             sharex : bool, optional
                 Whether the axes should share the x. Defaults to True.
-            
+
             plot_other_data : bool, optional
                 Includes plotting of other quantities saved in 'self.others'
                 during simulation run. Defaults to False.
@@ -318,19 +321,30 @@ class Simulation:
 
         if axs is None:
             from matplotlib.gridspec import GridSpec
+            from matplotlib.ticker import FormatStrFormatter
+
             gs = GridSpec(5 if plot_other_data else 4, 2, figure=fig)
             axs = np.array(
                 [fig.add_subplot(gs[i, j]) for i, j in product(
                     range(gs.nrows),
                     range(gs.ncols))]).reshape(gs.nrows, gs.ncols)
 
+            for ax in axs.flatten():
+                ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+                ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+
+        # create array of maxima - used to set y axis limits
         maxs = np.zeros(axs.shape)
 
+        # create time vector
         if t is None:
             t = np.arange(len(next(iter(self.net.links)).flow)) * self.T
 
+        # reduce linewidth
+        if 'linewidth' not in plot_kwargs:
+            plot_kwargs['linewidth'] = 1
+
         def plot(loc, x, c, lbl):
-            c = 'C' + str(c)
             maxs[loc] = max(maxs[loc], x.max())
             if add_labels:
                 return axs[loc].plot(t, x, color=c, label=lbl, **plot_kwargs)
@@ -338,40 +352,39 @@ class Simulation:
 
         # add plots
         any_onramp, any_vms = False, False
-        c_idx = 0
 
+        colors_ = cycle(colors)
         for link in self.net.links:
             v = np.hstack(link.speed[:-1])
             rho = np.hstack(link.density[:-1])
             q = np.hstack(link.flow)
             for i in range(link.nb_seg):
-                plot((0, 0), v[i], c_idx + i, f'$v_{{{link.name}, {i + 1}}}$')
-                plot((0, 1), q[i], c_idx + i, f'$q_{{{link.name}, {i + 1}}}$')
-                plot((1, 0), rho[i], c_idx + i,
-                     f'$\\rho_{{{link.name}, {i + 1}}}$')
+                c = next(colors_)
+                plot((0, 0), v[i], c, f'$v_{{{link.name}, {i + 1}}}$')
+                plot((0, 1), q[i], c, f'$q_{{{link.name}, {i + 1}}}$')
+                plot((1, 0), rho[i], c, f'$\\rho_{{{link.name}, {i + 1}}}$')
             if isinstance(link, LinkWithVms):
                 any_vms = True
                 v_ctrl = np.hstack(link.v_ctrl)
                 for i, s in enumerate(link.vms):
-                    plot((3, 1), v_ctrl[i], i,
+                    plot((3, 1), v_ctrl[i], c,
                          f'$v^{{ctrl}}_{{{link.name}, {s + 1}}}$')
-            c_idx += link.nb_seg
 
-        for i, origin in enumerate(self.net.origins):
+        for origin, c in zip(self.net.origins, cycle(colors)):
             w = np.vstack(origin.queue[:-1])
             q = np.vstack(origin.flow)
             d = np.vstack(origin.demand)
-            plot((2, 0), d, i, origin.name)
-            plot((3, 0), q, i, f'$q_{{{origin.name}}}$')
-            plot((2, 1), w, i, f'$\\omega_{{{origin.name}}}$')
+            plot((2, 0), d, c, origin.name)
+            plot((3, 0), q, c, f'$q_{{{origin.name}}}$')
+            plot((2, 1), w, c, f'$\\omega_{{{origin.name}}}$')
             if isinstance(origin, OnRamp):
                 any_onramp = True
                 r = np.vstack(origin.rate)
-                plot((3, 1), r, i, origin.name)
+                plot((3, 1), r, c, origin.name)
 
         if plot_other_data:
-            for i, (name, data) in enumerate(self.others.items()):
-                plot((4, 1), np.squeeze(data), i, f'${name}$')
+            for (name, data), c in zip(self.others.items(), cycle(colors)):
+                plot((4, 1), np.squeeze(data), c, f'${name}$')
 
         excluded = set()
         axs[0, 0].set_ylabel('speed (km/h)')
@@ -397,6 +410,9 @@ class Simulation:
             else:
                 if sharex:
                     axs[i, j].sharex(axs[0, 0])
+                axs[i, j].spines['top'].set_visible(False)
+                axs[i, j].spines['right'].set_visible(False)
+                axs[i, j].tick_params(direction="in")
                 axs[i, j].set_xlabel('time (h)')
                 axs[i, j].set_xlim(0, t[-1])
                 axs[i, j].autoscale_view()
