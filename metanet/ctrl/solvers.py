@@ -322,7 +322,7 @@ class NlpSolMPC(SolverBase):
 
         return g, lbg, ubg
 
-    def add_slack(self, name: str, size: Tuple[int,...], 
+    def add_slack(self, name: str, size: Tuple[int, int] = (1, 1),
                   lb: float = 0, ub: float = np.inf) -> cs.SX:
         '''
         Adds a new slack variable to the problem.
@@ -333,8 +333,8 @@ class NlpSolMPC(SolverBase):
                 Name of the slack variable. Must be unique among all other 
                 variables.
 
-            size : tuple[int, ...]
-                Size of the slack variable.
+            size : tuple[int, int], optional
+                Size of the slack variable. Defaults to a scalar.
 
             lb, ub : float, optional
                 Lower and upper bounds to the slack variable.
@@ -553,14 +553,17 @@ class OptiMPC(SolverBase):
         self.__create_constraints(
             sim, opti, vars, vars_ext, pars, Np, M,
             disable_onramps, disable_vms)
-        self.__create_objective_and_opts(
-            sim, opti, vars, pars, cost, solver, plugin_opts, solver_opts)
+        opti.solver(solver,
+                    {} if plugin_opts is None else plugin_opts,
+                    {} if solver_opts is None else solver_opts)
 
         # save to self
         self.opti = opti
         self.vars, self.vars_ext, self.pars = vars, vars_ext, pars
         self.sim = sim
         self.Np, self.Nc, self.M = Np, Nc, M
+        self.cost = cost
+        self.slacks = {}
 
     def __create_vars_and_pars(self, net: Network, opti: cs.Opti, Np: int,
                                Nc: int, M: int) -> Tuple[Dict[str, cs.SX], ...]:
@@ -662,20 +665,10 @@ class OptiMPC(SolverBase):
                 opti.subject_to(vars[f'v_{link}'][:, k + 1] == outs[i + 1])
                 i += 2
 
-    def __create_objective_and_opts(
-            self, sim: Simulation, opti: cs.Opti, vars: Dict[str, cs.SX],
-            pars: Dict[str, cs.SX],
-            cost: Callable, solver: str,
-            plugin_opts: Dict[str, Any], solver_opts: Dict[str, Any]) -> None:
-        # optimization criterion
-        opti.minimize(cost(sim, vars, pars))
-
-        # set solver
-        opti.solver(solver,
-                    {} if plugin_opts is None else plugin_opts,
-                    {} if solver_opts is None else solver_opts)
-
     def once_before_solver(self) -> None:
+        # assign the cost to opti
+        self.opti.minimize(self.cost(self.sim, self.vars, self.pars))
+
         # this function will only be used in multistarting
         self.opti_fun = self.opti.to_function(
             'opti_F',
@@ -707,7 +700,7 @@ class OptiMPC(SolverBase):
                     f'exception.\nEx. 1: {ex1}\nEx. 2: {ex2}') from ex2
 
         info['f'] = float(get_value(self.opti.f))
-        return {name: get_value(var).reshape(var.shape)
+        return {name: np.array(get_value(var)).reshape(var.shape)
                 for name, var in self.vars.items()}, info
 
     def _internal_solve_multistart(self, vars_init: Dict[str, float],
@@ -749,3 +742,42 @@ class OptiMPC(SolverBase):
         return {name: val.reshape(self.vars[name].shape)
                 for name, val in
                 zip(self.opti_fun.name_out()[1:], sol[1:])}, info
+
+    def add_slack(self, name: str, size: Tuple[int, int] = (1, 1),
+                  lb: float = 0, ub: float = np.inf) -> cs.SX:
+        '''
+        Adds a new slack variable to the problem.
+
+        Params
+        ------
+            name : str
+                Name of the slack variable. Must be unique among all other 
+                variables.
+
+            size : tuple[int, int], optional
+                Size of the slack variable. Defaults to a scalar.
+
+            lb, ub : float, optional
+                Lower and upper bounds to the slack variable.
+
+        Returns
+        -------
+            slack variable : cs.SX
+                The new variable
+        '''
+        # check name is unique
+        name = 'slack_' + str(name)
+        if name in self.slacks:
+            raise ValueError(f'\'{name}\' is already a variable.')
+
+        # create and add variable to internal dict of variables
+        slack = self.opti.variable(*size)
+        self.vars[name] = slack
+        self.slacks[name] = slack
+
+        # create bounds for the slack variable (cannot be negative)
+        # self.opti.subject_to(cs.vec(slack) >= np.full(size[0] * size[1], lb))
+        # self.opti.subject_to(cs.vec(slack) <= np.full(size[0] * size[1], ub))
+        dim = size[0] * size[1]
+        self.opti.bounded(np.full(dim, lb), cs.vec(slack), np.full(dim, ub))
+        return slack
