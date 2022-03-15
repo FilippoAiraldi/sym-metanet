@@ -345,7 +345,7 @@ class NlpSolMPC(SolverBase):
                 The new variable
         '''
         # check name is unique
-        name = 'slack_' + str(name)
+        name = f'slack_{name}'
         if name in self.slacks:
             raise ValueError(f'\'{name}\' is already a variable.')
 
@@ -414,7 +414,18 @@ class NlpSolMPC(SolverBase):
                           lbg=self.lbg, ubg=self.ubg)
 
         # make transformations to solution dict
-        return self._process_solver_output(sol)
+        vars, info = self._process_solver_output(sol)
+
+        # if an error is present, objective 'f' is going to be zero, so we need
+        # to manually compute it
+        if 'error' in info and info['f'] == 0:
+            f = self.f
+            for name, val in vars.items():
+                f = cs.substitute(f, self.vars[name], val)
+            for name, val in pars_val.items():
+                f = cs.substitute(f, self.pars[name], val)
+            info['f'] = float(f)
+        return vars, info
 
     def _internal_solve_multistart(self, vars_init: Dict[str, float],
                                    pars_val: Dict[str, float]
@@ -692,7 +703,6 @@ class OptiMPC(SolverBase):
         except Exception as ex1:
             try:
                 info = {'error': self.opti.debug.stats()['return_status']}
-                # + ' (' + str(ex1).replace('\n', ' ') + ')'}
                 get_value = lambda o: self.opti.debug.value(o)
             except Exception as ex2:
                 raise RuntimeError(
@@ -766,7 +776,7 @@ class OptiMPC(SolverBase):
                 The new variable
         '''
         # check name is unique
-        name = 'slack_' + str(name)
+        name = f'slack_{name}'
         if name in self.slacks:
             raise ValueError(f'\'{name}\' is already a variable.')
 
@@ -776,8 +786,8 @@ class OptiMPC(SolverBase):
         self.slacks[name] = slack
 
         # create bounds for the slack variable (cannot be negative)
-        # self.opti.subject_to(cs.vec(slack) >= np.full(size[0] * size[1], lb))
-        # self.opti.subject_to(cs.vec(slack) <= np.full(size[0] * size[1], ub))
-        dim = size[0] * size[1]
-        self.opti.bounded(np.full(dim, lb), cs.vec(slack), np.full(dim, ub))
+        # self.opti.bounded(lb, cs.vec(slack), ub) does not work
+        self.opti.subject_to(cs.vec(slack) >= lb)
+        if ub != np.inf:
+            self.opti.subject_to(cs.vec(slack) <= ub)
         return slack
