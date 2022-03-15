@@ -55,8 +55,9 @@ class Simulation:
         self.__check_main_origins_and_destinations()
         self.net._check_unique_names()
 
-        # container for other quantities to be saved
-        self.others = {}
+        # containers for other quantities to be saved
+        self.objective = []
+        self.slacks = {}
 
     def __check_normalized_turnrates(self):
         # check turnrates are normalized
@@ -278,7 +279,6 @@ class Simulation:
              axs: np.ndarray = None,
              sharex: bool = False,
              add_labels: bool = True,
-             plot_other_data: bool = False,
              **plot_kwargs) -> Tuple['Figure', np.ndarray]:
         '''
         Plots the simulation outcome.
@@ -301,10 +301,6 @@ class Simulation:
             sharex : bool, optional
                 Whether the axes should share the x. Defaults to True.
 
-            plot_other_data : bool, optional
-                Includes plotting of other quantities saved in 'self.others'
-                during simulation run. Defaults to False.
-
         Returns
         -------
             fig : matplotlib.figure
@@ -323,7 +319,7 @@ class Simulation:
             from matplotlib.gridspec import GridSpec
             from matplotlib.ticker import FormatStrFormatter
 
-            gs = GridSpec(5 if plot_other_data else 4, 2, figure=fig)
+            gs = GridSpec(5, 2, figure=fig)
             axs = np.array(
                 [fig.add_subplot(gs[i, j]) for i, j in product(
                     range(gs.nrows),
@@ -344,7 +340,7 @@ class Simulation:
         if 'linewidth' not in plot_kwargs:
             plot_kwargs['linewidth'] = 1
 
-        def plot(loc, x, c, lbl):
+        def plot(loc, x, c, lbl=None):
             maxs[loc] = max(maxs[loc], x.max())
             if add_labels:
                 return axs[loc].plot(t, x, color=c, label=lbl, **plot_kwargs)
@@ -382,14 +378,23 @@ class Simulation:
                 r = np.vstack(origin.rate)
                 plot((3, 1), r, c, origin.name)
 
-        if plot_other_data:
-            for (name, data), c in zip(self.others.items(), cycle(colors)):
-                plot((4, 1), np.squeeze(data), c, f'${name}$')
+        # plot objective
+        if len(self.objective) > 0:
+            plot((4, 0), np.squeeze(self.objective), colors[0], f'$J$')
 
+        # plot slacks variables
+        for (name, data), c in zip(self.slacks.items(), cycle(colors)):
+            plot((4, 1), np.squeeze(data), c)
+
+        # embellish axes
         excluded = set()
         axs[0, 0].set_ylabel('speed (km/h)')
         axs[0, 1].set_ylabel('flow (veh/h)')
         axs[1, 0].set_ylabel('density (veh/km)')
+        if any_vms:
+            axs[1, 1].set_ylabel('dynamic speed limit (km/h)')
+        else:
+            excluded.add((1, 1))
         axs[2, 0].set_ylabel('origin demand (veh/h)')
         axs[2, 1].set_ylabel('queue length (veh)')
         axs[3, 0].set_ylabel('origin flow (veh/h)')
@@ -397,12 +402,8 @@ class Simulation:
             axs[3, 1].set_ylabel('metering rate')
         else:
             excluded.add((3, 1))
-        if any_vms:
-            axs[1, 1].set_ylabel('dynamic speed limit (km/h)')
-        else:
-            excluded.add((1, 1))
-        if plot_other_data:
-            excluded.add((4, 0))
+        axs[4, 0].set_ylabel('objective (veh h)')
+        axs[4, 1].set_ylabel('slack')
 
         for i, j in product(range(axs.shape[0]), range(axs.shape[1])):
             if (i, j) in excluded:
