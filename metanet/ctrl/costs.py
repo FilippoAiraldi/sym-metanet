@@ -69,4 +69,11 @@ def slacks_penalty(sim: Simulation,
     the variable. 
     '''
     slacks = filter(lambda o: o[0].startswith('slack_'), vars.items())
-    return sum(cs.dot(w, slack) for w, (_, slack) in zip(weights, slacks))
+    tot = 0
+    for w, (_, slack) in zip(weights, slacks):
+        if (isinstance(w, (int, float))
+                or (hasattr(w, 'shape') and w.shape == (1, 1))):
+            tot += w * cs.sum1(cs.vec(slack))
+        else:
+            tot += cs.dot(w, slack)
+    return tot
