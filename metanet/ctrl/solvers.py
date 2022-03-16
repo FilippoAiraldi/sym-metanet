@@ -410,8 +410,10 @@ class NlpSolMPC(SolverBase):
         p, x0 = self._process_solver_inputs(vars_init, pars_val, perturb=False)
 
         # call solver
-        sol = self.solver(x0=x0, p=p, lbx=self.lbx, ubx=self.ubx,
-                          lbg=self.lbg, ubg=self.ubg)
+        sol = self.solver(x0=x0,                        # initial states guess
+                          p=p,                          # sym params values
+                          lbx=self.lbx, ubx=self.ubx,   # bounds on states
+                          lbg=self.lbg, ubg=self.ubg)   # bounds on constraints
 
         # make transformations to solution dict
         vars, info = self._process_solver_output(sol)
