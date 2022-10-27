@@ -16,6 +16,10 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "networkx >= 2.8.7",
+    "numpy  >= 1.21.5"
+]
 
 [project.urls]
 "Homepage" = "https://github.com/FilippoAiraldi/pymetanet"
