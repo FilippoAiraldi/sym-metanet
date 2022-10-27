@@ -1,4 +1,6 @@
-# METANET
+# PYMETANET
+
+TO REWRITE
 
 METANET is a Python collection of tools to model and control traffic networks 
 with the METANET framework. METANET is free software; you can redistribute it 

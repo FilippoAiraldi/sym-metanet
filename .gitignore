@@ -1,5 +1,6 @@
-# folders
-/metanet/__pycache__
-/metanet/blocks/__pycache__
-/metanet/ctrl/__pycache__
-/metanet/sim/__pycache__
+.vscode
+/_*
+__pycache__
+venv
+dist
+*.egg-info
