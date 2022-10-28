@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict, Iterable, Tuple, Union
+from typing import Dict, Iterable, Tuple, Union, Optional
 import networkx as nx
 from pymetanet.util.datastructures import NamedObject
 from pymetanet.util.funcs import cached_property_clearer
@@ -122,49 +122,75 @@ class Network(NamedObject):
             (l[0], l[2], {LINKENTRY: l[1]}) for l in links)
         self.links_by_name.update({l[1].name: l[1] for l in links})
 
-    def add_path(self, path: Iterable[Union[Node, Link]]) -> None:
-        '''Adds a path of nodes and links to the network.
+    def add_path(
+        self,
+        origin: Optional[Origin],
+        path: Iterable[Union[Node, Link]],
+        destination: Optional[Destination]
+    ) -> None:
+        '''Adds a path of nodes and links between the origin and the 
+        destination.
 
         Parameters
         ----------
+        origin : Origin, optional
+            The origin where the path starts from. Pass `None` to have no 
+            origin attached to the first node in `path`.
         path : Iterable[Union[Node, Link]]
             A path consists of an alternating sequence of nodes and links, 
             starting from the first node and ending at the last. For example, a 
-            valid path is: `node1, li|nk1, node2, link2, node3, ..., nodeN`. If
-            path ends with a link, this one is not added since a downstream 
-            node is missing.
+            valid path is: `node1, link1, node2, link2, node3, ..., nodeN`. 
+        destination : Destination, optional
+            The destination where the path ends in. Pass `None` to have no 
+            destination attached to the last node in `path`.
 
         Raises
         ------
         TypeError
-            Raises if the first point in the path is not a `Node`; then, raises 
-            if the alternation of `Link`s and `Node`s is not respected.
+            Raises if 
+            - the first or last points in `path` are not a `Node`
+            - the alternation of `Link`s and `Node`s is not respected
+            - the path has length 1, which is not accepted.
         '''
         path = iter(path)
         first_node = next(path)
         if not isinstance(first_node, Node):
             raise TypeError(
-                'First element of the path must be a `Node`; got '
+                f'First element of the path must be a `{Node.__name__}`; got '
                 f'{type(first_node)} instead.')
         self.add_node(first_node)
+        if origin is not None:
+            self.add_origin(origin, first_node)
         current_link = [first_node]
 
-        for point in path:
+        longer_than_one = False
+        for i, point in enumerate(path):
+            longer_than_one = True
             current_link.append(point)
             L = len(current_link)
             if L == 2:
                 if not isinstance(point, Link):
                     raise TypeError(
-                        'Middle element of each triplet must be a `Link`; got '
-                        f'{type(point)} instead.')
+                        f'Expected a `{Link.__name__}` at index {i} of the '
+                        f'path; got {type(point)} instead.')
             else:  # L == 3
                 if not isinstance(point, Node):
                     raise TypeError(
-                        'Last element of each triplet must be a `Node`; got '
-                        f'{type(point)} instead.')
+                        f'Expected a `{Node.__name__}` at index {i} of the '
+                        f'path; got {type(point)} instead.')
                 self.add_node(point)
                 self.add_link(*current_link)
                 current_link = current_link[-1:]
+        if not longer_than_one:
+            raise ValueError('Path must be longer than a single node.')
+
+        last_node = point
+        if not isinstance(first_node, Node):
+            raise TypeError(
+                f'Last element of the path must be a `{Node.__name__}`; got '
+                f'{type(first_node)} instead.')
+        if destination is not None:
+            self.add_destination(destination, last_node)
 
     @cached_property_clearer(origins)
     def add_origin(self, origin: Origin, node: Node) -> None:
