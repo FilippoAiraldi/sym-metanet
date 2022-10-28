@@ -85,23 +85,37 @@ class Network(NamedObject):
             if DESTINATIONENTRY in data
         }
 
-    def add_node(self, node: Node) -> None:
+    def add_node(self, node: Node) -> 'Network':
         '''Adds a node to the highway network. 
 
         Parameters
         ----------
         node : Node
             Node to be added.
+            
+        Returns
+        -------
+        Network
+            A reference to itself
         '''
         self._graph.add_node(node)
         self.nodes_by_name[node.name] = node
+        return self
 
-    def add_nodes(self, *nodes: Node) -> None:
-        '''Adds multiple nodes. See `Network.add_node`.'''
+    def add_nodes(self, *nodes: Node) -> 'Network':
+        '''Adds multiple nodes. See `Network.add_node`.
+        
+        Returns
+        -------
+        Network
+            A reference to itself
+        '''
         self._graph.add_nodes_from(nodes)
         self.nodes_by_name.update({node.name: node for node in nodes})
+        return self
 
-    def add_link(self, node_up: Node, link: Link, node_down: Node) -> None:
+    def add_link(
+            self, node_up: Node, link: Link, node_down: Node) -> 'Network':
         '''Adds a link to the highway network, between two nodes. 
 
         Parameters
@@ -112,22 +126,77 @@ class Network(NamedObject):
             The link to be added connecting the two nodes.
         node_down : Node
             Downstream node, that is, where traffic is going to.
+            
+        Returns
+        -------
+        Network
+            A reference to itself
         '''
         self._graph.add_edge(node_up, node_down, link=link)
         self.links_by_name[link.name] = link
+        return self
 
-    def add_links(self, *links: Tuple[Node, Link, Node]) -> None:
-        '''Adds multiple links. See `Network.add_link`.'''
+    def add_links(self, *links: Tuple[Node, Link, Node]) -> 'Network':
+        '''Adds multiple links. See `Network.add_link`.
+        
+        Returns
+        -------
+        Network
+            A reference to itself
+        '''
         self._graph.add_edges_from(
             (l[0], l[2], {LINKENTRY: l[1]}) for l in links)
         self.links_by_name.update({l[1].name: l[1] for l in links})
+        return self
+
+    @cached_property_clearer(origins)
+    def add_origin(self, origin: Origin, node: Node) -> 'Network':
+        '''Adds the given traffic origin to the node.
+
+        Parameters
+        ----------
+        origin : Origin
+            Origin to be added to the network.
+        node : Node
+            Node which the origin is attached to.
+            
+        Returns
+        -------
+        Network
+            A reference to itself
+        '''
+        self.nodes[node][ORIGINENTRY] = origin
+        self.origins_by_name[origin.name] = origin
+        return self
+
+    @cached_property_clearer(destinations)
+    def add_destination(
+            self, destination: Destination, node: Node) -> 'Network':
+        '''Adds the given traffic destination to the node.
+
+        Parameters
+        ----------
+        destination : Destination
+            Destination to be added to the network.
+        node : Node
+            Node which the destination is attached to.
+            
+        Returns
+        -------
+        Network
+            A reference to itself
+        '''
+        self.nodes[node][DESTINATIONENTRY] = destination
+        self.origins_by_name[destination.name] = destination
+        return self
+
 
     def add_path(
         self,
         origin: Optional[Origin],
         path: Iterable[Union[Node, Link]],
         destination: Optional[Destination]
-    ) -> None:
+    ) -> 'Network':
         '''Adds a path of nodes and links between the origin and the 
         destination.
 
@@ -143,6 +212,11 @@ class Network(NamedObject):
         destination : Destination, optional
             The destination where the path ends in. Pass `None` to have no 
             destination attached to the last node in `path`.
+
+        Returns
+        -------
+        Network
+            A reference to itself
 
         Raises
         ------
@@ -191,31 +265,4 @@ class Network(NamedObject):
                 f'{type(first_node)} instead.')
         if destination is not None:
             self.add_destination(destination, last_node)
-
-    @cached_property_clearer(origins)
-    def add_origin(self, origin: Origin, node: Node) -> None:
-        '''Adds the given traffic origin to the node.
-
-        Parameters
-        ----------
-        origin : Origin
-            Origin to be added to the network.
-        node : Node
-            Node which the origin is attached to.
-        '''
-        self.nodes[node][ORIGINENTRY] = origin
-        self.origins_by_name[origin.name] = origin
-
-    @cached_property_clearer(destinations)
-    def add_destination(self, destination: Destination, node: Node) -> None:
-        '''Adds the given traffic destination to the node.
-
-        Parameters
-        ----------
-        destination : Destination
-            Destination to be added to the network.
-        node : Node
-            Node which the destination is attached to.
-        '''
-        self.nodes[node][DESTINATIONENTRY] = destination
-        self.origins_by_name[destination.name] = destination
+        return self
