@@ -2,7 +2,9 @@ import unittest
 from pymetanet import (
     Node,
     Link,
-    Network
+    Network,
+    MainstreamOrigin,
+    Destination
 )
 
 
@@ -70,6 +72,22 @@ class TestNetwork(unittest.TestCase):
         net = Network(name='Net')
         net.add_path((N1,))
         self.assertIn(N1, net.nodes)
+
+    def test_add_origin(self):
+        node = Node(name='This is a random name')
+        origin = MainstreamOrigin(name='23423')
+        net = Network(name='Another random name')
+        net.add_node(node)
+        net.add_origin(origin, node)
+        self.assertIn(origin, net.origins)
+        
+    def test_add_destination(self):
+        node = Node(name='This is a random name')
+        destination = Destination(name='23423')
+        net = Network(name='Another random name')
+        net.add_node(node)
+        net.add_destination(destination, node)
+        self.assertIn(destination, net.destinations)
 
 
 if __name__ == '__main__':

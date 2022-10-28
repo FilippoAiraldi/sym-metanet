@@ -2,7 +2,13 @@ from functools import cached_property
 from typing import Dict, Iterable, Tuple, Union
 import networkx as nx
 from pymetanet.util.datastructures import NamedObject
-from pymetanet.blocks import Node, Link
+from pymetanet.util.funcs import cached_property_clearer
+from pymetanet.blocks import Node, Link, Origin, Destination
+
+
+LINKENTRY = 'link'
+ORIGINENTRY = 'origin'
+DESTINATIONENTRY = 'destination'
 
 
 class LinkView(nx.classes.reportviews.OutEdgeView):
@@ -14,12 +20,12 @@ class LinkView(nx.classes.reportviews.OutEdgeView):
         super().__init__(net._graph)
 
     def __getitem__(self, e: Tuple[Node, Node]) -> Link:
-        return super().__getitem__(e)['link']
+        return super().__getitem__(e)[LINKENTRY]
 
     def __iter__(self) -> Tuple[Node, Link, Node]:
         for un, dns in self._nodes_nbrs():
             for dn, l in dns.items():
-                yield (un, l['link'], dn)
+                yield (un, l[LINKENTRY], dn)
 
 
 class Network(NamedObject):
@@ -37,6 +43,7 @@ class Network(NamedObject):
         self._graph = nx.DiGraph(name=name)
         self.nodes_by_name: Dict[str, Node] = {}
         self.links_by_name: Dict[str, Link] = {}
+        self.origins_by_name: Dict[str, Origin] = {}
 
     @property
     def G(self) -> nx.DiGraph:
@@ -62,6 +69,21 @@ class Network(NamedObject):
     def links(self) -> LinkView:
         '''Returns a view on the links of the network.'''
         return LinkView(self)
+
+    @cached_property
+    def origins(self) -> Dict[Origin, Node]:
+        return {
+            data[ORIGINENTRY]: node for node, data in self._graph.nodes.data()
+            if ORIGINENTRY in data
+        }
+
+    @cached_property
+    def destinations(self) -> Dict[Destination, Node]:
+        return {
+            data[DESTINATIONENTRY]: node
+            for node, data in self._graph.nodes.data()
+            if DESTINATIONENTRY in data
+        }
 
     def add_node(self, node: Node) -> None:
         '''Adds a node to the highway network. 
@@ -97,7 +119,7 @@ class Network(NamedObject):
     def add_links(self, *links: Tuple[Node, Link, Node]) -> None:
         '''Adds multiple links. See `Network.add_link`.'''
         self._graph.add_edges_from(
-            (l[0], l[2], {'link': l[1]}) for l in links)
+            (l[0], l[2], {LINKENTRY: l[1]}) for l in links)
         self.links_by_name.update({l[1].name: l[1] for l in links})
 
     def add_path(self, path: Iterable[Union[Node, Link]]) -> None:
@@ -143,3 +165,31 @@ class Network(NamedObject):
                 self.add_node(point)
                 self.add_link(*current_link)
                 current_link = current_link[-1:]
+
+    @cached_property_clearer(origins)
+    def add_origin(self, origin: Origin, node: Node) -> None:
+        '''Adds the given traffic origin to the node.
+
+        Parameters
+        ----------
+        origin : Origin
+            Origin to be added to the network.
+        node : Node
+            Node which the origin is attached to.
+        '''
+        self.nodes[node][ORIGINENTRY] = origin
+        self.origins_by_name[origin.name] = origin
+
+    @cached_property_clearer(destinations)
+    def add_destination(self, destination: Destination, node: Node) -> None:
+        '''Adds the given traffic destination to the node.
+
+        Parameters
+        ----------
+        destination : Destination
+            Destination to be added to the network.
+        node : Node
+            Node which the destination is attached to.
+        '''
+        self.nodes[node][DESTINATIONENTRY] = destination
+        self.origins_by_name[destination.name] = destination

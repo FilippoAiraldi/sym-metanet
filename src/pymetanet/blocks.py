@@ -10,8 +10,8 @@ class Node(NamedObject):
 
     References
     ----------
-    [1] Hegyi, A., 2004, "Model predictive control for integrating 
-        traffic control measures", Netherlands TRAIL Research School.
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic 
+        control measures", Netherlands TRAIL Research School.
     '''
 
 
@@ -24,7 +24,7 @@ class Origin(NamedObject):
     # flow as the next link
 
 
-class OnRamp(NamedObject):
+class OnRamp(Origin):
     '''
     On-ramp where cars can queue up before being given access to the attached
     link.
@@ -45,7 +45,7 @@ class OnRamp(NamedObject):
         self.C = capacity
 
 
-class MainstreamOrigin(NamedObject):
+class MainstreamOrigin(Origin):
     '''METANET Highway mainstream-origin'''
     ...
 
@@ -65,8 +65,8 @@ class Link(NamedObject):
 
     References
     ----------
-    [1] Hegyi, A., 2004, "Model predictive control for integrating 
-        traffic control measures", Netherlands TRAIL Research School.
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic 
+        control measures", Netherlands TRAIL Research School.
     '''
 
     def __init__(
@@ -103,8 +103,8 @@ class Link(NamedObject):
 
         References
         ----------
-        [1] Hegyi, A., 2004, "Model predictive control for integrating 
-            traffic control measures", Netherlands TRAIL Research School.
+        [1] Hegyi, A., 2004, "Model predictive control for integrating traffic 
+            control measures", Netherlands TRAIL Research School.
         '''
         super().__init__(name)
         self.N = nb_segments
