@@ -1,6 +1,9 @@
 import unittest
 import numpy as np
-from pymetanet.util import NamedObject, as1darray
+from pymetanet.util import (
+    NamedObject,
+    as1darray
+)
 
 
 class TestUtil(unittest.TestCase):
