@@ -8,9 +8,6 @@ from pymetanet import (
 )
 
 
-# def get_simple_net():
-
-
 class TestNetwork(unittest.TestCase):
     def test_add_node(self):
         node = Node(name='This is a random name')

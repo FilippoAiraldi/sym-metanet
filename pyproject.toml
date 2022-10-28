@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "networkx >= 2.8.7",
-    "numpy  >= 1.21.5"
+    "casadi >= 3.5.5",
 ]
 
 [project.urls]
