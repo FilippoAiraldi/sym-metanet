@@ -3,7 +3,7 @@ from typing import Dict, Iterable, Tuple, Union, Optional
 import networkx as nx
 from pymetanet.util.datastructures import NamedObject
 from pymetanet.util.funcs import cached_property_clearer
-from pymetanet.blocks import Node, Link, Origin, Destination
+from pymetanet.blocks.origins import Node, Link, Origin, Destination
 
 
 LINKENTRY = 'link'
