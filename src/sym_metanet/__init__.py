@@ -1,3 +1,4 @@
+from tkinter import E
 from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
 from sym_metanet.blocks.origins import \
@@ -9,10 +10,19 @@ import sym_metanet.engines as engines
 
 # try to instantiate default engine here
 from importlib import import_module
+import inspect
 _notfound = True
-for engine_class, module in engines.get_available_engines().items():
+for engine_name, module in engines.get_available_engines().items():
     try:
-        cls = getattr(import_module(module), engine_class)
+        module = import_module(module)
+        engine_classes = [
+            m[1] for m in inspect.getmembers(module, inspect.isclass)
+            if issubclass(m[1], engines.core.EngineBase)
+            and m[1] != engines.core.EngineBase
+        ]
+        if not any(engine_classes):
+            continue
+        engine_class = engine_classes[0]
         _notfound = False
         break
     except ImportError:
@@ -23,6 +33,6 @@ if _notfound:
     warnings.warn('No available symbolic engine found.',
                   engines.EngineNotFoundWarning)
 else:
-    engine = cls()
-    del cls
-del _notfound, module, engine_class, import_module
+    engine = engine_class()
+    del engine_class
+del _notfound, engine_name, module, engine_classes, import_module, inspect
