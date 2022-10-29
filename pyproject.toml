@@ -18,6 +18,10 @@ classifiers = [
 ]
 dependencies = [
     "networkx >= 2.8.7",
+]
+
+[project.optional-dependencies]
+casadi = [
     "casadi >= 3.5.5",
 ]
 
