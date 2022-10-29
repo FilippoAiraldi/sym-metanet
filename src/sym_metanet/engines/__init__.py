@@ -1,6 +1,7 @@
 from sym_metanet.engines.base import (
-    use,
+    get_current_engine,
     get_available_engines, 
+    use,
     SymEngineNotFoundError,
     SymEngineNotFoundWarning
 )

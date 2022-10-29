@@ -24,7 +24,7 @@ class SymEngineBase(ABC, Generic[T]):
     @abstractmethod
     def Veq(self, rho: T, v_free: T, a: T, rho_crit: T) -> T:
         pass
-
+    
 
 def get_available_engines() -> Dict[str, str]:
     '''Returns the available symbolic engines for METANET modelling, for which
@@ -39,6 +39,17 @@ def get_available_engines() -> Dict[str, str]:
     return {
         'CasadiEngine': 'sym_metanet.engines.casadi'
     }
+
+
+def get_current_engine() -> SymEngineBase:
+    '''Gets the current symbolic engine.
+
+    Returns
+    -------
+    SymEngineBase
+        The current symbolic engine.
+    '''
+    return sym_metanet.engine
 
 
 def use(engine: Union[str, SymEngineBase], *args, **kwargs) -> SymEngineBase:
