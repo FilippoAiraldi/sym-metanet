@@ -144,10 +144,11 @@ def get_available_engines() -> Dict[str, str]:
     -------
     Dict[str, str]
         The available engines in the form of a `dict` whose keys are the 
-        engine class names, and the values are the modules in which they lie.
+        engine class names, and the values are the modules in which they lie 
+        and the class names.
     '''
     return {
-        'casadi': 'sym_metanet.engines.casadi'
+        'casadi': ('sym_metanet.engines.casadi', 'Engine')
     }
 
 
@@ -188,7 +189,8 @@ def use(engine: Union[str, EngineBase], *args, **kwargs) -> EngineBase:
             f'{engine} instead.')
     elif isinstance(engine, str):
         from importlib import import_module
-        cls = getattr(import_module(engines[engine]), engine)
+        module, clsname = engines[engine]
+        cls = getattr(import_module(module), clsname)
         sym_metanet.engine = cls(*args, **kwargs)
     else:
         raise ValueError('Expected `engine` to be either a string or an '

@@ -13,7 +13,7 @@ class TestEngines(unittest.TestCase):
 
     def test_use(self):
         old_engine = metanet.engine
-        new_engine = metanet.engines.use('CasadiEngine')
+        new_engine = metanet.engines.use('casadi')
         self.assertIsNot(metanet.engine, old_engine)
         self.assertIs(metanet.engine, new_engine)
 
