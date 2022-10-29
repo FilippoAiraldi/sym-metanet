@@ -1,30 +1,78 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Generic, TypeVar, Union
+from typing import Dict, Generic, Tuple, TypeVar, Union
 import sym_metanet
 
 
 T = TypeVar('T')
 
 
-class SymEngineNotFoundError(Exception):
+class EngineNotFoundError(Exception):
     '''
     Exception raised when no symbolic engine is found among the available ones.
     To see which are avaiable, see `sym_metanet.engines.get_available_engines`.
     '''
 
 
-class SymEngineNotFoundWarning(Warning):
+class EngineNotFoundWarning(Warning):
     '''
     Warning raised when no symbolic engine is found among the available ones.
     To see which are avaiable, see `sym_metanet.engines.get_available_engines`.
     '''
 
 
-class SymEngineBase(ABC, Generic[T]):
+class EngineBase(ABC, Generic[T]):
+    '''
+    Abstract class of a symbolic engine for modelling highways via the METANET
+    framework. The methods of this class implement the various equations 
+    proposed in the framework, which can be found in [1].
+
+    References
+    ----------
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic 
+        control measures", Netherlands TRAIL Research School.
+    '''
+
     @abstractmethod
-    def Veq(self, rho: T, v_free: T, a: T, rho_crit: T) -> T:
+    def var(self, name: str, shape: Tuple[int, ...], *args, **kwargs) -> T:
+        '''Creates a variable.
+
+        Parameters
+        ----------
+        name : str
+            Name of the variable.
+        shape : Tuple[int, ...]
+            Shape of the variable.
+
+        Returns
+        -------
+        sym variable
+            The symbolic variable (T is generic).
+        '''
         pass
-    
+
+    @abstractmethod
+    def Veq(self, rho: T, v_free: T, rho_crit: T, a: T) -> T:
+        '''Computes the equilibrium speed of the link, according to 
+        [1, Equation 3.4].
+
+        Parameters
+        ----------
+        rho
+            Densities of the link.
+        v_free
+            Free-flow speed of the link.
+        rho_crit
+            Critical density of the link.
+        a
+            Model parameter in the equilibrium speed exponent. 
+
+        Returns
+        -------
+        Veq
+            The equilibrium speed of the link.
+        '''
+        pass
+
 
 def get_available_engines() -> Dict[str, str]:
     '''Returns the available symbolic engines for METANET modelling, for which
@@ -41,7 +89,7 @@ def get_available_engines() -> Dict[str, str]:
     }
 
 
-def get_current_engine() -> SymEngineBase:
+def get_current_engine() -> EngineBase:
     '''Gets the current symbolic engine.
 
     Returns
@@ -52,7 +100,7 @@ def get_current_engine() -> SymEngineBase:
     return sym_metanet.engine
 
 
-def use(engine: Union[str, SymEngineBase], *args, **kwargs) -> SymEngineBase:
+def use(engine: Union[str, EngineBase], *args, **kwargs) -> EngineBase:
     '''Uses the given symbolic engine for computations.
 
     Parameters
@@ -80,11 +128,11 @@ def use(engine: Union[str, SymEngineBase], *args, **kwargs) -> SymEngineBase:
     SymEngineNotFoundError
         Raises in case `engine` is a string but matches no available engines.
     '''
-    if isinstance(engine, SymEngineBase):
+    if isinstance(engine, EngineBase):
         sym_metanet.engine = engine
     engines = get_available_engines()
     if engine not in engines:
-        raise SymEngineNotFoundError(
+        raise EngineNotFoundError(
             f'Engine class must be in {{{", ".join(engines)}}}; got '
             f'{engine} instead.')
     elif isinstance(engine, str):

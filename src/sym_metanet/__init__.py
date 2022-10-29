@@ -21,7 +21,7 @@ for engine_class, module in engines.get_available_engines().items():
 if _notfound:
     import warnings
     warnings.warn('No available symbolic engine found.',
-                  engines.SymEngineNotFoundWarning)
+                  engines.EngineNotFoundWarning)
 else:
     engine = cls()
     del cls
