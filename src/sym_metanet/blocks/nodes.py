@@ -1,4 +1,4 @@
-from pymetanet.util.datastructures import NamedObject
+from sym_metanet.util.structures import NamedObject
 
 
 class Node(NamedObject):

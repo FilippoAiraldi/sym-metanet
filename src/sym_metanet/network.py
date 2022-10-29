@@ -1,12 +1,12 @@
 from functools import cached_property
 from typing import Dict, Iterable, Tuple, Union, Optional
 import networkx as nx
-from pymetanet.util.datastructures import NamedObject
-from pymetanet.util.funcs import cached_property_clearer
-from pymetanet.blocks.nodes import Node
-from pymetanet.blocks.links import Link
-from pymetanet.blocks.origins import Origin
-from pymetanet.blocks.destinations import Destination
+from sym_metanet.util.structures import NamedObject
+from sym_metanet.util.funcs import cached_property_clearer
+from sym_metanet.blocks.nodes import Node
+from sym_metanet.blocks.links import Link
+from sym_metanet.blocks.origins import Origin
+from sym_metanet.blocks.destinations import Destination
 
 
 LINKENTRY = 'link'

@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pymetanet"
+name = "sym_metanet"
 version = "0.0.1"
 authors = [
   { name="Filippo Airaldi", email="filippoairaldi@gmail.com" },
 ]
-description = "Highway Traffic Modelling with METANET framework in Python"
+description = "Highway Traffic Symbolic Modelling with METANET framework"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -22,5 +22,5 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/FilippoAiraldi/pymetanet"
-"Bug Tracker" = "https://github.com/FilippoAiraldi/pymetanet/issues"
+"Homepage" = "https://github.com/FilippoAiraldi/sym-metanet"
+"Bug Tracker" = "https://github.com/FilippoAiraldi/sym-metanet/issues"

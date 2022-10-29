@@ -1,4 +1,4 @@
-from pymetanet.util.datastructures import NamedObject
+from sym_metanet.util.structures import NamedObject
 
 
 class Origin(NamedObject):
@@ -6,6 +6,10 @@ class Origin(NamedObject):
     Ideal, state-less highway origin that conveys to the attached link as much 
     flow as the flow in such link.
     '''
+
+    def __init__(self, name: str = None) -> None:
+        super().__init__(name)
+
     # TODO: do we need bare-bone origins? Maybe they just provide the same
     # flow as the next link
 
