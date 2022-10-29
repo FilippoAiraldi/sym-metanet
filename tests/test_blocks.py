@@ -1,5 +1,5 @@
 import unittest
-from pymetanet import (
+from sym_metanet import (
     Node,
     Link,
     Network,

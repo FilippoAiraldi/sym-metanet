@@ -1,7 +1,6 @@
 import unittest
-import numpy as np
 from functools import cached_property
-from pymetanet.util import (
+from sym_metanet.util import (
     NamedObject,
     cached_property_clearer
 )
