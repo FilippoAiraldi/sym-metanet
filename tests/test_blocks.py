@@ -6,16 +6,19 @@ from sym_metanet import (
     Origin,
     Network,
     Destination,
+    InvalidNetworkError,
 )
-from sym_metanet.errors import DuplicateLinkError
+from sym_metanet.blocks.origins import MeteredOnRamp
 
 
-class TestNetwork(unittest.TestCase):
-    def test_element_base(self):
+class TestElementBase(unittest.TestCase):
+    def test_name(self):
         name = 'This is a random name'
         obj = ElementBase(name=name)
         self.assertEqual(name, obj.name)
 
+
+class TestNetwork(unittest.TestCase):
     def test_add_node(self):
         node = Node(name='This is a random name')
         net = Network(name='Another random name')
@@ -45,25 +48,6 @@ class TestNetwork(unittest.TestCase):
         self.assertIn(link.name, net.links_by_name)
         self.assertIn(link, net.nodes_by_link)
         self.assertEqual(net.nodes_by_link[link], (upnode, downnode))
-
-    def test_add_link__raises__with_duplicate_link(self):
-        N1 = Node(name='N1')
-        N2 = Node(name='N2')
-        N3 = Node(name='N3')
-        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
-        net = Network(name='.Net')
-        net.add_nodes((N1, N2, N3))
-        net.add_link(N1, L, N2)
-        inputs = [
-            [(N1, L, N2), False],
-            [(N1, L, N3), True]
-        ]
-        for input, should_raise in inputs:
-            if not should_raise:
-                net.add_link(*input)
-            else:
-                with self.assertRaises(DuplicateLinkError):
-                    net.add_link(*input)
 
     def test_add_links(self):
         upnode1 = Node(name='N11')
@@ -105,7 +89,7 @@ class TestNetwork(unittest.TestCase):
         self.assertIn(O1, net.origins)
         self.assertIn(D1, net.destinations)
 
-    def test_add_path__with_single_node__raises(self):
+    def test_add_path__raises__with_single_node(self):
         net = Network(name='Net')
         with self.assertRaises(ValueError):
             net.add_path(path=(Node(name='N1'),))
@@ -149,6 +133,74 @@ class TestNetwork(unittest.TestCase):
         net = Network(name='.Net')
         net.add_links(((N1, L1, N2), (N3, L2, N2)))
         self.assertEqual({(N1, N2, L1), (N3, N2, L2)}, set(net.in_links(N2)))
+
+    def test_validate__raises__with_node_with_origin_and_destination(self):
+        N = Node(name='N')
+        O = MeteredOnRamp(100, name='23423')
+        D = Destination(name='23423')
+        net = Network(name='.Net')
+        net.add_node(N)
+        net.add_origin(O, N)
+        net.add_destination(D, N)
+        with self.assertRaises(InvalidNetworkError):
+            net.validate()
+
+    def test_validate__raises__with_duplicate_link(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        net = Network(name='.Net')
+        net.add_nodes((N1, N2, N3))
+        net.add_link(N1, L, N2)
+        net.add_link(N1, L, N3)
+        with self.assertRaises(InvalidNetworkError):
+            net.validate()
+
+    def test_validate__raises__with_duplicate_origin(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        net = Network(name='.Net')
+        O = MeteredOnRamp(100, name='23423')
+        net.add_origin(O, N1)
+        net.add_origin(O, N2)
+        with self.assertRaises(InvalidNetworkError):
+            net.validate()
+
+    def test_validate__raises__with_duplicate_destination(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        net = Network(name='.Net')
+        D = Destination(name='23423')
+        net.add_destination(D, N1)
+        net.add_destination(D, N2)
+        with self.assertRaises(InvalidNetworkError):
+            net.validate()
+
+    def test_validate__raises__destination_on_node_with_out_link(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        net = Network(name='.Net that does not raise')
+        D = Destination(name='23423')
+        net.add_link(N1, L, N2)
+        net.add_destination(D, N1)
+        with self.assertRaises(InvalidNetworkError):
+            net.validate()
+
+    def test_validate__raises__origin_on_node_with_in_link(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        net = Network(name='.Net that does not raise')
+        R = MeteredOnRamp(100, name='ramp does not raise')
+        net.add_link(N1, L, N2)
+        net.add_origin(R, N2)
+        net.validate()
+        O = Origin(name='origin raises')
+        net.add_origin(O, N2)
+        with self.assertRaises(InvalidNetworkError):
+            net.validate()
 
 
 if __name__ == '__main__':

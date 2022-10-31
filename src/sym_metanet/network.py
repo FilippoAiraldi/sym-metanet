@@ -1,4 +1,5 @@
 from functools import cached_property
+from itertools import chain, product
 from typing import Dict, Iterable, Tuple, Union
 import networkx as nx
 from sym_metanet.blocks.base import ElementBase
@@ -13,7 +14,7 @@ from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
 from sym_metanet.blocks.origins import MeteredOnRamp, Origin
 from sym_metanet.blocks.destinations import Destination
-from sym_metanet.errors import DuplicateLinkError
+from sym_metanet.errors import InvalidNetworkError
 from sym_metanet.util import cached_property_clearer
 
 
@@ -28,7 +29,7 @@ class Network(ElementBase):
         name : str, optional
             Name of the network, by default `None`.
         '''
-        NamedObject.__init__(self, name=name)
+        super().__init__(name=name)
         self._graph = nx.DiGraph(name=name)
         self.nodes_by_name: Dict[str, Node] = {}
         self.links_by_name: Dict[str, Link] = {}
@@ -138,15 +139,9 @@ class Network(ElementBase):
         Network
             A reference to itself.
         '''
-        nodes = self.nodes_by_link.get(link, None)
-        if nodes is not None:
-            if nodes == (node_up, node_down):
-                return self
-            raise DuplicateLinkError(
-                f'Link {link.name} already inserted in the network connecting '
-                f'nodes {nodes[0].name} and {nodes[1].name}.')
-        self.nodes_by_link[link] = (node_up, node_down)
+
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
+        self.nodes_by_link[link] = (node_up, node_down)
         self.links_by_name[link.name] = link
         return self
 
@@ -163,8 +158,14 @@ class Network(ElementBase):
         Network
             A reference to itself.
         '''
-        for link in links:
-            self.add_link(*link)
+
+        def get_edge(linkdata: Tuple[Node, Link, Node]):
+            node_up, link, node_down = linkdata
+            self.nodes_by_link[link] = (node_up, node_down)
+            self.links_by_name[link.name] = link
+            return (node_up, node_down, {LINKENTRY: link})
+
+        self._graph.add_edges_from(get_edge(l) for l in links)
         return self
 
     @cached_property_clearer(origins)
@@ -183,7 +184,10 @@ class Network(ElementBase):
         Network
             A reference to itself.
         '''
-        self.nodes[node][ORIGINENTRY] = origin
+        if node not in self.nodes:
+            self._graph.add_node(node, **{ORIGINENTRY: origin})
+        else:
+            self.nodes[node][ORIGINENTRY] = origin
         self.origins_by_name[origin.name] = origin
         return self
 
@@ -204,7 +208,10 @@ class Network(ElementBase):
         Network
             A reference to itself.
         '''
-        self.nodes[node][DESTINATIONENTRY] = destination
+        if node not in self.nodes:
+            self._graph.add_node(node, **{DESTINATIONENTRY: destination})
+        else:
+            self.nodes[node][DESTINATIONENTRY] = destination
         self.destinations_by_name[destination.name] = destination
         return self
 
@@ -283,3 +290,54 @@ class Network(ElementBase):
         if destination is not None:
             self.add_destination(destination, last_node)
         return self
+
+    def validate(self):
+        '''Checks whether the network is consistent.
+
+        Raises
+        ------
+        InvalidNetworkError
+            Raises if
+             - a node has both an origin and a destination
+             - a node with an origin that is not a ramp has also entering links
+             - a node with a destination has also exiting links
+        '''
+
+        # nodes must not have origins and destinations
+        for node, nodedata in self.nodes.data():
+            if ORIGINENTRY in nodedata and DESTINATIONENTRY in nodedata:
+                raise InvalidNetworkError(
+                    f'Node {node.name} must either have an origin or a '
+                    'destination, but not both.')
+
+        # no duplicate elements
+        def origin_destination_yielder():
+            for data, entry in product(self._graph.nodes.values(),  
+                                       (ORIGINENTRY, DESTINATIONENTRY)):
+                if entry in data:
+                    yield data[entry]
+
+        count: Dict[ElementBase, int] = {}
+        for o in chain((l[2] for l in self.links), 
+                       iter(origin_destination_yielder())):
+            d = count.get(o, 0) + 1
+            if d > 1:
+                raise InvalidNetworkError(
+                    f'Element {o.name} is duplicated in the network.')
+            count[o] = d
+
+        # nodes with origins (that are not a ramps) must have no entering links
+        for origin, node in self.origins.items():
+            if not isinstance(origin, MeteredOnRamp) and \
+                        any(self.in_links(node)):
+                raise InvalidNetworkError(
+                    f'Expected node {node.name} to have no entering links, as '
+                    f'it is connected to origin {origin.name} (only ramps '
+                    'support entering links).')
+
+        # nodes with destinations must have no exiting links
+        for destination, node in self.destinations.items():
+            if any(self.out_links(node)):
+                raise InvalidNetworkError(
+                    f'Expected node {node.name} to have no exiting links, as '
+                    f'it is connected to destination {destination.name}.')
