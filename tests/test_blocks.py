@@ -73,10 +73,10 @@ class TestNetwork(unittest.TestCase):
         self.assertEqual(len(net.links), 2)
         for data in ((link1, upnode1, downnode1), (link2, upnode2, downnode2)):
             link, nodeup, nodedown = data
+            self.assertEqual(net.nodes_by_link[link], (nodeup, nodedown))
             self.assertIs(link, net.links[nodeup, nodedown])
             self.assertIn(link.name, net.links_by_name)
             self.assertIn(link, net.nodes_by_link)
-            self.assertEqual(net.nodes_by_link[link], (nodeup, nodedown))
 
     def test_add_path(self):
         N1 = Node(name='N1')
