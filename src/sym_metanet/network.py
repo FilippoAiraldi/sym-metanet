@@ -14,7 +14,7 @@ from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
 from sym_metanet.blocks.origins import Origin
 from sym_metanet.blocks.destinations import Destination
-# from sym_metanet.errors import DuplicateNodeError
+from sym_metanet.errors import DuplicateLinkError
 
 
 class Network(NamedObject):
@@ -34,6 +34,7 @@ class Network(NamedObject):
         self.links_by_name: Dict[str, Link] = {}
         self.origins_by_name: Dict[str, Origin] = {}
         self.destinations_by_name: Dict[str, Destination] = {}
+        self.nodes_by_link: Dict[Link, Tuple[Node, Node]] = {}
 
     @property
     def G(self) -> nx.DiGraph:
@@ -137,24 +138,33 @@ class Network(NamedObject):
         Network
             A reference to itself.
         '''
+        nodes = self.nodes_by_link.get(link, None)
+        if nodes is not None:
+            if nodes == (node_up, node_down):
+                return self
+            raise DuplicateLinkError(
+                f'Link {link.name} already inserted in the network connecting '
+                f'nodes {nodes[0].name} and {nodes[1].name}.')
+        self.nodes_by_link[link] = (node_up, node_down)
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
         self.links_by_name[link.name] = link
         return self
 
-    def add_links(self, *links: Tuple[Node, Link, Node]) -> 'Network':
+    def add_links(self, links: Iterable[Tuple[Node, Link, Node]]) -> 'Network':
         '''Adds multiple links. See `Network.add_link`.
+
+        Parameters
+        ----------
+        nodes : iterable of Tuple[Node, Link, Node]
+            Links to be added between the corresponding nodes.
 
         Returns
         -------
         Network
             A reference to itself.
         '''
-
-        def get_edge(link):
-            return (link[0], link[2], {LINKENTRY: link[1]})
-
-        self._graph.add_edges_from(get_edge(l) for l in links)
-        self.links_by_name.update({l[1].name: l[1] for l in links})
+        for link in links:
+            self.add_link(*link)
         return self
 
     @cached_property_clearer(origins)

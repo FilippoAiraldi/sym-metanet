@@ -6,6 +6,7 @@ from sym_metanet import (
     MainstreamOrigin,
     Destination
 )
+from sym_metanet.errors import DuplicateLinkError
 
 
 class TestNetwork(unittest.TestCase):
@@ -36,6 +37,27 @@ class TestNetwork(unittest.TestCase):
         self.assertIs(link, net.links[upnode, downnode])
         self.assertEqual(len(net.links), 1)
         self.assertIn(link.name, net.links_by_name)
+        self.assertIn(link, net.nodes_by_link)
+        self.assertEqual(net.nodes_by_link[link], (upnode, downnode))
+
+    def test_add_link__raises__with_duplicate_link(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        net = Network(name='.Net')
+        net.add_nodes((N1, N2, N3))
+        net.add_link(N1, L, N2)
+        inputs = [
+            [(N1, L, N2), False],
+            [(N1, L, N3), True]
+        ]
+        for input, should_raise in inputs:
+            if not should_raise:
+                net.add_link(*input)
+            else:
+                with self.assertRaises(DuplicateLinkError):
+                    net.add_link(*input)
 
     def test_add_links(self):
         upnode1 = Node(name='N11')
@@ -46,12 +68,15 @@ class TestNetwork(unittest.TestCase):
         link2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
         net = Network(name='Net')
         net.add_nodes((upnode1, downnode1, upnode2, downnode2))
-        net.add_links((upnode1, link1, downnode1), (upnode2, link2, downnode2))
-        self.assertIs(link1, net.links[upnode1, downnode1])
-        self.assertIs(link2, net.links[upnode2, downnode2])
+        net.add_links((
+            (upnode1, link1, downnode1), (upnode2, link2, downnode2)))
         self.assertEqual(len(net.links), 2)
-        self.assertIn(link1.name, net.links_by_name)
-        self.assertIn(link2.name, net.links_by_name)
+        for data in ((link1, upnode1, downnode1), (link2, upnode2, downnode2)):
+            link, nodeup, nodedown = data
+            self.assertIs(link, net.links[nodeup, nodedown])
+            self.assertIn(link.name, net.links_by_name)
+            self.assertIn(link, net.nodes_by_link)
+            self.assertEqual(net.nodes_by_link[link], (nodeup, nodedown))
 
     def test_add_path(self):
         N1 = Node(name='N1')
@@ -106,7 +131,7 @@ class TestNetwork(unittest.TestCase):
         L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
         L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
         net = Network(name='.Net')
-        net.add_links((N1, L1, N2), (N1, L2, N3))
+        net.add_links(((N1, L1, N2), (N1, L2, N3)))
         self.assertEqual({(N1, N3, L2), (N1, N2, L1)}, set(net.out_links(N1)))
 
     def test_in_links(self):
@@ -116,7 +141,7 @@ class TestNetwork(unittest.TestCase):
         L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
         L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
         net = Network(name='.Net')
-        net.add_links((N1, L1, N2), (N3, L2, N2))
+        net.add_links(((N1, L1, N2), (N3, L2, N2)))
         self.assertEqual({(N1, N2, L1), (N3, N2, L2)}, set(net.in_links(N2)))
 
 
