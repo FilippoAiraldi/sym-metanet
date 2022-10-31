@@ -3,9 +3,9 @@ from sym_metanet import (
     Node,
     Link,
     Network,
-    MainstreamOrigin,
     Destination
 )
+from sym_metanet.blocks.origins import Origin
 from sym_metanet.errors import DuplicateLinkError
 
 
@@ -85,7 +85,7 @@ class TestNetwork(unittest.TestCase):
         L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
         L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
         L3 = Link(4, 3, 1, 100, 30, 1.8, name='L3')
-        O1 = MainstreamOrigin(name='23423')
+        O1 = Origin(name='23423')
         D1 = Destination(name='23421')
         net = Network(name='Net')
         net.add_path(origin=O1, path=(N1, L1, N2), destination=D1)
@@ -106,7 +106,7 @@ class TestNetwork(unittest.TestCase):
 
     def test_add_origin(self):
         node = Node(name='This is a random name')
-        origin = MainstreamOrigin(name='23423')
+        origin = Origin(name='23423')
         net = Network(name='Another random name')
         net.add_node(node)
         net.add_origin(origin, node)

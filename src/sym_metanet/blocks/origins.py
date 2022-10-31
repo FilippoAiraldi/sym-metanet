@@ -17,9 +17,14 @@ class Origin(NamedObject):
 class MeteredOnRamp(Origin):
     '''
     On-ramp where cars can queue up before being given access to the attached
-    link.
+    link. For reference, look at [1], in particular, Section 3.2.1 and 
+    Equations 3.5 and 3.6.
+
+    References
+    ----------
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic 
+        control measures", Netherlands TRAIL Research School.
     '''
-    # TODO: improve doc
 
     def __init__(self, capacity: float, name: str = None) -> None:
         '''Instantiates an on-ramp with the given capacity.
@@ -43,10 +48,3 @@ class SimpleMeteredOnRamp(MeteredOnRamp):
 
     See `MeteredOnRamp` for the original version.
     '''
-
-
-class MainstreamOrigin(Origin):
-    '''METANET Highway mainstream-origin'''
-    ...
-
-    # TODO: improve doc
