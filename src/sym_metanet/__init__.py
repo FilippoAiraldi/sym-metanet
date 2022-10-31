@@ -5,7 +5,8 @@ from sym_metanet.blocks.origins import \
     Origin, MeteredOnRamp, SimpleMeteredOnRamp
 from sym_metanet.blocks.destinations import Destination
 from sym_metanet.network import Network
-from sym_metanet.errors import DuplicateLinkError
+from sym_metanet.errors import \
+    DuplicateNetworkElementError, InvalidNetworkError
 import sym_metanet.engines as engines
 
 
