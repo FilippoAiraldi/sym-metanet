@@ -1,15 +1,21 @@
 import unittest
+from sym_metanet.blocks.base import ElementBase
 from sym_metanet import (
     Node,
     Link,
+    Origin,
     Network,
-    Destination
+    Destination,
 )
-from sym_metanet.blocks.origins import Origin
 from sym_metanet.errors import DuplicateLinkError
 
 
 class TestNetwork(unittest.TestCase):
+    def test_element_base(self):
+        name = 'This is a random name'
+        obj = ElementBase(name=name)
+        self.assertEqual(name, obj.name)
+
     def test_add_node(self):
         node = Node(name='This is a random name')
         net = Network(name='Another random name')

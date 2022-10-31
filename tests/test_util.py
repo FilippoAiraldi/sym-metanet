@@ -1,9 +1,6 @@
 import unittest
 from functools import cached_property
-from sym_metanet.util import (
-    NamedObject,
-    cached_property_clearer
-)
+from sym_metanet.util import cached_property_clearer
 
 
 class DummyWithCachedProperty:
@@ -21,11 +18,6 @@ class DummyWithCachedProperty:
 
 
 class TestUtil(unittest.TestCase):
-    def test_NamedObject(self):
-        name = 'This is a random name'
-        obj = NamedObject(name=name)
-        self.assertEqual(name, obj.name)
-
     def test_cached_property_clearer(self):
         dummy = DummyWithCachedProperty()
         dummy.a_cached_property

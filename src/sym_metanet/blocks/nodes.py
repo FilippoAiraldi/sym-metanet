@@ -1,7 +1,7 @@
-from sym_metanet.util import NamedObject
+from sym_metanet.blocks.base import ElementBase
 
 
-class Node(NamedObject):
+class Node(ElementBase):
     '''
     Node of the highway [1, Section 3.2.2] representing, e.g., the connection 
     between two links. Nodes do not correspond to actual physical components of

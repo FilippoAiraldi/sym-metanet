@@ -1,7 +1,7 @@
-from sym_metanet.util import NamedObject
+from sym_metanet.blocks.base import ElementBase
 
 
-class Link(NamedObject):
+class Link(ElementBase):
     '''
     Highway link between two nodes [1, Section 3.2.1]. Links represent stretch
     of highway with similar traffic characteristics and no road changes (e.g., 

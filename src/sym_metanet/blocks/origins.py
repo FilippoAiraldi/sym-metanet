@@ -1,7 +1,7 @@
-from sym_metanet.util import NamedObject
+from sym_metanet.blocks.base import ElementBase
 
 
-class Origin(NamedObject):
+class Origin(ElementBase):
     '''
     Ideal, state-less highway origin that conveys to the attached link as much 
     flow as the flow in such link.
@@ -9,9 +9,6 @@ class Origin(NamedObject):
 
     def __init__(self, name: str = None) -> None:
         super().__init__(name)
-
-    # TODO: do we need bare-bone origins? Maybe they just provide the same
-    # flow as the next link
 
 
 class MeteredOnRamp(Origin):

@@ -1,7 +1,7 @@
 from functools import cached_property
 from typing import Dict, Iterable, Tuple, Union
 import networkx as nx
-from sym_metanet.util import NamedObject
+from sym_metanet.blocks.base import ElementBase
 from sym_metanet.views import (
     LINKENTRY,
     ORIGINENTRY,
@@ -9,15 +9,15 @@ from sym_metanet.views import (
     InLinkViewWrapper,
     OutLinkViewWrapper,
 )
-from sym_metanet.util import cached_property_clearer
 from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
-from sym_metanet.blocks.origins import Origin
+from sym_metanet.blocks.origins import MeteredOnRamp, Origin
 from sym_metanet.blocks.destinations import Destination
 from sym_metanet.errors import DuplicateLinkError
+from sym_metanet.util import cached_property_clearer
 
 
-class Network(NamedObject):
+class Network(ElementBase):
     '''Highway network'''
 
     def __init__(self, name: str = None):

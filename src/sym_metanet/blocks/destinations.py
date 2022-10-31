@@ -1,7 +1,7 @@
-from sym_metanet.util import NamedObject
+from sym_metanet.blocks.base import ElementBase
 
 
-class Destination(NamedObject):
+class Destination(ElementBase):
     '''
     Highway congestion-free destination, representing a sink where cars can 
     leave the highway with no congestion (i.e., slowing down due to downstream 
