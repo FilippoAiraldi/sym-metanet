@@ -15,6 +15,68 @@ class NodesEngineBase(ABC):
         control measures", Netherlands TRAIL Research School.
     '''
 
+    @staticmethod
+    @abstractmethod
+    def get_upstream_flow(q_lasts, beta):
+        '''Computes the upstream flow from a node to a given extiting link, 
+        where the node can have multiple entering links and multiple exiting 
+        links, according to [1, Section 3.2.2].
+
+        Parameters
+        ----------
+        q_lasts
+            Flows of the last segments of the links entering the node.
+        beta
+            Turnrate of the given link exiting from the node.
+
+        Returns
+        -------
+        flow
+            (virtual) upstream flow in the first segment of the exiting link.
+        '''
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_upstream_speed(q_lasts, v_lasts):
+        '''Computes the upstream speed from a node to a given exiting link, 
+        where the node can have multiple entering links and multiple exiting 
+        links, according to [1, Equation 3.10].
+
+        Parameters
+        ----------
+        q_lasts
+            Flows of the last segments of the links entering the node.
+        v_lasts
+            Speeds of the last segments of the links entering the node.
+
+        Returns
+        -------
+        speed
+            (virtual) upstream speed in the first segment of the exiting link.
+        '''
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_downstream_density(rho_firsts):
+        '''Computes the downstream density from a node to a given entering 
+        link, where the node can have multiple entering links and multiple 
+        exiting links, according to [1, Equation 3.9].
+
+        Parameters
+        ----------
+        rho_firsts
+            Densities of the first segments of the links exiting the node.
+
+        Returns
+        -------
+        speed
+            (virtual) downstream density in the last segment of the entering 
+            link.
+        '''
+        pass
+
 
 class LinksEngineBase(ABC):
     '''
@@ -201,8 +263,8 @@ class OriginsEngineBase(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_flow(d, w, C, r, rho_max, rho_first, rho_crit, T,
-                 type: Literal['in', 'out'] = 'out'):
+    def get_ramp_flow(d, w, C, r, rho_max, rho_first, rho_crit, T,
+                      type: Literal['in', 'out'] = 'out'):
         '''Computes the flows of the origin, according to 
         [1, Equation 3.5], if `type=='in'`, or [1, Equation 3.6], if 
         `type=='out'`.
@@ -237,6 +299,77 @@ class OriginsEngineBase(ABC):
         '''
         pass
 
+    # @staticmethod
+    # def get_upstream_speed(v_first):
+    #     '''For a link with only an upstream origin, returns the upstream speed,
+    #     that is the same as the speed in the first segment of this link,
+    #     according to [1, Section 3.2.3].
+
+    #     Parameters
+    #     ----------
+    #     v_first
+    #         Speed in the link's first segment.
+
+    #     Returns
+    #     -------
+    #     speed
+    #         The upstream speed for a link connected only to an upstream origin.
+    #     '''
+    #     return v_first
+
+
+class DestinationsEngineBase(ABC):
+    '''
+    Abstract class of a symbolic engine for modelling highway destinations via 
+    the METANET framework. The methods of this class implement the various 
+    equations proposed in the framework, which can be found in [1].
+
+    References
+    ----------
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic 
+        control measures", Netherlands TRAIL Research School.
+    '''
+
+    # @staticmethod
+    # def get_downstream_density(rho_last):
+    #     '''For a link with a downstream destination, returns the downstream
+    #     density, that is the same as the density in the last segment of this
+    #     link, according to [1, Section 3.2.3].
+
+    #     Parameters
+    #     ----------
+    #     rho_last
+    #         Density in the link's last segment.
+
+    #     Returns
+    #     -------
+    #     density
+    #         The downstream density for a link connected to a destination.
+    #     '''
+    #     return rho_last
+
+    @staticmethod
+    @abstractmethod
+    def get_congested_downstream_density(rho_last, rho_destination, rho_crit):
+        '''For a link with a downstream congested destination, returns the 
+        downstream  density.
+
+        Parameters
+        ----------
+        rho_last
+            Density in the link's last segment.
+        rho_destination 
+            Density scenerio of the congested destination.
+        rho_crit
+            Critical density of the link entering the destination.
+
+        Returns
+        -------
+        density
+            The downstream density for a link connected to a destination.
+        '''
+        pass
+
 
 class EngineBase(ABC):
     '''
@@ -263,6 +396,11 @@ class EngineBase(ABC):
     @property
     @abstractmethod
     def origins(self) -> Type[OriginsEngineBase]:
+        pass
+
+    @property
+    @abstractmethod
+    def destinations(self) -> Type[DestinationsEngineBase]:
         pass
 
     @abstractmethod

@@ -1,11 +1,28 @@
 from typing import Dict, Literal, Type, Tuple
 import casadi as cs
-from sym_metanet.engines.core import \
-    NodesEngineBase, LinksEngineBase, OriginsEngineBase, EngineBase
+from sym_metanet.engines.core import (
+    NodesEngineBase,
+    LinksEngineBase,
+    OriginsEngineBase,
+    DestinationsEngineBase,
+    EngineBase
+)
 
 
 class NodesEngine(NodesEngineBase):
     '''CasADi implementation of `sym_metanet.engines.core.NodesEngineBase`.'''
+
+    @staticmethod
+    def get_upstream_flow(q_lasts: cs.SX, beta: cs.SX) -> cs.SX:
+        return beta * cs.sum1(q_lasts)
+
+    @staticmethod
+    def get_upstream_speed(q_lasts: cs.SX, v_lasts: cs.SX) -> cs.SX:
+        return (v_lasts.T @ q_lasts) / cs.sum1(q_lasts)
+
+    @staticmethod
+    def get_downstream_density(rho_firsts: cs.SX) -> cs.SX:
+        return (rho_firsts.T @ rho_firsts) / cs.sum1(rho_firsts)
 
 
 class LinksEngine(LinksEngineBase):
@@ -55,14 +72,25 @@ class OriginsEngine(OriginsEngineBase):
         return w + T * (d - q)
 
     @staticmethod
-    def get_flow(d: cs.SX, w: cs.SX, C: cs.SX, r: cs.SX, rho_max: cs.SX,
-                 rho_first: cs.SX, rho_crit: cs.SX, T: cs.SX,
-                 type: Literal['in', 'out'] = 'out') -> cs.SX:
+    def get_ramp_flow(d: cs.SX, w: cs.SX, C: cs.SX, r: cs.SX, rho_max: cs.SX,
+                      rho_first: cs.SX, rho_crit: cs.SX, T: cs.SX,
+                      type: Literal['in', 'out'] = 'out') -> cs.SX:
         term1 = d + w / T
         term3 = (rho_max - rho_first) / (rho_max - rho_crit)
         if type == 'in':
             return cs.fmin(term1, C * cs.fmin(r, term3))
         return r * cs.fmin(term1, C * cs.fmin(1, term3))
+
+
+class DestinationsEngine(DestinationsEngineBase):
+    '''
+    CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`.
+    '''
+
+    @staticmethod
+    def get_congested_downstream_density(
+            rho_last: cs.SX, rho_destination: cs.SX, rho_crit: cs.SX) -> cs.SX:
+        return cs.fmax(cs.fmin(rho_last, rho_crit), rho_destination)
 
 
 CSTYPES: Dict[str, Type] = {
@@ -108,6 +136,10 @@ class Engine(EngineBase):
     @property
     def origins(self) -> Type[OriginsEngine]:
         return OriginsEngine
+
+    @property
+    def destinations(self) -> Type[DestinationsEngine]:
+        return DestinationsEngine
 
     def var(
         self,
