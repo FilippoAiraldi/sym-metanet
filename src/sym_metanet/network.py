@@ -58,7 +58,7 @@ class Network(NamedObject):
     @cached_property
     def links(self) -> OutLinkViewWrapper:
         '''Returns a view on the links of the network.'''
-        return OutLinkViewWrapper(self)
+        return OutLinkViewWrapper(self._graph)
 
     @property
     def out_links(self) -> OutLinkViewWrapper:
@@ -68,7 +68,7 @@ class Network(NamedObject):
     @cached_property
     def in_links(self) -> InLinkViewWrapper:
         '''Returns a view on the inward links of the network.'''
-        return InLinkViewWrapper(self)
+        return InLinkViewWrapper(self._graph)
 
     @cached_property
     def origins(self) -> Dict[Origin, Node]:

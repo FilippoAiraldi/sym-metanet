@@ -20,7 +20,7 @@ class TestNetwork(unittest.TestCase):
         node1 = Node(name='This is a random name1')
         node2 = Node(name='This is a random name2')
         net = Network(name='Another random name')
-        net.add_nodes(node1, node2)
+        net.add_nodes((node1, node2))
         self.assertIn(node1, net.nodes)
         self.assertIn(node2, net.nodes)
         self.assertIn(node1.name, net.nodes_by_name)
@@ -31,10 +31,10 @@ class TestNetwork(unittest.TestCase):
         downnode = Node(name='N2')
         link = Link(4, 3, 1, 100, 30, 1.8, name='L1')
         net = Network(name='Net')
-        net.add_nodes(upnode, downnode)
+        net.add_nodes((upnode, downnode))
         net.add_link(upnode, link, downnode)
         self.assertIs(link, net.links[upnode, downnode])
-        self.assertEqual((link,), list(zip(*net.links))[1])
+        self.assertEqual(len(net.links), 1)
         self.assertIn(link.name, net.links_by_name)
 
     def test_add_links(self):
@@ -45,11 +45,11 @@ class TestNetwork(unittest.TestCase):
         downnode2 = Node(name='N21')
         link2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
         net = Network(name='Net')
-        net.add_nodes(upnode1, downnode1, upnode2, downnode2)
+        net.add_nodes((upnode1, downnode1, upnode2, downnode2))
         net.add_links((upnode1, link1, downnode1), (upnode2, link2, downnode2))
         self.assertIs(link1, net.links[upnode1, downnode1])
         self.assertIs(link2, net.links[upnode2, downnode2])
-        self.assertEqual({link1, link2}, set(list(zip(*net.links))[1]))
+        self.assertEqual(len(net.links), 2)
         self.assertIn(link1.name, net.links_by_name)
         self.assertIn(link2.name, net.links_by_name)
 
@@ -67,7 +67,7 @@ class TestNetwork(unittest.TestCase):
         net.add_path(origin=O1, path=(N1, L2, N3, L3, N2), destination=D1)
         for n in (N1, N2, N3):
             self.assertIn(n, net.nodes)
-        self.assertEqual({L1, L2, L3}, set(list(zip(*net.links))[1]))
+        self.assertEqual(len(net.links), 3)
         self.assertIs(L1, net.links[N1, N2])
         self.assertIs(L2, net.links[N1, N3])
         self.assertIs(L3, net.links[N3, N2])
@@ -98,6 +98,26 @@ class TestNetwork(unittest.TestCase):
         self.assertIn(destination, net.destinations)
         self.assertIs(net.destinations[destination], node)
         self.assertIn(destination.name, net.destinations_by_name)
+
+    def test_out_links(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
+        net = Network(name='.Net')
+        net.add_links((N1, L1, N2), (N1, L2, N3))
+        self.assertEqual({(N1, N3, L2), (N1, N2, L1)}, set(net.out_links(N1)))
+
+    def test_in_links(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
+        net = Network(name='.Net')
+        net.add_links((N1, L1, N2), (N3, L2, N2))
+        self.assertEqual({(N1, N2, L1), (N3, N2, L2)}, set(net.in_links(N2)))
 
 
 if __name__ == '__main__':
