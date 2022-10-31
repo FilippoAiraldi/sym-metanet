@@ -14,6 +14,7 @@ class TestNetwork(unittest.TestCase):
         net = Network(name='Another random name')
         net.add_node(node)
         self.assertIn(node, net.nodes)
+        self.assertIn(node.name, net.nodes_by_name)
 
     def test_add_nodes(self):
         node1 = Node(name='This is a random name1')
@@ -22,6 +23,8 @@ class TestNetwork(unittest.TestCase):
         net.add_nodes(node1, node2)
         self.assertIn(node1, net.nodes)
         self.assertIn(node2, net.nodes)
+        self.assertIn(node1.name, net.nodes_by_name)
+        self.assertIn(node1.name, net.nodes_by_name)
 
     def test_add_link(self):
         upnode = Node(name='N1')
@@ -32,6 +35,7 @@ class TestNetwork(unittest.TestCase):
         net.add_link(upnode, link, downnode)
         self.assertIs(link, net.links[upnode, downnode])
         self.assertEqual((link,), list(zip(*net.links))[1])
+        self.assertIn(link.name, net.links_by_name)
 
     def test_add_links(self):
         upnode1 = Node(name='N11')
@@ -46,6 +50,8 @@ class TestNetwork(unittest.TestCase):
         self.assertIs(link1, net.links[upnode1, downnode1])
         self.assertIs(link2, net.links[upnode2, downnode2])
         self.assertEqual({link1, link2}, set(list(zip(*net.links))[1]))
+        self.assertIn(link1.name, net.links_by_name)
+        self.assertIn(link2.name, net.links_by_name)
 
     def test_add_path(self):
         N1 = Node(name='N1')
@@ -57,8 +63,8 @@ class TestNetwork(unittest.TestCase):
         O1 = MainstreamOrigin(name='23423')
         D1 = Destination(name='23421')
         net = Network(name='Net')
-        net.add_path(O1, (N1, L1, N2), D1)
-        net.add_path(O1, (N1, L2, N3, L3, N2), D1)
+        net.add_path(origin=O1, path=(N1, L1, N2), destination=D1)
+        net.add_path(origin=O1, path=(N1, L2, N3, L3, N2), destination=D1)
         for n in (N1, N2, N3):
             self.assertIn(n, net.nodes)
         self.assertEqual({L1, L2, L3}, set(list(zip(*net.links))[1]))
@@ -71,7 +77,7 @@ class TestNetwork(unittest.TestCase):
     def test_add_path__with_single_node__raises(self):
         net = Network(name='Net')
         with self.assertRaises(ValueError):
-            net.add_path(None, (Node(name='N1'),), None)
+            net.add_path(path=(Node(name='N1'),))
 
     def test_add_origin(self):
         node = Node(name='This is a random name')
@@ -81,6 +87,7 @@ class TestNetwork(unittest.TestCase):
         net.add_origin(origin, node)
         self.assertIn(origin, net.origins)
         self.assertIs(net.origins[origin], node)
+        self.assertIn(origin.name, net.origins_by_name)
 
     def test_add_destination(self):
         node = Node(name='This is a random name')
@@ -90,6 +97,7 @@ class TestNetwork(unittest.TestCase):
         net.add_destination(destination, node)
         self.assertIn(destination, net.destinations)
         self.assertIs(net.destinations[destination], node)
+        self.assertIn(destination.name, net.destinations_by_name)
 
 
 if __name__ == '__main__':
