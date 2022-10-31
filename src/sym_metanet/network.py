@@ -47,6 +47,7 @@ class Network(NamedObject):
         self.nodes_by_name: Dict[str, Node] = {}
         self.links_by_name: Dict[str, Link] = {}
         self.origins_by_name: Dict[str, Origin] = {}
+        self.destinations_by_name: Dict[str, Destination] = {}
 
     @property
     def G(self) -> nx.DiGraph:
@@ -95,7 +96,7 @@ class Network(NamedObject):
         ----------
         node : Node
             Node to be added.
-            
+
         Returns
         -------
         Network
@@ -107,7 +108,7 @@ class Network(NamedObject):
 
     def add_nodes(self, *nodes: Node) -> 'Network':
         '''Adds multiple nodes. See `Network.add_node`.
-        
+
         Returns
         -------
         Network
@@ -129,26 +130,29 @@ class Network(NamedObject):
             The link to be added connecting the two nodes.
         node_down : Node
             Downstream node, that is, where traffic is going to.
-            
+
         Returns
         -------
         Network
             A reference to itself
         '''
-        self._graph.add_edge(node_up, node_down, link=link)
+        self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
         self.links_by_name[link.name] = link
         return self
 
     def add_links(self, *links: Tuple[Node, Link, Node]) -> 'Network':
         '''Adds multiple links. See `Network.add_link`.
-        
+
         Returns
         -------
         Network
             A reference to itself
         '''
-        self._graph.add_edges_from(
-            (l[0], l[2], {LINKENTRY: l[1]}) for l in links)
+
+        def get_edge(link):
+            return (link[0], link[2], {LINKENTRY: link[1]})
+
+        self._graph.add_edges_from(get_edge(l) for l in links)
         self.links_by_name.update({l[1].name: l[1] for l in links})
         return self
 
@@ -162,7 +166,7 @@ class Network(NamedObject):
             Origin to be added to the network.
         node : Node
             Node which the origin is attached to.
-            
+
         Returns
         -------
         Network
@@ -183,35 +187,34 @@ class Network(NamedObject):
             Destination to be added to the network.
         node : Node
             Node which the destination is attached to.
-            
+
         Returns
         -------
         Network
             A reference to itself
         '''
         self.nodes[node][DESTINATIONENTRY] = destination
-        self.origins_by_name[destination.name] = destination
+        self.destinations_by_name[destination.name] = destination
         return self
-
 
     def add_path(
         self,
-        origin: Optional[Origin],
         path: Iterable[Union[Node, Link]],
-        destination: Optional[Destination]
+        origin: Origin = None,
+        destination: Destination = None
     ) -> 'Network':
         '''Adds a path of nodes and links between the origin and the 
         destination.
 
         Parameters
         ----------
-        origin : Origin, optional
-            The origin where the path starts from. Pass `None` to have no 
-            origin attached to the first node in `path`.
         path : Iterable[Union[Node, Link]]
             A path consists of an alternating sequence of nodes and links, 
             starting from the first node and ending at the last. For example, a 
             valid path is: `node1, link1, node2, link2, node3, ..., nodeN`. 
+        origin : Origin, optional
+            The origin where the path starts from. Pass `None` to have no 
+            origin attached to the first node in `path`.
         destination : Destination, optional
             The destination where the path ends in. Pass `None` to have no 
             destination attached to the last node in `path`.
