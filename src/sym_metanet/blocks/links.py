@@ -21,6 +21,7 @@ class Link(NamedObject):
         free_flow_velocity: float,
         critical_density: float,
         a: float,
+        turnrate: float = 1.0,
         name: str = None
     ) -> None:
         '''Creates an instance of a METANET link.
@@ -42,6 +43,11 @@ class Link(NamedObject):
         a : float
             Model parameter in the computations of the equivalent speed
             [1, Equation 3.4]. 
+        turnrate : float, optional
+            Fraction of the total flow that enters this link via the upstream 
+            node. Only relevant if multiple exiting links are attached to the 
+            same node, in order to split the flow according to these rates. 
+            Needs not be normalized. By default, all links have equal rates. 
         name : str, optional
             Name of this link, by default `None`.
 
@@ -57,3 +63,4 @@ class Link(NamedObject):
         self.v_free = free_flow_velocity
         self.rho_crit = critical_density
         self.a = a
+        self.turnrate = turnrate
