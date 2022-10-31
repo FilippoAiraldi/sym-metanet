@@ -9,22 +9,16 @@ import sym_metanet.engines as engines
 
 
 # try to instantiate default engine here
-from importlib import import_module
-import inspect
 _notfound = True
-for _, (module, engine_class) in engines.get_available_engines().items():
+for engine in engines.get_available_engines().keys():
     try:
-        module = import_module(module)
-        engine_class = getattr(module, engine_class)
+        engine = engines.use(engine)
         _notfound = False
         break
     except ImportError:
         continue
-
 if _notfound:
     import warnings
-    warnings.warn('No available symbolic engine found.',
-                  engines.EngineNotFoundWarning)
-else:
-    engine = engine_class()
-del _notfound, module, engine_class, import_module, inspect
+    warnings.warn(
+        'No available symbolic engine found.', engines.EngineNotFoundWarning)
+del _notfound

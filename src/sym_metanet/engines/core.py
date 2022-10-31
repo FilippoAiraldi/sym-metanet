@@ -309,19 +309,19 @@ def get_current_engine() -> EngineBase:
     return sym_metanet.engine
 
 
-def get_available_engines() -> Dict[str, str]:
+def get_available_engines() -> Dict[str, Dict[str, str]]:
     '''Returns the available symbolic engines for METANET modelling, for which
     an implementation exists.
 
     Returns
     -------
-    Dict[str, str]
+    Dict[str, Dict[str, str]]
         The available engines in the form of a `dict` whose keys are the 
-        engine class names, and the values are the modules in which they lie 
-        and the class names.
+        available engine class types, and the values are info on each engine, 
+        such as module and class name.
     '''
     return {
-        'casadi': ('sym_metanet.engines.casadi', 'Engine')
+        'casadi': {'module': 'sym_metanet.engines.casadi', 'class': 'Engine'}
     }
 
 
@@ -355,15 +355,15 @@ def use(engine: Union[str, EngineBase], *args, **kwargs) -> EngineBase:
     '''
     if isinstance(engine, EngineBase):
         sym_metanet.engine = engine
-    engines = get_available_engines()
-    if engine not in engines:
-        raise EngineNotFoundError(
-            f'Engine class must be in {{{", ".join(engines)}}}; got '
-            f'{engine} instead.')
     elif isinstance(engine, str):
+        engines = get_available_engines()
+        if engine not in engines:
+            raise EngineNotFoundError(
+                f'Engine class must be in {{{", ".join(engines)}}}; got '
+                f'{engine} instead.')
         from importlib import import_module
-        module, clsname = engines[engine]
-        cls = getattr(import_module(module), clsname)
+        engineinfo = engines[engine]
+        cls = getattr(import_module(engineinfo['module']), engineinfo['class'])
         sym_metanet.engine = cls(*args, **kwargs)
     else:
         raise ValueError('Expected `engine` to be either a string or an '
