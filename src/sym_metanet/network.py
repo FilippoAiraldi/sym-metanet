@@ -1,34 +1,20 @@
 from functools import cached_property
-from typing import Dict, Iterable, Tuple, Union, Optional
+from typing import Dict, Iterable, Tuple, Union
 import networkx as nx
-from sym_metanet.util.structures import NamedObject
-from sym_metanet.util.funcs import cached_property_clearer
+from sym_metanet.util import NamedObject
+from sym_metanet.views import (
+    LINKENTRY,
+    ORIGINENTRY,
+    DESTINATIONENTRY,
+    InLinkViewWrapper,
+    OutLinkViewWrapper,
+)
+from sym_metanet.util import cached_property_clearer
 from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
 from sym_metanet.blocks.origins import Origin
 from sym_metanet.blocks.destinations import Destination
-
-
-LINKENTRY = 'link'
-ORIGINENTRY = 'origin'
-DESTINATIONENTRY = 'destination'
-
-
-class LinkView(nx.classes.reportviews.OutEdgeView):
-    '''
-    Wrapper around `networkx`'s edge view to facilitate operations with links.
-    '''
-
-    def __init__(self, net: 'Network') -> None:
-        super().__init__(net._graph)
-
-    def __getitem__(self, e: Tuple[Node, Node]) -> Link:
-        return super().__getitem__(e)[LINKENTRY]
-
-    def __iter__(self) -> Tuple[Node, Link, Node]:
-        for un, dns in self._nodes_nbrs():
-            for dn, l in dns.items():
-                yield (un, l[LINKENTRY], dn)
+# from sym_metanet.errors import DuplicateNodeError
 
 
 class Network(NamedObject):
@@ -70,9 +56,19 @@ class Network(NamedObject):
         return self._graph.nodes
 
     @cached_property
-    def links(self) -> LinkView:
+    def links(self) -> OutLinkViewWrapper:
         '''Returns a view on the links of the network.'''
-        return LinkView(self)
+        return OutLinkViewWrapper(self)
+
+    @property
+    def out_links(self) -> OutLinkViewWrapper:
+        '''Alias of the `links` property.'''
+        return self.links
+
+    @cached_property
+    def in_links(self) -> InLinkViewWrapper:
+        '''Returns a view on the inward links of the network.'''
+        return InLinkViewWrapper(self)
 
     @cached_property
     def origins(self) -> Dict[Origin, Node]:
@@ -100,19 +96,24 @@ class Network(NamedObject):
         Returns
         -------
         Network
-            A reference to itself
+            A reference to itself.
         '''
         self._graph.add_node(node)
         self.nodes_by_name[node.name] = node
         return self
 
-    def add_nodes(self, *nodes: Node) -> 'Network':
+    def add_nodes(self, nodes: Iterable[Node]) -> 'Network':
         '''Adds multiple nodes. See `Network.add_node`.
+
+        Parameters
+        ----------
+        nodes : iterable of Nodes
+            Nodes to be added.
 
         Returns
         -------
         Network
-            A reference to itself
+            A reference to itself.
         '''
         self._graph.add_nodes_from(nodes)
         self.nodes_by_name.update({node.name: node for node in nodes})
@@ -134,7 +135,7 @@ class Network(NamedObject):
         Returns
         -------
         Network
-            A reference to itself
+            A reference to itself.
         '''
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
         self.links_by_name[link.name] = link
@@ -146,7 +147,7 @@ class Network(NamedObject):
         Returns
         -------
         Network
-            A reference to itself
+            A reference to itself.
         '''
 
         def get_edge(link):
@@ -170,7 +171,7 @@ class Network(NamedObject):
         Returns
         -------
         Network
-            A reference to itself
+            A reference to itself.
         '''
         self.nodes[node][ORIGINENTRY] = origin
         self.origins_by_name[origin.name] = origin
@@ -191,7 +192,7 @@ class Network(NamedObject):
         Returns
         -------
         Network
-            A reference to itself
+            A reference to itself.
         '''
         self.nodes[node][DESTINATIONENTRY] = destination
         self.destinations_by_name[destination.name] = destination
@@ -222,7 +223,7 @@ class Network(NamedObject):
         Returns
         -------
         Network
-            A reference to itself
+            A reference to itself.
 
         Raises
         ------

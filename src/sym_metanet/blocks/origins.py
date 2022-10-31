@@ -1,4 +1,4 @@
-from sym_metanet.util.structures import NamedObject
+from sym_metanet.util import NamedObject
 
 
 class Origin(NamedObject):
