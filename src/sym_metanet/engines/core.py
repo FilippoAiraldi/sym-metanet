@@ -480,7 +480,7 @@ def use(engine: Union[str, EngineBase], *args, **kwargs) -> EngineBase:
     '''
     if isinstance(engine, EngineBase):
         sym_metanet.engine = engine
-    elif isinstance(engine, str):
+    else:
         engines = get_available_engines()
         if engine not in engines:
             raise EngineNotFoundError(
@@ -490,7 +490,4 @@ def use(engine: Union[str, EngineBase], *args, **kwargs) -> EngineBase:
         engineinfo = engines[engine]
         cls = getattr(import_module(engineinfo['module']), engineinfo['class'])
         sym_metanet.engine = cls(*args, **kwargs)
-    else:
-        raise ValueError('Expected `engine` to be either a string or an '
-                         f'instance of an engine; got {engine} instead.')
     return sym_metanet.engine
