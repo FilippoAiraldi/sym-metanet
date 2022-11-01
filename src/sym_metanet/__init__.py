@@ -1,13 +1,6 @@
-from sym_metanet.blocks.nodes import Node
-from sym_metanet.blocks.links import Link
-from sym_metanet.blocks.origins import \
-    Origin, MeteredOnRamp, SimpleMeteredOnRamp
-from sym_metanet.blocks.destinations import Destination
-from sym_metanet.network import Network
 from sym_metanet.errors import \
     InvalidNetworkError, EngineNotFoundWarning, EngineNotFoundError
 import sym_metanet.engines as engines
-
 
 # try to instantiate default engine here
 _notfound = True
@@ -23,3 +16,10 @@ if _notfound:
     import warnings
     warnings.warn('No available symbolic engine found.', EngineNotFoundWarning)
 del _notfound
+
+from sym_metanet.blocks.nodes import Node
+from sym_metanet.blocks.links import Link
+from sym_metanet.blocks.origins import \
+    Origin, MeteredOnRamp, SimpleMeteredOnRamp
+from sym_metanet.blocks.destinations import Destination
+from sym_metanet.network import Network
