@@ -291,14 +291,20 @@ class Network(ElementBase):
             self.add_destination(destination, last_node)
         return self
 
-    def validate(self):
+    def validate(self) -> 'Network':
         '''Checks whether the network is consistent.
+
+        Returns
+        -------
+        Network
+            A reference to itself.
 
         Raises
         ------
         InvalidNetworkError
             Raises if
              - a node has both an origin and a destination
+             - a link, origin or destination is duplicated in the network
              - a node with an origin that is not a ramp has also entering links
              - a node with a destination has also exiting links
         '''
@@ -312,13 +318,13 @@ class Network(ElementBase):
 
         # no duplicate elements
         def origin_destination_yielder():
-            for data, entry in product(self._graph.nodes.values(),  
+            for data, entry in product(self._graph.nodes.values(),
                                        (ORIGINENTRY, DESTINATIONENTRY)):
                 if entry in data:
                     yield data[entry]
 
         count: Dict[ElementBase, int] = {}
-        for o in chain((l[2] for l in self.links), 
+        for o in chain((l[2] for l in self.links),
                        iter(origin_destination_yielder())):
             d = count.get(o, 0) + 1
             if d > 1:
@@ -329,7 +335,7 @@ class Network(ElementBase):
         # nodes with origins (that are not a ramps) must have no entering links
         for origin, node in self.origins.items():
             if not isinstance(origin, MeteredOnRamp) and \
-                        any(self.in_links(node)):
+                    any(self.in_links(node)):
                 raise InvalidNetworkError(
                     f'Expected node {node.name} to have no entering links, as '
                     f'it is connected to origin {origin.name} (only ramps '
@@ -341,3 +347,4 @@ class Network(ElementBase):
                 raise InvalidNetworkError(
                     f'Expected node {node.name} to have no exiting links, as '
                     f'it is connected to destination {destination.name}.')
+        return self
