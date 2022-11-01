@@ -1,4 +1,4 @@
-from sym_metanet.blocks.base import ElementBase
+from sym_metanet.blocks.base import ElementBase, sym_float
 
 
 class Origin(ElementBase):
@@ -23,12 +23,12 @@ class MeteredOnRamp(Origin):
         control measures", Netherlands TRAIL Research School.
     '''
 
-    def __init__(self, capacity: float, name: str = None) -> None:
+    def __init__(self, capacity: sym_float, name: str = None) -> None:
         '''Instantiates an on-ramp with the given capacity.
 
         Parameters
         ----------
-        capacity : float
+        capacity : float or symbolic
             Capacity of the on-ramp, i.e., `C`. 
         name : str, optional
             Name of the on-ramp, by default None.

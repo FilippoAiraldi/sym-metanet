@@ -1,4 +1,4 @@
-from sym_metanet.blocks.base import ElementBase
+from sym_metanet.blocks.base import ElementBase, sym_int, sym_float
 
 
 class Link(ElementBase):
@@ -15,35 +15,35 @@ class Link(ElementBase):
 
     def __init__(
         self,
-        nb_segments: int,
-        lanes: int,
-        length: float,
-        free_flow_velocity: float,
-        critical_density: float,
-        a: float,
-        turnrate: float = 1.0,
+        nb_segments: sym_int,
+        lanes: sym_int,
+        length: sym_float,
+        free_flow_velocity: sym_float,
+        critical_density: sym_float,
+        a: sym_float,
+        turnrate: sym_float = 1.0,
         name: str = None
     ) -> None:
         '''Creates an instance of a METANET link.
 
         Parameters
         ----------
-        nb_segments : int
+        nb_segments : int or symbolic
             Number of segments in this highway link, i.e., `N`.
-        lanes : int
+        lanes : int or symbolic
             Number of lanes in each segment, i.e., `lam`. 
-        lengths : float
+        lengths : float or symbolic
             Length of each segment in the link, i.e., `L`. 
-        free_flow_velocities : float
+        free_flow_velocities : float or symbolic
             Average speed of cars when traffic is freely flowing, i.e., 
             `v_free`.
-        critical_densities : float
+        critical_densities : float or symbolic
             Critical density at which the traffic flow is maximal, i.e., 
             `rho_crit`.
-        a : float
+        a : float or symbolic
             Model parameter in the computations of the equivalent speed
             [1, Equation 3.4]. 
-        turnrate : float, optional
+        turnrate : float or symbolic, optional
             Fraction of the total flow that enters this link via the upstream 
             node. Only relevant if multiple exiting links are attached to the 
             same node, in order to split the flow according to these rates. 

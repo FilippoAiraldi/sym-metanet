@@ -1,5 +1,13 @@
 from itertools import count
-from typing import Dict
+from typing import Dict, Annotated
+
+
+sym_int = Annotated[int, 'sym']
+sym_int.__doc__ = \
+    'Integer variable that can also be symbolic, depending on the engine.'
+sym_float = Annotated[float, 'sym']
+sym_float.__doc__ = \
+    'Float variable that can also be symbolic, depending on the engine.'
 
 
 class ElementBase:
