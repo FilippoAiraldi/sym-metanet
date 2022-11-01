@@ -1,5 +1,6 @@
 import unittest
 import sym_metanet as metanet
+from sym_metanet.errors import EngineNotFoundError
 
 
 class TestEngines(unittest.TestCase):
@@ -17,6 +18,10 @@ class TestEngines(unittest.TestCase):
         self.assertIsNot(metanet.engine, old_engine)
         self.assertIs(metanet.engine, new_engine)
 
+    def test_use__raises__when_engine_not_found(self):
+        invalid_engine = object()
+        with self.assertRaises(EngineNotFoundError):
+            metanet.engines.use(invalid_engine)
 
 if __name__ == '__main__':
     unittest.main()
