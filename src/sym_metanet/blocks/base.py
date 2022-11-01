@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 from itertools import count
-from typing import Dict, Annotated
+from typing import Annotated, Dict
 
 
 sym_int = Annotated[int, 'sym']
@@ -10,7 +11,7 @@ sym_float.__doc__ = \
     'Float variable that can also be symbolic, depending on the engine.'
 
 
-class ElementBase:
+class ElementBase(ABC):
     '''Base class for any element for a highway modelled in METANET.'''
 
     __ids: Dict[type, count] = {}
@@ -31,6 +32,11 @@ class ElementBase:
             _id = count(0)
             self.__ids[cls] = _id
         self.name = name or f'{cls.__name__}{next(_id)}'
+
+    @abstractmethod
+    def init_vars(self, *args, **kwargs) -> None:
+        raise NotImplementedError('Variable initialization not supported '
+                                  f'for {self.__class__.__name__}.')
 
     def __str__(self) -> str:
         return self.__repr__()

@@ -13,3 +13,6 @@ class Node(ElementBase):
     [1] Hegyi, A., 2004, "Model predictive control for integrating traffic 
         control measures", Netherlands TRAIL Research School.
     '''
+
+    def init_vars(self, *args, **kwargs) -> None:
+        pass
