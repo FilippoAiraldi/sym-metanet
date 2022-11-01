@@ -25,9 +25,9 @@ class TestImport(unittest.TestCase):
 
         # can only perform this import after the warning-raising import
         from sym_metanet.errors import EngineNotFoundWarning
+        self.assertFalse(hasattr(metanet, 'engine'))
         self.assertEqual(len(w), 1)
         self.assertIs(w[0].category, EngineNotFoundWarning)
-
 
 
 if __name__ == '__main__':
