@@ -331,24 +331,6 @@ class DestinationsEngineBase(ABC):
         control measures", Netherlands TRAIL Research School.
     '''
 
-    # @staticmethod
-    # def get_downstream_density(rho_last):
-    #     '''For a link with a downstream destination, returns the downstream
-    #     density, that is the same as the density in the last segment of this
-    #     link, according to [1, Section 3.2.3].
-
-    #     Parameters
-    #     ----------
-    #     rho_last
-    #         Density in the link's last segment.
-
-    #     Returns
-    #     -------
-    #     density
-    #         The downstream density for a link connected to a destination.
-    #     '''
-    #     return rho_last
-
     @staticmethod
     @abstractmethod
     def get_congested_downstream_density(rho_last, rho_destination, rho_crit):
@@ -370,6 +352,24 @@ class DestinationsEngineBase(ABC):
             The downstream density for a link connected to a destination.
         '''
         pass
+
+    # @staticmethod
+    # def get_downstream_density(rho_last):
+    #     '''For a link with a downstream destination, returns the downstream
+    #     density, that is the same as the density in the last segment of this
+    #     link, according to [1, Section 3.2.3].
+
+    #     Parameters
+    #     ----------
+    #     rho_last
+    #         Density in the link's last segment.
+
+    #     Returns
+    #     -------
+    #     density
+    #         The downstream density for a link connected to a destination.
+    #     '''
+    #     return rho_last
 
 
 class EngineBase(ABC):
@@ -418,7 +418,7 @@ class EngineBase(ABC):
         Returns
         -------
         sym variable
-            The symbolic variable (T is generic).
+            The symbolic variable.
         '''
         pass
 

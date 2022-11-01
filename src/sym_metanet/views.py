@@ -1,4 +1,3 @@
-from itertools import count
 from typing import Any, Dict, Sequence, Tuple, Union
 import networkx as nx
 from sym_metanet.blocks.nodes import Node
