@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Literal, Tuple, Type, Union
 import sym_metanet
+from sym_metanet.errors import EngineNotFoundError
 
 
 class NodesEngineBase(ABC):
@@ -420,20 +421,6 @@ class EngineBase(ABC):
             The symbolic variable (T is generic).
         '''
         pass
-
-
-class EngineNotFoundError(Exception):
-    '''
-    Exception raised when no symbolic engine is found among the available ones.
-    To see which are avaiable, see `sym_metanet.engines.get_available_engines`.
-    '''
-
-
-class EngineNotFoundWarning(Warning):
-    '''
-    Warning raised when no symbolic engine is found among the available ones.
-    To see which are avaiable, see `sym_metanet.engines.get_available_engines`.
-    '''
 
 
 def get_current_engine() -> EngineBase:

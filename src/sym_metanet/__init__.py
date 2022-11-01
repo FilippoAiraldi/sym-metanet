@@ -5,7 +5,8 @@ from sym_metanet.blocks.origins import \
     Origin, MeteredOnRamp, SimpleMeteredOnRamp
 from sym_metanet.blocks.destinations import Destination
 from sym_metanet.network import Network
-from sym_metanet.errors import InvalidNetworkError
+from sym_metanet.errors import \
+    InvalidNetworkError, EngineNotFoundWarning, EngineNotFoundError
 import sym_metanet.engines as engines
 
 
@@ -20,6 +21,5 @@ for engine in engines.get_available_engines().keys():
         continue
 if _notfound:
     import warnings
-    warnings.warn(
-        'No available symbolic engine found.', engines.EngineNotFoundWarning)
+    warnings.warn('No available symbolic engine found.', EngineNotFoundWarning)
 del _notfound
