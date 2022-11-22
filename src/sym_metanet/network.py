@@ -15,7 +15,7 @@ from sym_metanet.blocks.links import Link
 from sym_metanet.blocks.origins import MeteredOnRamp, Origin
 from sym_metanet.blocks.destinations import Destination
 from sym_metanet.errors import InvalidNetworkError
-from sym_metanet.util import cached_property_clearer
+from sym_metanet.util.funcs import cache_clearer
 
 
 class Network(ElementBase):
@@ -168,7 +168,7 @@ class Network(ElementBase):
         self._graph.add_edges_from(get_edge(l) for l in links)
         return self
 
-    @cached_property_clearer(origins)
+    @cache_clearer(origins)
     def add_origin(self, origin: Origin, node: Node) -> 'Network':
         '''Adds the given traffic origin to the node.
 
@@ -191,7 +191,7 @@ class Network(ElementBase):
         self.origins_by_name[origin.name] = origin
         return self
 
-    @cached_property_clearer(destinations)
+    @cache_clearer(destinations)
     def add_destination(
             self, destination: Destination, node: Node) -> 'Network':
         '''Adds the given traffic destination to the node.
