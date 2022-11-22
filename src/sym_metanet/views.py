@@ -1,4 +1,4 @@
-from typing import Any, Dict, Sequence, Tuple, Union
+from typing import Any, Dict, Generator, Sequence, Tuple, Union
 import networkx as nx
 from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
@@ -10,13 +10,13 @@ DESTINATIONENTRY = 'destination'
 
 
 class OutLinkViewWrapper(nx.classes.reportviews.OutEdgeView):
-    '''Wrapper around `networkx`'s outward edge view to facilitate operations 
-    with link'''
+    '''Wrapper around `networkx`'s outward edge view to facilitate operations
+    with link.'''
 
     def __getitem__(self, e: Tuple[Node, Node]) -> Link:
         return super().__getitem__(e)[LINKENTRY]
 
-    def __iter__(self) -> Tuple[Node, Node, Link]:
+    def __iter__(self) -> Generator[Tuple[Node, Node, Link], None, None]:
         for un, dns in self._nodes_nbrs():
             for dn, l in dns.items():
                 yield (un, dn, l[LINKENTRY])
@@ -31,13 +31,13 @@ class OutLinkViewWrapper(nx.classes.reportviews.OutEdgeView):
 
 
 class InLinkViewWrapper(nx.classes.reportviews.InEdgeView):
-    '''Wrapper around `networkx`'s inward edge view to facilitate operations 
-    with link'''
+    '''Wrapper around `networkx`'s inward edge view to facilitate operations
+    with link.'''
 
     def __getitem__(self, e: Tuple[Node, Node]) -> Link:
         return super().__getitem__(e)[LINKENTRY]
 
-    def __iter__(self) -> Tuple[Node, Node, Link]:
+    def __iter__(self) -> Generator[Tuple[Node, Node, Link], None, None]:
         for un, dns in self._nodes_nbrs():
             for dn, l in dns.items():
                 yield (un, dn, l[LINKENTRY])

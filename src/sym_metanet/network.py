@@ -1,6 +1,6 @@
 from functools import cached_property
 from itertools import chain, product
-from typing import Dict, Iterable, Tuple, Union
+from typing import Dict, Iterable, Tuple, Union, List
 import networkx as nx
 from sym_metanet.blocks.base import ElementBase
 from sym_metanet.views import (
@@ -88,7 +88,7 @@ class Network(ElementBase):
         }
 
     def add_node(self, node: Node) -> 'Network':
-        '''Adds a node to the highway network. 
+        '''Adds a node to the highway network.
 
         Parameters
         ----------
@@ -123,7 +123,7 @@ class Network(ElementBase):
 
     def add_link(
             self, node_up: Node, link: Link, node_down: Node) -> 'Network':
-        '''Adds a link to the highway network, between two nodes. 
+        '''Adds a link to the highway network, between two nodes.
 
         Parameters
         ----------
@@ -165,7 +165,7 @@ class Network(ElementBase):
             self.links_by_name[link.name] = link
             return (node_up, node_down, {LINKENTRY: link})
 
-        self._graph.add_edges_from(get_edge(l) for l in links)
+        self._graph.add_edges_from(get_edge(link) for link in links)
         return self
 
     @cache_clearer(origins)
@@ -221,20 +221,20 @@ class Network(ElementBase):
         origin: Origin = None,
         destination: Destination = None
     ) -> 'Network':
-        '''Adds a path of nodes and links between the origin and the 
+        '''Adds a path of nodes and links between the origin and the
         destination.
 
         Parameters
         ----------
         path : Iterable[Union[Node, Link]]
-            A path consists of an alternating sequence of nodes and links, 
-            starting from the first node and ending at the last. For example, a 
-            valid path is: `node1, link1, node2, link2, node3, ..., nodeN`. 
+            A path consists of an alternating sequence of nodes and links,
+            starting from the first node and ending at the last. For example, a
+            valid path is: `node1, link1, node2, link2, node3, ..., nodeN`.
         origin : Origin, optional
-            The origin where the path starts from. Pass `None` to have no 
+            The origin where the path starts from. Pass `None` to have no
             origin attached to the first node in `path`.
         destination : Destination, optional
-            The destination where the path ends in. Pass `None` to have no 
+            The destination where the path ends in. Pass `None` to have no
             destination attached to the last node in `path`.
 
         Returns
@@ -245,7 +245,7 @@ class Network(ElementBase):
         Raises
         ------
         TypeError
-            Raises if 
+            Raises if
             - the first or last points in `path` are not a `Node`
             - the alternation of `Link`s and `Node`s is not respected
             - the path has length 1, which is not accepted.
@@ -259,7 +259,7 @@ class Network(ElementBase):
         self.add_node(first_node)
         if origin is not None:
             self.add_origin(origin, first_node)
-        current_link = [first_node]
+        current_link: List[Union[Node, Link]] = [first_node]
 
         longer_than_one = False
         for i, point in enumerate(path):
@@ -324,7 +324,7 @@ class Network(ElementBase):
                     yield data[entry]
 
         count: Dict[ElementBase, int] = {}
-        for o in chain((l[2] for l in self.links),
+        for o in chain((link[2] for link in self.links),
                        iter(origin_destination_yielder())):
             d = count.get(o, 0) + 1
             if d > 1:
