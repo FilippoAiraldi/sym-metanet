@@ -1,14 +1,17 @@
 from abc import ABC, abstractmethod
 from itertools import count
-from typing import Dict, Generic, TypeVar
+from typing import Dict, Generic, TypeVar, Optional
 
 
 sym_var = TypeVar('sym_var')
-sym_var.__doc__ = \
-    'Variable that can also be numerical or symbolic, depending on the engine.'
+sym_var.__doc__ = ('Variable that can also be numerical or symbolic, '
+                   'depending on the engine. Should be indexable as an array '
+                   'in case of vector quantities.')
+
+NO_DICT = None
 
 
-class ElementBase(ABC, Generic[sym_var]):
+class ElementBase(Generic[sym_var], ABC):
     '''Base class for any element for a highway modelled in METANET.'''
 
     __ids: Dict[type, count] = {}
@@ -29,11 +32,12 @@ class ElementBase(ABC, Generic[sym_var]):
             _id = count(0)
             self.__ids[cls] = _id
         self.name = name or f'{cls.__name__}{next(_id)}'
+        self.vars: Optional[Dict[str, sym_var]] = None
 
-    # @abstractmethod
+    @abstractmethod
     def init_vars(self, *args, **kwargs) -> None:
-        raise NotImplementedError('Variable initialization not supported '
-                                  f'for {self.__class__.__name__}.')
+        raise NotImplementedError('Variable initialization not supported for '
+                                  + self.__class__.__name__ + '.')
 
     def __str__(self) -> str:
         return self.__repr__()

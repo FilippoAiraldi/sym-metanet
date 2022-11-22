@@ -1,4 +1,6 @@
+from typing import Dict, Union
 from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.engines.core import EngineBase, get_current_engine
 
 
 class Link(ElementBase[sym_var]):
@@ -15,7 +17,7 @@ class Link(ElementBase[sym_var]):
 
     def __init__(
         self,
-        nb_segments: sym_var,
+        nb_segments: int,
         lanes: sym_var,
         length: sym_var,
         free_flow_velocity: sym_var,
@@ -28,7 +30,7 @@ class Link(ElementBase[sym_var]):
 
         Parameters
         ----------
-        nb_segments : int or symbolic
+        nb_segments : int
             Number of segments in this highway link, i.e., `N`.
         lanes : int or symbolic
             Number of lanes in each segment, i.e., `lam`.
@@ -64,3 +66,37 @@ class Link(ElementBase[sym_var]):
         self.rho_crit = critical_density
         self.a = a
         self.turnrate = turnrate
+
+    def init_vars(
+        self,
+        initial_conditions: Dict[str, Union[sym_var, sym_var]] = None,
+        engine: EngineBase = None
+    ) -> None:
+        '''For each segment in the link, initializes the states
+         - densities `rho`
+         - speeds `v`
+
+        as well as
+         - flows `q`.
+
+        Parameters
+        ----------
+        initial_conditions : dict[str, variable]
+            Provides name-variable tuples to initialize variables with specific
+            values. These values must be compatible with the symbolic engine.
+        '''
+        if initial_conditions is None:
+            initial_conditions = {}
+        if engine is None:
+            engine = get_current_engine()
+
+        _vars: Dict[str, sym_var] = {
+            name: (
+                initial_conditions[name]
+                if name in initial_conditions else
+                engine.var(name, (self.N, 1))
+            ) for name in ('rho', 'v')
+        }
+        _vars['q'] = engine.links.get_flow(
+            rho=_vars['rho'], v=_vars['v'], lanes=self.lam)
+        self.vars = _vars
