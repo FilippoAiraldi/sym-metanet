@@ -2,7 +2,7 @@ from functools import cached_property
 from itertools import chain, product
 from typing import Dict, Iterable, Tuple, Union, List
 import networkx as nx
-from sym_metanet.blocks.base import ElementBase
+from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.views import (
     LINKENTRY,
     ORIGINENTRY,
@@ -18,8 +18,8 @@ from sym_metanet.errors import InvalidNetworkError
 from sym_metanet.util.funcs import cache_clearer
 
 
-class Network(ElementBase):
-    '''Highway network'''
+class Network(ElementBase[sym_var]):
+    '''Highway network.'''
 
     def __init__(self, name: str = None):
         '''Instantiates an highway network.

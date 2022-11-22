@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import count
-from typing import Dict, TypeVar
+from typing import Dict, Generic, TypeVar
 
 
 sym_var = TypeVar('sym_var')
@@ -8,7 +8,7 @@ sym_var.__doc__ = \
     'Variable that can also be numerical or symbolic, depending on the engine.'
 
 
-class ElementBase(ABC):
+class ElementBase(ABC, Generic[sym_var]):
     '''Base class for any element for a highway modelled in METANET.'''
 
     __ids: Dict[type, count] = {}

@@ -1,7 +1,7 @@
 from sym_metanet.blocks.base import ElementBase, sym_var
 
 
-class Origin(ElementBase):
+class Origin(ElementBase[sym_var]):
     '''
     Ideal, state-less highway origin that conveys to the attached link as much
     flow as the flow in such link.
