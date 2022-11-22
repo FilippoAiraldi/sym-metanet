@@ -3,12 +3,9 @@ from itertools import count
 from typing import Dict, TypeVar
 
 
-sym_int = TypeVar('sym_int')
-sym_int.__doc__ = \
-    'Integer variable that can also be symbolic, depending on the engine.'
-sym_float = TypeVar('sym_float')
-sym_float.__doc__ = \
-    'Float variable that can also be symbolic, depending on the engine.'
+sym_var = TypeVar('sym_var')
+sym_var.__doc__ = \
+    'Variable that can also be numerical or symbolic, depending on the engine.'
 
 
 class ElementBase(ABC):

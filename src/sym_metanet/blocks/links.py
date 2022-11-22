@@ -1,4 +1,4 @@
-from sym_metanet.blocks.base import ElementBase, sym_int, sym_float
+from sym_metanet.blocks.base import ElementBase, sym_var
 
 
 class Link(ElementBase):
@@ -15,13 +15,13 @@ class Link(ElementBase):
 
     def __init__(
         self,
-        nb_segments: sym_int,
-        lanes: sym_int,
-        length: sym_float,
-        free_flow_velocity: sym_float,
-        critical_density: sym_float,
-        a: sym_float,
-        turnrate: sym_float = 1.0,
+        nb_segments: sym_var,
+        lanes: sym_var,
+        length: sym_var,
+        free_flow_velocity: sym_var,
+        critical_density: sym_var,
+        a: sym_var,
+        turnrate: sym_var = 1.0,
         name: str = None
     ) -> None:
         '''Creates an instance of a METANET link.

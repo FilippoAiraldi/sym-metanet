@@ -1,10 +1,10 @@
 from functools import cached_property, _lru_cache_wrapper, wraps
-from typing import Any, Callable, List, Union
+from typing import Callable, List, Union
 
 
 def cache_clearer(
     *callables: Union[cached_property, _lru_cache_wrapper]
-) -> Callable[[Any], Any]:
+) -> Callable:
     '''Decorator that allows to enhance a method with the ability, when
     called, to clear the cached of some target methods/properties. This is
     especially useful to reset the cache of a given cached method/property when
