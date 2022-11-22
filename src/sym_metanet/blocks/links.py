@@ -83,20 +83,20 @@ class Link(ElementBase[sym_var]):
         ----------
         initial_conditions : dict[str, variable]
             Provides name-variable tuples to initialize variables with specific
-            values. These values must be compatible with the symbolic engine.
+            values. These values must be compatible with the symbolic engine in
+            type and shape.
         '''
         if initial_conditions is None:
             initial_conditions = {}
         if engine is None:
             engine = get_current_engine()
 
-        _vars: Dict[str, sym_var] = {
+        self.vars = {
             name: (
                 initial_conditions[name]
                 if name in initial_conditions else
                 engine.var(name, (self.N, 1))
             ) for name in ('rho', 'v')
         }
-        _vars['q'] = engine.links.get_flow(
-            rho=_vars['rho'], v=_vars['v'], lanes=self.lam)
-        self.vars = _vars
+        self.vars['q'] = engine.links.get_flow(
+            rho=self.vars['rho'], v=self.vars['v'], lanes=self.lam)

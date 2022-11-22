@@ -1,4 +1,6 @@
+from typing import Dict, Union
 from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.engines.core import EngineBase, get_current_engine
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -51,12 +53,68 @@ class MeteredOnRamp(Origin[sym_var]):
         super().__init__(name=name)
         self.C = capacity
 
+    def init_vars(
+        self,
+        initial_conditions: Dict[str, Union[sym_var, sym_var]] = None,
+        engine: EngineBase = None
+    ) -> None:
+        '''initializes the queue length `w` (state) and the ramp metering rate
+        `r` (control action).
+
+        Parameters
+        ----------
+        initial_conditions : dict[str, variable]
+            Provides name-variable tuples to initialize variables with specific
+            values. These values must be compatible with the symbolic engine in
+            type and shape.
+        '''
+        if initial_conditions is None:
+            initial_conditions = {}
+        if engine is None:
+            engine = get_current_engine()
+
+        self.vars = {
+            name: (
+                initial_conditions[name]
+                if name in initial_conditions else
+                engine.var(name, (1, 1))
+            ) for name in ('w', 'r')
+        }
+
 
 class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
     '''
-    A simplified version of the vanilla on-ramp where the flow of vehicle on
-    the ramp is the direct control action, instead of controlling the metering
-    rate that in turns dictates the car flow on the ramp.
+    A simplified version of the vanilla on-ramp, where the flow of vehicles on
+    the ramp is the direct control action (instead of controlling the metering
+    rate that in turns dictates the car flow on the ramp).
 
     See `MeteredOnRamp` for the original version.
     '''
+
+    def init_vars(
+        self,
+        initial_conditions: Dict[str, Union[sym_var, sym_var]] = None,
+        engine: EngineBase = None
+    ) -> None:
+        '''initializes the queue length `w` (state) and the ramp flow `q`
+        (control action).
+
+        Parameters
+        ----------
+        initial_conditions : dict[str, variable]
+            Provides name-variable tuples to initialize variables with specific
+            values. These values must be compatible with the symbolic engine in
+            type and shape.
+        '''
+        if initial_conditions is None:
+            initial_conditions = {}
+        if engine is None:
+            engine = get_current_engine()
+
+        self.vars = {
+            name: (
+                initial_conditions[name]
+                if name in initial_conditions else
+                engine.var(name, (1, 1))
+            ) for name in ('w', 'q')
+        }
