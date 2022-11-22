@@ -1,4 +1,4 @@
-from typing import Dict, Literal, Type, Tuple
+from typing import Dict, Literal, Type, Tuple, Generic, TypeVar, Union
 import casadi as cs
 from sym_metanet.engines.core import (
     NodesEngineBase,
@@ -9,23 +9,30 @@ from sym_metanet.engines.core import (
 )
 
 
-class NodesEngine(NodesEngineBase):
+csTYPES: Dict[str, Type] = {
+    'SX': cs.SX,
+    'MX': cs.MX,
+}
+csXX = TypeVar('csXX', cs.SX, cs.MX)
+
+
+class NodesEngine(NodesEngineBase, Generic[csXX]):
     '''CasADi implementation of `sym_metanet.engines.core.NodesEngineBase`.'''
 
     @staticmethod
-    def get_upstream_flow(q_lasts: cs.SX, beta: cs.SX) -> cs.SX:
+    def get_upstream_flow(q_lasts: csXX, beta: csXX) -> csXX:
         return beta * cs.sum1(q_lasts)
 
     @staticmethod
-    def get_upstream_speed(q_lasts: cs.SX, v_lasts: cs.SX) -> cs.SX:
+    def get_upstream_speed(q_lasts: csXX, v_lasts: csXX) -> csXX:
         return (v_lasts.T @ q_lasts) / cs.sum1(q_lasts)
 
     @staticmethod
-    def get_downstream_density(rho_firsts: cs.SX) -> cs.SX:
+    def get_downstream_density(rho_firsts: csXX) -> csXX:
         return (rho_firsts.T @ rho_firsts) / cs.sum1(rho_firsts)
 
 
-class LinksEngine(LinksEngineBase):
+class LinksEngine(LinksEngineBase, Generic[csXX]):
     '''CasADi implementation of `sym_metanet.engines.core.LinksEngineBase`.'''
 
     @staticmethod
@@ -62,7 +69,7 @@ class LinksEngine(LinksEngineBase):
         return v_free * cs.exp((-1 / a) * cs.power(rho / rho_crit, a))
 
 
-class OriginsEngine(OriginsEngineBase):
+class OriginsEngine(OriginsEngineBase, Generic[csXX]):
     '''
     CasADi implementation of `sym_metanet.engines.core.OriginsEngineBase`.
     '''
@@ -82,7 +89,7 @@ class OriginsEngine(OriginsEngineBase):
         return r * cs.fmin(term1, C * cs.fmin(1, term3))
 
 
-class DestinationsEngine(DestinationsEngineBase):
+class DestinationsEngine(DestinationsEngineBase, Generic[csXX]):
     '''
     CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`.
     '''
@@ -93,24 +100,18 @@ class DestinationsEngine(DestinationsEngineBase):
         return cs.fmax(cs.fmin(rho_last, rho_crit), rho_destination)
 
 
-CSTYPES: Dict[str, Type] = {
-    'SX': cs.SX,
-    'MX': cs.MX,
-}
-
-
-class Engine(EngineBase):
+class Engine(EngineBase, Generic[csXX]):
     '''Symbolic engine implemented with the CasADi framework'''
 
-    def __init__(self, type: Literal['SX', 'MX'] = 'SX') -> None:
+    def __init__(self, sym_type: Literal['SX', 'MX'] = 'SX') -> None:
         '''Instantiates a CasADi engine.
 
         Parameters
         ----------
-        type : {'SX', 'MX'}, optional
-            A string that tells the engine with type of symbolic variables to 
-            use. Must be either `'SX'` or `'MX'`, at which point the engine 
-            employes `casadi.SX` or `casadi.MX` variables, respectively. By 
+        sym_type : {'SX', 'MX'}, optional
+            A string that tells the engine with type of symbolic variables to
+            use. Must be either `'SX'` or `'MX'`, at which point the engine
+            employes `casadi.SX` or `casadi.MX` variables, respectively. By
             default, `'SX'` is used.
 
         Raises
@@ -119,40 +120,34 @@ class Engine(EngineBase):
             Raises if the provided string `type` is not valid.
         '''
         super().__init__()
-        if type not in CSTYPES:
+        if sym_type not in csTYPES:
             raise ValueError(
-                f'CasADi symbolic type must be in {{{", ".join(CSTYPES)}}}; '
-                f'got {type} instead.')
-        self.CSXX = CSTYPES[type]
+                f'CasADi symbolic type must be in {{{", ".join(csTYPES)}}}; '
+                f'got {sym_type} instead.')
+        self._csXX: Union[Type[cs.SX], Type[cs.SX]] = csTYPES[sym_type]
 
     @property
-    def nodes(self) -> Type[NodesEngine]:
+    def nodes(self) -> Type[NodesEngine[csXX]]:
         return NodesEngine
 
     @property
-    def links(self) -> Type[LinksEngine]:
+    def links(self) -> Type[LinksEngine[csXX]]:
         return LinksEngine
 
     @property
-    def origins(self) -> Type[OriginsEngine]:
+    def origins(self) -> Type[OriginsEngine[csXX]]:
         return OriginsEngine
 
     @property
-    def destinations(self) -> Type[DestinationsEngine]:
+    def destinations(self) -> Type[DestinationsEngine[csXX]]:
         return DestinationsEngine
 
-    def var(
-        self,
-        name: str,
-        shape: Tuple[int, int],
-        *args,
-        **kwargs
-    ) -> cs.SX:
+    def var(self, name: str, shape: Tuple[int, ...], *args, **kwargs) -> csXX:
         assert len(shape) <= 2, 'CasADi supports 1D and 2D variables only.'
-        return self.CSXX.sym(name, *shape)
+        return self._csXX.sym(name, *shape)
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(casadi)'
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(casadi, type={self.CSXX.__name__})'
+        return f'{self.__class__.__name__}(casadi, type={self._csXX.__name__})'
