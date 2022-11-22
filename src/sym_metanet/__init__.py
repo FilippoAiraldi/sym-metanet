@@ -2,6 +2,7 @@ from sym_metanet.errors import \
     InvalidNetworkError, EngineNotFoundWarning, EngineNotFoundError
 import sym_metanet.engines as engines
 
+
 # try to instantiate default engine here
 _notfound = True
 for _engine in engines.get_available_engines().keys():
@@ -12,7 +13,6 @@ for _engine in engines.get_available_engines().keys():
     except ImportError:
         continue
 if _notfound:
-    del engine
     import warnings
     warnings.warn('No available symbolic engine found.', EngineNotFoundWarning)
 del _notfound, _engine

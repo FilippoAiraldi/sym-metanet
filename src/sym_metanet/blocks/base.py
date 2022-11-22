@@ -22,7 +22,7 @@ class ElementBase(ABC):
         Parameters
         ----------
         name : str, optional
-            Name of the element. If `None`, one is automatically created from a 
+            Name of the element. If `None`, one is automatically created from a
             counter of the class' instancies.
         '''
         cls = self.__class__
@@ -33,7 +33,7 @@ class ElementBase(ABC):
             self.__ids[cls] = _id
         self.name = name or f'{cls.__name__}{next(_id)}'
 
-    @abstractmethod
+    # @abstractmethod
     def init_vars(self, *args, **kwargs) -> None:
         raise NotImplementedError('Variable initialization not supported '
                                   f'for {self.__class__.__name__}.')
