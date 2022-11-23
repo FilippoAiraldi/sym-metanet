@@ -149,15 +149,15 @@ class Engine(EngineBase):
         '''
         if isinstance(val, str):
             if val == 'empty':
-                gen = lambda shape: np.empty(shape, val)
+                def gen(shape): return np.empty(shape, val)
             elif val == 'rand':
-                gen = lambda shape: np.random.rand(*shape)
+                def gen(shape): return np.random.rand(*shape)
             elif val == 'randn':
-                gen = lambda shape: np.random.randn(*shape)
+                def gen(shape): return np.random.randn(*shape)
             else:
                 raise ValueError('Invalid variable initialization method.')
         else:
-            gen = lambda shape: np.full(shape, val)
+            def gen(shape): return np.full(shape, val)
         self._var_gen: Callable[[Tuple[int, ...]], np.ndarray] = gen
         self._var_type = val
 

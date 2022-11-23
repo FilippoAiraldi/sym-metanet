@@ -37,6 +37,7 @@ class Network(ElementBase[sym_var]):
         self.origins_by_name: Dict[str, Origin] = {}
         self.destinations_by_name: Dict[str, Destination] = {}
         self.nodes_by_link: Dict[Link, Tuple[Node, Node]] = {}
+        self._vars_initialized = False
 
     @property
     def G(self) -> nx.DiGraph:
@@ -103,6 +104,7 @@ class Network(ElementBase[sym_var]):
         '''
         self._graph.add_node(node)
         self.nodes_by_name[node.name] = node
+        self._vars_initialized = False
         return self
 
     def add_nodes(self, nodes: Iterable[Node]) -> 'Network':
@@ -120,6 +122,7 @@ class Network(ElementBase[sym_var]):
         '''
         self._graph.add_nodes_from(nodes)
         self.nodes_by_name.update({node.name: node for node in nodes})
+        self._vars_initialized = False
         return self
 
     def add_link(
@@ -140,10 +143,10 @@ class Network(ElementBase[sym_var]):
         Network
             A reference to itself.
         '''
-
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
         self.nodes_by_link[link] = (node_up, node_down)
         self.links_by_name[link.name] = link
+        self._vars_initialized = False
         return self
 
     def add_links(self, links: Iterable[Tuple[Node, Link, Node]]) -> 'Network':
@@ -159,7 +162,6 @@ class Network(ElementBase[sym_var]):
         Network
             A reference to itself.
         '''
-
         def get_edge(linkdata: Tuple[Node, Link, Node]):
             node_up, link, node_down = linkdata
             self.nodes_by_link[link] = (node_up, node_down)
@@ -167,6 +169,7 @@ class Network(ElementBase[sym_var]):
             return (node_up, node_down, {LINKENTRY: link})
 
         self._graph.add_edges_from(get_edge(link) for link in links)
+        self._vars_initialized = False
         return self
 
     @cache_clearer(origins)
@@ -190,6 +193,7 @@ class Network(ElementBase[sym_var]):
         else:
             self.nodes[node][ORIGINENTRY] = origin
         self.origins_by_name[origin.name] = origin
+        self._vars_initialized = False
         return self
 
     @cache_clearer(destinations)
@@ -214,6 +218,7 @@ class Network(ElementBase[sym_var]):
         else:
             self.nodes[node][DESTINATIONENTRY] = destination
         self.destinations_by_name[destination.name] = destination
+        self._vars_initialized = False
         return self
 
     def add_path(
@@ -392,3 +397,4 @@ class Network(ElementBase[sym_var]):
                         self.destinations):
             el.init_vars(
                 init_conditions=init_conditions.get(el), engine=engine)
+        self._vars_initialized = True
