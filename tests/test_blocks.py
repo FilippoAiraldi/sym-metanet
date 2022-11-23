@@ -40,20 +40,20 @@ class TestLinks(unittest.TestCase):
         self.assertIsNot(L.vars, NO_VARS)
         for n in ['rho', 'v']:
             self.assertIn(n, L.vars)
-            self.assertEqual(L.vars[n].shape, (nb_seg, 1))
+            self.assertEqual(L.vars[n].shape, (nb_seg,))
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         nb_seg = 4
         L = Link[np.ndarray](nb_seg, 3, 1, 100, 30, 1.8)
         init_conds = {
-            'rho': np.random.rand(nb_seg, 1),
-            'v': np.random.rand(nb_seg, 1)
+            'rho': np.random.rand(nb_seg),
+            'v': np.random.rand(nb_seg)
         }
         L.init_vars(init_conds)
         self.assertIsNot(L, NO_VARS)
         for n in ['rho', 'v']:
             self.assertIn(n, L.vars)
-            self.assertEqual(L.vars[n].shape, (nb_seg, 1))
+            self.assertEqual(L.vars[n].shape, (nb_seg,))
             np.testing.assert_equal(init_conds[n], L.vars[n])
 
 
@@ -70,15 +70,15 @@ class TestCongestedDestinations(unittest.TestCase):
         D.init_vars()
         self.assertIsNot(D.vars, NO_VARS)
         self.assertIn('d', D.vars)
-        self.assertIn(D.vars['d'].shape, {(1, 1), (1,), ()})
+        self.assertIn(D.vars['d'].shape, {(1,), ()})
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         D = CongestedDestination[np.ndarray]()
-        init_conds = {'d': np.random.rand(1, 1)}
+        init_conds = {'d': np.random.rand(1)}
         D.init_vars(init_conds)
         self.assertIsNot(D, NO_VARS)
         self.assertIn('d', D.vars)
-        self.assertIn(D.vars['d'].shape, {(1, 1), (1,), ()})
+        self.assertIn(D.vars['d'].shape, {(1,), ()})
         np.testing.assert_equal(init_conds['d'], D.vars['d'])
 
 
@@ -96,20 +96,20 @@ class TestMeteredOnRamp(unittest.TestCase):
         self.assertIsNot(R.vars, NO_VARS)
         for n in ['w', 'r', 'd']:
             self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+            self.assertIn(R.vars[n].shape, {(1,), ()})
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         R = MeteredOnRamp[np.ndarray](1e5)
         init_conds = {
-            'w': np.random.rand(1, 1),
-            'r': np.random.rand(1, 1),
-            'd': np.random.rand(1, 1)
+            'w': np.random.rand(1),
+            'r': np.random.rand(1),
+            'd': np.random.rand(1)
         }
         R.init_vars(init_conds)
         self.assertIsNot(R, NO_VARS)
         for n in ['w', 'r', 'd']:
             self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+            self.assertIn(R.vars[n].shape, {(1,), ()})
             np.testing.assert_equal(init_conds[n], R.vars[n])
 
 
@@ -120,20 +120,20 @@ class TestSimpleMeteredOnRamp(unittest.TestCase):
         self.assertIsNot(R.vars, NO_VARS)
         for n in ['w', 'q', 'd']:
             self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+            self.assertIn(R.vars[n].shape, {(1,), ()})
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         R = SimpleMeteredOnRamp[np.ndarray](1e5)
         init_conds = {
-            'w': np.random.rand(1, 1),
-            'q': np.random.rand(1, 1),
-            'd': np.random.rand(1, 1)
+            'w': np.random.rand(1),
+            'q': np.random.rand(1),
+            'd': np.random.rand(1)
         }
         R.init_vars(init_conds)
         self.assertIsNot(R, NO_VARS)
         for n in ['w', 'q', 'd']:
             self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+            self.assertIn(R.vars[n].shape, {(1,), ()})
             np.testing.assert_equal(init_conds[n], R.vars[n])
 
 
@@ -356,6 +356,28 @@ class TestNetwork(unittest.TestCase):
                 el.init_vars.assert_called_with(
                     init_conditions=init_conds[el],
                     engine=engine)
+
+    def test_step__raises__if_variables_not_init(self):
+        L = 1
+        lanes = 2
+        C = (3500, 2000)
+        a_sym = 1.8
+        v_free_sym = 110
+        rho_crit_sym = 30
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L1 = Link(4, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L1')
+        L2 = Link(2, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L2')
+        O1 = MeteredOnRamp(C[0], name='O1')
+        O2 = SimpleMeteredOnRamp(C[1], name='O2')
+        D1 = Destination(name='D1')
+        net = (Network(name='A1')
+               .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
+               .add_origin(O2, N2))
+
+        with self.assertRaises(RuntimeError):
+            net.step()
 
 
 if __name__ == '__main__':

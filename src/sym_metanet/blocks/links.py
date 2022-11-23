@@ -92,8 +92,8 @@ class Link(ElementBase[sym_var]):
             engine = get_current_engine()
         self.vars = {
             name: (
-                init_conditions[name] 
+                init_conditions[name]
                 if name in init_conditions else
-                engine.var(name, (self.N, 1))
+                engine.var(name, self.N)
             ) for name in ('rho', 'v')
         }

@@ -405,15 +405,15 @@ class EngineBase(ABC):
         pass
 
     @abstractmethod
-    def var(self, name: str, shape: Tuple[int, int], *args, **kwargs):
+    def var(self, name: str, n: int = 1, *args, **kwargs):
         '''Creates a variable.
 
         Parameters
         ----------
         name : str
             Name of the variable.
-        shape : Tuple[int, int]
-            Shape of the variable.
+        n : int
+            Length of the variable.
 
         Returns
         -------

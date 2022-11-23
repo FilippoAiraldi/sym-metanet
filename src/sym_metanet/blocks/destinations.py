@@ -35,7 +35,7 @@ class CongestedDestination(Destination[sym_var]):
             The initial density scenario. If `None`, it is automatically
             initialized.
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and 
+            Provides name-variable tuples to initialize states, actions and
             disturbances with specific values. These values must be compatible
             with the symbolic engine in type and shape. If not provided,
             variables are initialized automatically.
@@ -45,7 +45,7 @@ class CongestedDestination(Destination[sym_var]):
         if engine is None:
             engine = get_current_engine()
         self.vars = {
-            'd': engine.var('d', (1, 1))
+            'd': engine.var('d')
             if init_conditions is None or 'd' not in init_conditions else
             init_conditions['d']
         }

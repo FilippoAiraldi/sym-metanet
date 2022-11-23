@@ -19,11 +19,12 @@ class NodesEngine(NodesEngineBase):
     @staticmethod
     def get_upstream_speed(q_lasts: np.ndarray,
                            v_lasts: np.ndarray) -> np.ndarray:
-        return (v_lasts.T @ q_lasts) / np.sum(q_lasts, axis=0)
+        return np.sum(v_lasts * q_lasts, axis=0) / np.sum(q_lasts, axis=0)
 
     @staticmethod
     def get_downstream_density(rho_firsts: np.ndarray) -> np.ndarray:
-        return (rho_firsts.T @ rho_firsts) / np.sum(rho_firsts, axis=0)
+        return np.sum(np.square(rho_firsts), axis=0) \
+            / np.sum(rho_firsts, axis=0)
 
 
 class LinksEngine(LinksEngineBase):
@@ -149,16 +150,16 @@ class Engine(EngineBase):
         '''
         if isinstance(val, str):
             if val == 'empty':
-                def gen(shape): return np.empty(shape, dtype=float)
+                def gen(n): return np.empty((n,), dtype=float)
             elif val == 'rand':
-                def gen(shape): return np.random.rand(*shape)
+                def gen(n): return np.random.rand(n)
             elif val == 'randn':
-                def gen(shape): return np.random.randn(*shape)
+                def gen(n): return np.random.randn(n)
             else:
                 raise ValueError('Invalid variable initialization method.')
         else:
-            def gen(shape): return np.full(shape, val)
-        self._var_gen: Callable[[Tuple[int, ...]], np.ndarray] = gen
+            def gen(n): return np.full((n,), val)
+        self._var_gen: Callable[[int], np.ndarray] = gen
         self._var_type = val
 
     @property
@@ -178,16 +179,12 @@ class Engine(EngineBase):
         return DestinationsEngine
 
     def var(
-        self, name: str, shape: Tuple[int, int], *args, **kwargs
+        self, name: str, n: int = 1, *args, **kwargs
     ) -> np.ndarray:
-        return self._var_gen(shape)
+        return self._var_gen(n)
 
-    def vcat(self, x1: np.ndarray, x2: np.ndarray):
-        if x1.ndim == 1:
-            x1 = x1.reshape(-1, 1)
-        if x2.ndim == 1:
-            x2 = x2.reshape(-1, 1)
-        return np.concatenate((x1, x2), axis=0)
+    def vcat(self, *arrays: np.ndarray):
+        return np.hstack(arrays)
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(numpy)'

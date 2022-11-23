@@ -25,11 +25,11 @@ class NodesEngine(NodesEngineBase, Generic[csXX]):
 
     @staticmethod
     def get_upstream_speed(q_lasts: csXX, v_lasts: csXX) -> csXX:
-        return (v_lasts.T @ q_lasts) / cs.sum1(q_lasts)
+        return cs.sum1(v_lasts * q_lasts) / cs.sum1(q_lasts)
 
     @staticmethod
     def get_downstream_density(rho_firsts: csXX) -> csXX:
-        return (rho_firsts.T @ rho_firsts) / cs.sum1(rho_firsts)
+        return cs.sum1(rho_firsts**2) / cs.sum1(rho_firsts)
 
 
 class LinksEngine(LinksEngineBase, Generic[csXX]):
@@ -142,11 +142,11 @@ class Engine(EngineBase, Generic[csXX]):
     def destinations(self) -> Type[DestinationsEngine[csXX]]:
         return DestinationsEngine[csXX]
 
-    def var(self, name: str, shape: Tuple[int, int], *args, **kwargs) -> csXX:
-        return self._csXX.sym(name, *shape)
+    def var(self, name: str, n: int = 1, *args, **kwargs) -> csXX:
+        return self._csXX.sym(name, n, 1)
 
-    def vcat(self, x1, x2):
-        return cs.vertcat(x1, x2)
+    def vcat(self, *arrays):
+        return cs.vertcat(*arrays)
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(casadi)'

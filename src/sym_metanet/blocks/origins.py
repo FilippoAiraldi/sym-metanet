@@ -57,7 +57,7 @@ class MeteredOnRamp(Origin[sym_var]):
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and 
+            Provides name-variable tuples to initialize states, actions and
             disturbances with specific values. These values must be compatible
             with the symbolic engine in type and shape. If not provided,
             variables are initialized automatically.
@@ -72,7 +72,7 @@ class MeteredOnRamp(Origin[sym_var]):
             name: (
                 init_conditions[name]
                 if name in init_conditions else
-                engine.var(name, (1, 1))
+                engine.var(name)
             ) for name in ('w', 'r', 'd')
         }
 
@@ -99,7 +99,7 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and 
+            Provides name-variable tuples to initialize states, actions and
             disturbances with specific values. These values must be compatible
             with the symbolic engine in type and shape. If not provided,
             variables are initialized automatically.
@@ -114,6 +114,6 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
             name: (
                 init_conditions[name]
                 if name in init_conditions else
-                engine.var(name, (1, 1))
+                engine.var(name)
             ) for name in ('w', 'q', 'd')
         }
