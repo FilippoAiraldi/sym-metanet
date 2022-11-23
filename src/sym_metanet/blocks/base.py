@@ -8,7 +8,7 @@ sym_var.__doc__ = ('Variable that can also be numerical or symbolic, '
                    'depending on the engine. Should be indexable as an array '
                    'in case of vector quantities.')
 
-NO_DICT = None
+NO_VARS = None
 
 
 class ElementBase(Generic[sym_var], ABC):
@@ -32,7 +32,7 @@ class ElementBase(Generic[sym_var], ABC):
             _id = count(0)
             self.__ids[cls] = _id
         self.name = name or f'{cls.__name__}{next(_id)}'
-        self.vars: Optional[Dict[str, sym_var]] = None
+        self.vars: Optional[Dict[str, sym_var]] = NO_VARS
 
     @abstractmethod
     def init_vars(self, *args, **kwargs) -> None:

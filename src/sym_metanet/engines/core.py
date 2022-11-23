@@ -266,7 +266,7 @@ class OriginsEngineBase(ABC):
     @abstractmethod
     def get_ramp_flow(d, w, C, r, rho_max, rho_first, rho_crit, T,
                       type: Literal['in', 'out'] = 'out'):
-        '''Computes the flows of the origin according to [1, Equation 3.5] 
+        '''Computes the flows of the origin according to [1, Equation 3.5]
         if `type='in'`, or [1, Equation 3.6] if `type='out'`.
 
         Parameters
@@ -289,8 +289,8 @@ class OriginsEngineBase(ABC):
             Sampling time.
         type : 'in' or 'out', optional
             Whether the metering rate `r` should be inside or outside the min
-            function, by default 'out'. See Equation 3.5 and  3.6 for more
-            details.
+            function; by default, 'out'. See [1, Equations 3.5 and 3.6] for
+            more details.
 
         Returns
         -------

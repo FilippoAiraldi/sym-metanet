@@ -36,22 +36,22 @@ class LinksEngine(LinksEngineBase, Generic[csXX]):
     '''CasADi implementation of `sym_metanet.engines.core.LinksEngineBase`.'''
 
     @staticmethod
-    def get_flow(rho: cs.SX, v: cs.SX, lanes: cs.SX) -> cs.SX:
+    def get_flow(rho: csXX, v: csXX, lanes: csXX) -> csXX:
         return rho * v * lanes
 
     @staticmethod
     def step_density(
-            rho: cs.SX, q: cs.SX, q_up: cs.SX,
-            lanes: cs.SX, L: cs.SX, T: cs.SX) -> cs.SX:
+            rho: csXX, q: csXX, q_up: csXX,
+            lanes: csXX, L: csXX, T: csXX) -> csXX:
         return rho + (T / lanes / L) * (q_up - q)
 
     @staticmethod
-    def step_speed(v: cs.SX, v_up: cs.SX, rho: cs.SX, rho_down: cs.SX,
-                   Veq: cs.SX, lanes: cs.SX, L: cs.SX, tau: cs.SX, eta: cs.SX,
-                   kappa: cs.SX, T: cs.SX,
-                   q_ramp: cs.SX = None, delta: cs.SX = None,
-                   lanes_drop: cs.SX = None, phi: cs.SX = None,
-                   rho_crit: cs.SX = None):
+    def step_speed(v: csXX, v_up: csXX, rho: csXX, rho_down: csXX,
+                   Veq: csXX, lanes: csXX, L: csXX, tau: csXX, eta: csXX,
+                   kappa: csXX, T: csXX,
+                   q_ramp: csXX = None, delta: csXX = None,
+                   lanes_drop: csXX = None, phi: csXX = None,
+                   rho_crit: csXX = None) -> csXX:
         relaxation = (T / tau) * (Veq - v)
         convection = T * v / L * (v_up - v)
         anticipation = (eta * T / tau) * (rho_down - rho) / (L * (rho + kappa))
@@ -65,7 +65,7 @@ class LinksEngine(LinksEngineBase, Generic[csXX]):
         return v_next
 
     @staticmethod
-    def Veq(rho: cs.SX, v_free: cs.SX, rho_crit: cs.SX, a: cs.SX) -> cs.SX:
+    def Veq(rho: csXX, v_free: csXX, rho_crit: csXX, a: csXX) -> csXX:
         return v_free * cs.exp((-1 / a) * cs.power(rho / rho_crit, a))
 
 
@@ -75,13 +75,13 @@ class OriginsEngine(OriginsEngineBase, Generic[csXX]):
     '''
 
     @staticmethod
-    def step_queue(w: cs.SX, d: cs.SX, q: cs.SX, T: cs.SX) -> cs.SX:
+    def step_queue(w: csXX, d: csXX, q: csXX, T: csXX) -> csXX:
         return w + T * (d - q)
 
     @staticmethod
-    def get_ramp_flow(d: cs.SX, w: cs.SX, C: cs.SX, r: cs.SX, rho_max: cs.SX,
-                      rho_first: cs.SX, rho_crit: cs.SX, T: cs.SX,
-                      type: Literal['in', 'out'] = 'out') -> cs.SX:
+    def get_ramp_flow(d: csXX, w: csXX, C: csXX, r: csXX, rho_max: csXX,
+                      rho_first: csXX, rho_crit: csXX, T: csXX,
+                      type: Literal['in', 'out'] = 'out') -> csXX:
         term1 = d + w / T
         term3 = (rho_max - rho_first) / (rho_max - rho_crit)
         if type == 'in':
@@ -96,7 +96,7 @@ class DestinationsEngine(DestinationsEngineBase, Generic[csXX]):
 
     @staticmethod
     def get_congested_downstream_density(
-            rho_last: cs.SX, rho_destination: cs.SX, rho_crit: cs.SX) -> cs.SX:
+            rho_last: csXX, rho_destination: csXX, rho_crit: csXX) -> csXX:
         return cs.fmax(cs.fmin(rho_last, rho_crit), rho_destination)
 
 
