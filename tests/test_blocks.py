@@ -11,14 +11,14 @@ from sym_metanet.blocks.origins import MeteredOnRamp
 
 
 class TestNetwork(unittest.TestCase):
-    def test_add_node(self):
+    def test_add_node__adds_node_correctly(self):
         node = Node(name='This is a random name')
         net = Network(name='Another random name')
         net.add_node(node)
         self.assertIn(node, net.nodes)
         self.assertIn(node.name, net.nodes_by_name)
 
-    def test_add_nodes(self):
+    def test_add_nodes__adds_nodes_correctly(self):
         node1 = Node(name='This is a random name1')
         node2 = Node(name='This is a random name2')
         net = Network(name='Another random name')
@@ -28,7 +28,7 @@ class TestNetwork(unittest.TestCase):
         self.assertIn(node1.name, net.nodes_by_name)
         self.assertIn(node1.name, net.nodes_by_name)
 
-    def test_add_link(self):
+    def test_add_link__adds_link_correctly(self):
         upnode = Node(name='N1')
         downnode = Node(name='N2')
         link = Link(4, 3, 1, 100, 30, 1.8, name='L1')
@@ -41,7 +41,7 @@ class TestNetwork(unittest.TestCase):
         self.assertIn(link, net.nodes_by_link)
         self.assertEqual(net.nodes_by_link[link], (upnode, downnode))
 
-    def test_add_links(self):
+    def test_add_links__adds_links_correctly(self):
         upnode1 = Node(name='N11')
         downnode1 = Node(name='N12')
         link1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
@@ -60,7 +60,7 @@ class TestNetwork(unittest.TestCase):
             self.assertIn(link.name, net.links_by_name)
             self.assertIn(link, net.nodes_by_link)
 
-    def test_add_path(self):
+    def test_add_path__adds_nodes_and_links_correctly(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
@@ -86,7 +86,7 @@ class TestNetwork(unittest.TestCase):
         with self.assertRaises(ValueError):
             net.add_path(path=(Node(name='N1'),))
 
-    def test_add_origin(self):
+    def test_add_origin__adds_origin_correctly(self):
         node = Node(name='This is a random name')
         origin = Origin(name='23423')
         net = Network(name='Another random name')
@@ -96,7 +96,7 @@ class TestNetwork(unittest.TestCase):
         self.assertIs(net.origins[origin], node)
         self.assertIn(origin.name, net.origins_by_name)
 
-    def test_add_destination(self):
+    def test_add_destination__adds_destination_correctly(self):
         node = Node(name='This is a random name')
         destination = Destination(name='23423')
         net = Network(name='Another random name')
@@ -106,7 +106,7 @@ class TestNetwork(unittest.TestCase):
         self.assertIs(net.destinations[destination], node)
         self.assertIn(destination.name, net.destinations_by_name)
 
-    def test_out_links(self):
+    def test_out_links__gets_correct_outward_links(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
@@ -116,7 +116,7 @@ class TestNetwork(unittest.TestCase):
         net.add_links(((N1, L1, N2), (N1, L2, N3)))
         self.assertEqual({(N1, N3, L2), (N1, N2, L1)}, set(net.out_links(N1)))
 
-    def test_in_links(self):
+    def test_in_links__gets_correct_inward_links(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
