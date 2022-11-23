@@ -17,7 +17,7 @@ class ForbiddenModules(MetaPathFinder):
 
 class TestImport(unittest.TestCase):
     def test_import__warns__when_no_import_succeeds(self):
-        forbidden_modules = {'casadi'}
+        forbidden_modules = {'numpy', 'casadi'}
         import sys
         sys.meta_path.insert(0, ForbiddenModules(forbidden_modules))
         with warnings.catch_warnings(record=True) as w:

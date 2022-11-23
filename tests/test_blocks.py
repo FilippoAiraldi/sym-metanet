@@ -1,14 +1,133 @@
 import unittest
+import numpy as np
+from sym_metanet.blocks.base import NO_VARS
 from sym_metanet import (
     Node,
     Link,
     Origin,
+    MeteredOnRamp,
+    SimpleMeteredOnRamp,
     Network,
     Destination,
+    CongestedDestination,
     InvalidNetworkError,
 )
-from sym_metanet.blocks.origins import MeteredOnRamp
+from sym_metanet import engines
 
+
+engine = engines.use('numpy', var_type='randn')
+
+
+class TestNodes(unittest.TestCase):
+    def test_init_vars__no_value_is_initialized(self):
+        N = Node()
+        N.init_vars()
+        self.assertEqual(N.vars, NO_VARS)
+
+
+class TestLinks(unittest.TestCase):
+    def test_init_vars__without_inital_condition__creates_vars(self):
+        nb_seg = 4
+        L = Link[np.ndarray](nb_seg, 3, 1, 100, 30, 1.8)
+        L.init_vars()
+        self.assertIsNot(L.vars, NO_VARS)
+        for n in ['rho', 'v']:
+            self.assertIn(n, L.vars)
+            self.assertEqual(L.vars[n].shape, (nb_seg, 1))
+
+    def test_init_vars__with_inital_condition__copies_vars(self):
+        nb_seg = 4
+        L = Link[np.ndarray](nb_seg, 3, 1, 100, 30, 1.8)
+        init_conds = {
+            'rho': np.random.rand(nb_seg, 1),
+            'v': np.random.rand(nb_seg, 1)
+        }
+        L.init_vars(init_conds)
+        self.assertIsNot(L, NO_VARS)
+        for n in ['rho', 'v']:
+            self.assertIn(n, L.vars)
+            self.assertEqual(L.vars[n].shape, (nb_seg, 1))
+            np.testing.assert_equal(init_conds[n], L.vars[n])
+
+
+class TestDestinations(unittest.TestCase):
+    def test_init_vars__no_value_is_initialized(self):
+        D = Destination()
+        D.init_vars()
+        self.assertEqual(D.vars, NO_VARS)
+
+
+class TestCongestedDestinations(unittest.TestCase):
+    def test_init_vars__without_inital_condition__creates_vars(self):
+        D = CongestedDestination[np.ndarray]()
+        D.init_vars()
+        self.assertIsNot(D.vars, NO_VARS)
+        self.assertIn('d', D.vars)
+        self.assertIn(D.vars['d'].shape, {(1, 1), (1,), ()})
+
+    def test_init_vars__with_inital_condition__copies_vars(self):
+        D = CongestedDestination[np.ndarray]()
+        init_conds = {'d': np.random.rand(1, 1)}
+        D.init_vars(init_conds)
+        self.assertIsNot(D, NO_VARS)
+        self.assertIn('d', D.vars)
+        self.assertIn(D.vars['d'].shape, {(1, 1), (1,), ()})
+        np.testing.assert_equal(init_conds['d'], D.vars['d'])
+
+
+class TestOrigins(unittest.TestCase):
+    def test_init_vars__no_value_is_initialized(self):
+        O = Origin()
+        O.init_vars()
+        self.assertEqual(O.vars, NO_VARS)
+
+
+class TestMeteredOnRamp(unittest.TestCase):
+    def test_init_vars__without_inital_condition__creates_vars(self):
+        R = MeteredOnRamp[np.ndarray](1e5)
+        R.init_vars()
+        self.assertIsNot(R.vars, NO_VARS)
+        for n in ['w', 'r', 'd']:
+            self.assertIn(n, R.vars)
+            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+
+    def test_init_vars__with_inital_condition__copies_vars(self):
+        R = MeteredOnRamp[np.ndarray](1e5)
+        init_conds = {
+            'w': np.random.rand(1, 1),
+            'r': np.random.rand(1, 1),
+            'd': np.random.rand(1, 1)
+        }
+        R.init_vars(init_conds)
+        self.assertIsNot(R, NO_VARS)
+        for n in ['w', 'r', 'd']:
+            self.assertIn(n, R.vars)
+            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+            np.testing.assert_equal(init_conds[n], R.vars[n])
+
+
+class TestSimpleMeteredOnRamp(unittest.TestCase):
+    def test_init_vars__without_inital_condition__creates_vars(self):
+        R = SimpleMeteredOnRamp[np.ndarray](1e5)
+        R.init_vars()
+        self.assertIsNot(R.vars, NO_VARS)
+        for n in ['w', 'q', 'd']:
+            self.assertIn(n, R.vars)
+            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+
+    def test_init_vars__with_inital_condition__copies_vars(self):
+        R = SimpleMeteredOnRamp[np.ndarray](1e5)
+        init_conds = {
+            'w': np.random.rand(1, 1),
+            'q': np.random.rand(1, 1),
+            'd': np.random.rand(1, 1)
+        }
+        R.init_vars(init_conds)
+        self.assertIsNot(R, NO_VARS)
+        for n in ['w', 'q', 'd']:
+            self.assertIn(n, R.vars)
+            self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
+            np.testing.assert_equal(init_conds[n], R.vars[n])
 
 class TestNetwork(unittest.TestCase):
     def test_add_node__adds_node_correctly(self):
