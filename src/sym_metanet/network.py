@@ -297,30 +297,43 @@ class Network(ElementBase[sym_var]):
             self.add_destination(destination, last_node)
         return self
 
-    def validate(self) -> 'Network':
+    def is_valid(self, raises: bool = False) -> Tuple[bool, List[str]]:
         '''Checks whether the network is consistent.
+
+        Parameters
+        ----------
+        raises : bool, optional
+            If `True`, if an issue is found, an exception is raised. If
+            `False`, then the exception messages are returned in a list. By
+            default, `False`.
 
         Returns
         -------
-        Network
-            A reference to itself.
+        bool
+            `True` if the network is valid, `False` otherwise.
+        list[str]
+            A list of messages describing the invalid issues found. Returned
+            only if `raises=False`.
 
         Raises
         ------
         InvalidNetworkError
-            Raises if
+            Raises if `raises=True` and if
              - a node has both an origin and a destination
              - a link, origin or destination is duplicated in the network
              - a node with an origin that is not a ramp has also entering links
              - a node with a destination has also exiting links
+             - a node has multiple incoming and multiple exiting links.
         '''
-
+        msgs = []
         # nodes must not have origins and destinations
         for node, nodedata in self.nodes.data():
             if ORIGINENTRY in nodedata and DESTINATIONENTRY in nodedata:
-                raise InvalidNetworkError(
+                msgs.append(
                     f'Node {node.name} must either have an origin or a '
                     'destination, but not both.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
 
         # no duplicate elements
         def origin_destination_yielder():
@@ -334,34 +347,41 @@ class Network(ElementBase[sym_var]):
                        iter(origin_destination_yielder())):
             d = count.get(o, 0) + 1
             if d > 1:
-                raise InvalidNetworkError(
-                    f'Element {o.name} is duplicated in the network.')
+                msgs.append(f'Element {o.name} is duplicated in the network.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
             count[o] = d
 
         # nodes with origins (that are not a ramps) must have no entering links
         for origin, node in self.origins.items():
             if not isinstance(origin, MeteredOnRamp) and \
                     any(self.in_links(node)):
-                raise InvalidNetworkError(
+                msgs.append(
                     f'Expected node {node.name} to have no entering links, as '
                     f'it is connected to origin {origin.name} (only ramps '
                     'support entering links).')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
 
         # nodes with destinations must have no exiting links
         for destination, node in self.destinations.items():
             if any(self.out_links(node)):
-                raise InvalidNetworkError(
+                msgs.append(
                     f'Expected node {node.name} to have no exiting links, as '
                     f'it is connected to destination {destination.name}.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
 
         # nodes with multiple inward links cannot have multiple outward links
         # (and viceversa)
         for node in self.nodes:
             n_in, n_out = len(self.in_links(node)), len(self.out_links(node))
             if n_in > 1 and n_out > 1:
-                raise InvalidNetworkError(
+                msgs.append(
                     'Nodes cannot have multiple inward links and multiple '
                     f'outward links; node {node.name} has {n_in} and {n_out}.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
         return self
 
     def init_vars(
