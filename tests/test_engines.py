@@ -23,5 +23,6 @@ class TestEngines(unittest.TestCase):
         with self.assertRaises(EngineNotFoundError):
             metanet.engines.use(invalid_engine)
 
+
 if __name__ == '__main__':
     unittest.main()
