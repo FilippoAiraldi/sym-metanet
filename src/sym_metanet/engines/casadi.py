@@ -142,8 +142,7 @@ class Engine(EngineBase, Generic[csXX]):
     def destinations(self) -> Type[DestinationsEngine[csXX]]:
         return DestinationsEngine[csXX]
 
-    def var(self, name: str, shape: Tuple[int, ...], *args, **kwargs) -> csXX:
-        assert len(shape) <= 2, 'CasADi supports 1D and 2D variables only.'
+    def var(self, name: str, shape: Tuple[int, int], *args, **kwargs) -> csXX:
         return self._csXX.sym(name, *shape)
 
     def __str__(self) -> str:

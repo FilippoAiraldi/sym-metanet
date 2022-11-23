@@ -149,7 +149,7 @@ class Engine(EngineBase):
         '''
         if isinstance(val, str):
             if val == 'empty':
-                def gen(shape): return np.empty(shape, val)
+                def gen(shape): return np.empty(shape, dtype=float)
             elif val == 'rand':
                 def gen(shape): return np.random.rand(*shape)
             elif val == 'randn':
@@ -178,7 +178,7 @@ class Engine(EngineBase):
         return DestinationsEngine
 
     def var(
-        self, name: str, shape: Tuple[int, ...], *args, **kwargs
+        self, name: str, shape: Tuple[int, int], *args, **kwargs
     ) -> np.ndarray:
         return self._var_gen(shape)
 

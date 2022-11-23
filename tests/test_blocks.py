@@ -337,7 +337,7 @@ class TestNetwork(unittest.TestCase):
         with self.assertRaises(InvalidNetworkError):
             net.is_valid(raises=True)
 
-    def test_init_vars(self):
+    def test_init_vars__calls_init_vars_in_elements(self):
         L = 1
         lanes = 2
         C = (3500, 2000)
@@ -352,12 +352,13 @@ class TestNetwork(unittest.TestCase):
         O1 = MeteredOnRamp(C[0], name='O1')
         O2 = SimpleMeteredOnRamp(C[1], name='O2')
         D1 = Destination(name='D1')
-        elements: List[ElementBase] = [N1, N2, N3, L1, L2, O1, O2, D1]
-        for el in elements:
-            el.init_vars = MagicMock(return_value=None)
         net = (Network(name='A1')
                .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
                .add_origin(O2, N2))
+
+        elements: List[ElementBase] = [N1, N2, N3, L1, L2, O1, O2, D1]
+        for el in elements:
+            el.init_vars = MagicMock(return_value=None)
 
         engine = object()
         init_conds = {el: object() for el in elements}
