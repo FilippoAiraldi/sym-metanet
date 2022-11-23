@@ -1,5 +1,5 @@
 from typing import Dict, TYPE_CHECKING
-from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.blocks.base import ElementBase, sym_var, NO_VARS
 from sym_metanet.engines.core import EngineBase, get_current_engine
 if TYPE_CHECKING:
     from sym_metanet.blocks.links import Link
@@ -57,10 +57,10 @@ class MeteredOnRamp(Origin[sym_var]):
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states and actions with
-            specific values. These values must be compatible with the symbolic
-            engine in type and shape. If not provided, variables are
-            initialized automatically.
+            Provides name-variable tuples to initialize states, actions and 
+            disturbances with specific values. These values must be compatible
+            with the symbolic engine in type and shape. If not provided,
+            variables are initialized automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
         '''
@@ -99,10 +99,10 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states and actions with
-            specific values. These values must be compatible with the symbolic
-            engine in type and shape. If not provided, variables are
-            initialized automatically.
+            Provides name-variable tuples to initialize states, actions and 
+            disturbances with specific values. These values must be compatible
+            with the symbolic engine in type and shape. If not provided,
+            variables are initialized automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
         '''

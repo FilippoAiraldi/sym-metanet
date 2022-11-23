@@ -79,10 +79,10 @@ class Link(ElementBase[sym_var]):
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states and actions with
-            specific values. These values must be compatible with the symbolic
-            engine in type and shape. If not provided, variables are
-            initialized automatically.
+            Provides name-variable tuples to initialize states, actions and 
+            disturbances with specific values. These values must be compatible
+            with the symbolic engine in type and shape. If not provided,
+            variables are initialized automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
         '''
