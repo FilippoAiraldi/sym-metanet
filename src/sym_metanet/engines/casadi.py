@@ -124,23 +124,23 @@ class Engine(EngineBase, Generic[csXX]):
             raise ValueError(
                 f'CasADi symbolic type must be in {{{", ".join(csTYPES)}}}; '
                 f'got {sym_type} instead.')
-        self._csXX: Union[Type[cs.SX], Type[cs.SX]] = csTYPES[sym_type]
+        self._csXX: Union[Type[cs.SX], Type[cs.MX]] = csTYPES[sym_type]
 
     @property
     def nodes(self) -> Type[NodesEngine[csXX]]:
-        return NodesEngine
+        return NodesEngine[csXX]
 
     @property
     def links(self) -> Type[LinksEngine[csXX]]:
-        return LinksEngine
+        return LinksEngine[csXX]
 
     @property
     def origins(self) -> Type[OriginsEngine[csXX]]:
-        return OriginsEngine
+        return OriginsEngine[csXX]
 
     @property
     def destinations(self) -> Type[DestinationsEngine[csXX]]:
-        return DestinationsEngine
+        return DestinationsEngine[csXX]
 
     def var(self, name: str, shape: Tuple[int, ...], *args, **kwargs) -> csXX:
         assert len(shape) <= 2, 'CasADi supports 1D and 2D variables only.'

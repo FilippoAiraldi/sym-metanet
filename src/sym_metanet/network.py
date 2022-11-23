@@ -323,7 +323,7 @@ class Network(ElementBase[sym_var]):
                 if entry in data:
                     yield data[entry]
 
-        count: Dict[ElementBase, int] = {}
+        count: Dict[ElementBase[sym_var], int] = {}
         for o in chain((link[2] for link in self.links),
                        iter(origin_destination_yielder())):
             d = count.get(o, 0) + 1

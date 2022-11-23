@@ -266,9 +266,8 @@ class OriginsEngineBase(ABC):
     @abstractmethod
     def get_ramp_flow(d, w, C, r, rho_max, rho_first, rho_crit, T,
                       type: Literal['in', 'out'] = 'out'):
-        '''Computes the flows of the origin, according to
-        [1, Equation 3.5], if `type=='in'`, or [1, Equation 3.6], if
-        `type=='out'`.
+        '''Computes the flows of the origin according to [1, Equation 3.5] 
+        if `type='in'`, or [1, Equation 3.6] if `type='out'`.
 
         Parameters
         ----------

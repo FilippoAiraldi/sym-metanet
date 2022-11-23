@@ -1,8 +1,6 @@
-from typing import Dict, Union
+from typing import Dict, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
-
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sym_metanet.blocks.links import Link
 
@@ -55,7 +53,7 @@ class MeteredOnRamp(Origin[sym_var]):
 
     def init_vars(
         self,
-        initial_conditions: Dict[str, Union[sym_var, sym_var]] = None,
+        initial_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None
     ) -> None:
         '''initializes the queue length `w` (state) and the ramp metering rate
@@ -93,7 +91,7 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
 
     def init_vars(
         self,
-        initial_conditions: Dict[str, Union[sym_var, sym_var]] = None,
+        initial_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None
     ) -> None:
         '''initializes the queue length `w` (state) and the ramp flow `q`

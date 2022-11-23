@@ -1,5 +1,4 @@
 import unittest
-from sym_metanet.blocks.base import ElementBase
 from sym_metanet import (
     Node,
     Link,
@@ -9,13 +8,6 @@ from sym_metanet import (
     InvalidNetworkError,
 )
 from sym_metanet.blocks.origins import MeteredOnRamp
-
-
-class TestElementBase(unittest.TestCase):
-    def test_name(self):
-        name = 'This is a random name'
-        obj = ElementBase(name=name)
-        self.assertEqual(name, obj.name)
 
 
 class TestNetwork(unittest.TestCase):

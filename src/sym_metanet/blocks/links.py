@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Dict
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
 
@@ -69,7 +69,7 @@ class Link(ElementBase[sym_var]):
 
     def init_vars(
         self,
-        initial_conditions: Dict[str, Union[sym_var, sym_var]] = None,
+        initial_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None
     ) -> None:
         '''For each segment in the link, initializes the states
