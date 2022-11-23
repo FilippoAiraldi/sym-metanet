@@ -353,6 +353,15 @@ class Network(ElementBase[sym_var]):
                 raise InvalidNetworkError(
                     f'Expected node {node.name} to have no exiting links, as '
                     f'it is connected to destination {destination.name}.')
+
+        # nodes with multiple inward links cannot have multiple outward links
+        # (and viceversa)
+        for node in self.nodes:
+            n_in, n_out = len(self.in_links(node)), len(self.out_links(node))
+            if n_in > 1 and n_out > 1:
+                raise InvalidNetworkError(
+                    'Nodes cannot have multiple inward links and multiple '
+                    f'outward links; node {node.name} has {n_in} and {n_out}.')
         return self
 
     def init_vars(
