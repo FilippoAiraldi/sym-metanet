@@ -35,12 +35,12 @@ class ElementBase(Generic[sym_var], ABC):
         self.vars: Optional[Dict[str, sym_var]] = NO_VARS
 
     @abstractmethod
-    def init_vars(self, *args, **kwargs):
+    def init_vars(self, *args, **kwargs) -> None:
         raise NotImplementedError('Variable initialization not supported for '
                                   + self.__class__.__name__ + '.')
 
     @abstractmethod
-    def step(self, *args, **kwargs):
+    def step(self, *args, **kwargs) -> None:
         raise NotImplementedError('Stepping the dynamics not supported for '
                                   + self.__class__.__name__ + '.')
 
