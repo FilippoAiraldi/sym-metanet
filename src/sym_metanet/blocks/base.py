@@ -40,7 +40,7 @@ class ElementBase(Generic[sym_var], ABC):
                                   + self.__class__.__name__ + '.')
 
     def __str__(self) -> str:
-        return self.__repr__()
+        return self.name
 
     def __repr__(self) -> str:
         return f'<{self.name}: {self.__class__.__name__}>'

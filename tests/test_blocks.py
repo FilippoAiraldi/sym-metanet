@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock
 import numpy as np
 from sym_metanet.blocks.base import NO_VARS
 from sym_metanet import (
@@ -128,6 +129,7 @@ class TestSimpleMeteredOnRamp(unittest.TestCase):
             self.assertIn(n, R.vars)
             self.assertIn(R.vars[n].shape, {(1, 1), (1,), ()})
             np.testing.assert_equal(init_conds[n], R.vars[n])
+
 
 class TestNetwork(unittest.TestCase):
     def test_add_node__adds_node_correctly(self):
@@ -312,6 +314,38 @@ class TestNetwork(unittest.TestCase):
         net.add_origin(O, N2)
         with self.assertRaises(InvalidNetworkError):
             net.validate()
+
+    def test_init_vars(self):
+        L = 1
+        lanes = 2
+        C = (3500, 2000)
+        a_sym = 1.8
+        v_free_sym = 110
+        rho_crit_sym = 30
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L1 = Link(4, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L1')
+        L2 = Link(2, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L2')
+        O1 = MeteredOnRamp(C[0], name='O1')
+        O2 = SimpleMeteredOnRamp(C[1], name='O2')
+        D1 = Destination(name='D1')
+        for el in [N1, N2, N3, L1, L2, O1, O2, D1]:
+            el.init_vars = MagicMock(return_value=None)
+        net = (Network(name='A1')
+               .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
+               .add_origin(O2, N2))
+
+        engine = object()
+        init_conds = {el: object() for el in [N1, N2, N3, L1, L2, O1, O2, D1]}
+        net.init_vars(init_conds, engine)
+
+        for el in [N1, N2, N3, L1, L2, O1, O2, D1]:
+            el.init_vars.assert_called_once()
+            el.init_vars.assert_called_with(
+                init_conditions=init_conds[el],
+                engine=engine
+            )
 
 
 if __name__ == '__main__':

@@ -12,8 +12,9 @@ from sym_metanet.views import (
 )
 from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
-from sym_metanet.blocks.origins import MeteredOnRamp, Origin
+from sym_metanet.blocks.origins import Origin, MeteredOnRamp
 from sym_metanet.blocks.destinations import Destination
+from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.errors import InvalidNetworkError
 from sym_metanet.util.funcs import cache_clearer
 
@@ -348,3 +349,46 @@ class Network(ElementBase[sym_var]):
                     f'Expected node {node.name} to have no exiting links, as '
                     f'it is connected to destination {destination.name}.')
         return self
+
+    def init_vars(
+        self,
+        init_conditions: Dict[ElementBase[sym_var], Dict[str, sym_var]] = None,
+        engine: EngineBase = None
+    ) -> None:
+        '''Initializes the variables (states, inputs, disturbances) of the
+        elements in the network. In particular, it initializes the states
+         - densities `rho`, speeds `v` in links
+         - queues `w` and flows `q` in ramps and origins with queues;
+
+        the control actions
+         - ramp rates `r` or flows `q`;
+
+        the disturbances
+         - entering demands `d` in origins
+         - congestion scenarios `d` in congested destinations.
+
+        The initiliazed variables can be found in the property `vars` of
+        each element.
+
+        Parameters
+        ----------
+        init_conditions : dict[element, dict[varname, variable]], optional
+            For each element in the network, provides name-variable tuples to
+            initialize states, actions and disturbances with specific values.
+            These values must be compatible with the symbolic engine in type
+            and shape. If not provided, variables are initialized
+            automatically.
+        engine : EngineBase, optional
+            The engine to be used for initialization. If `None`, the current
+            engine is used.
+        '''
+        if init_conditions is None:
+            init_conditions = {}
+        if engine is None:
+            engine = get_current_engine()
+        for el in chain(self.nodes,
+                        (link[-1] for link in self.links),
+                        self.origins,
+                        self.destinations):
+            el.init_vars(
+                init_conditions=init_conditions.get(el), engine=engine)
