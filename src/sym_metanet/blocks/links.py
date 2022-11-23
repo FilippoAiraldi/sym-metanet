@@ -69,34 +69,31 @@ class Link(ElementBase[sym_var]):
 
     def init_vars(
         self,
-        initial_conditions: Dict[str, sym_var] = None,
+        init_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None
     ) -> None:
-        '''For each segment in the link, initializes the states
-         - densities `rho`
-         - speeds `v`
-
-        as well as
-         - flows `q`.
+        '''For each segment in the link, initializes
+        -  `rho`: densities (state)
+        -  `v`: speeds (state).
 
         Parameters
         ----------
-        initial_conditions : dict[str, variable]
-            Provides name-variable tuples to initialize variables with specific
-            values. These values must be compatible with the symbolic engine in
-            type and shape.
+        init_conditions : dict[str, variable], optional
+            Provides name-variable tuples to initialize states and actions with
+            specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are
+            initialized automatically.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
         '''
-        if initial_conditions is None:
-            initial_conditions = {}
+        if init_conditions is None:
+            init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-
         self.vars = {
             name: (
-                initial_conditions[name]
-                if name in initial_conditions else
+                init_conditions[name] 
+                if name in init_conditions else
                 engine.var(name, (self.N, 1))
             ) for name in ('rho', 'v')
         }
-        self.vars['q'] = engine.links.get_flow(
-            rho=self.vars['rho'], v=self.vars['v'], lanes=self.lam)

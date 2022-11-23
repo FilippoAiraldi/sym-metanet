@@ -14,16 +14,9 @@ class Origin(ElementBase[sym_var]):
     def __init__(self, name: str = None) -> None:
         super().__init__(name)
 
-    def init_vars(self, link_down: 'Link[sym_var]') -> None:
-        '''Initializes the ideal origin variables by borrowing them from the
-        first link's segment attached the origin.
+    def init_vars(self, *args, **kwargs) -> None:
+        pass
 
-        Parameters
-        ----------
-        link_down : Link
-            Downstream link from the origin.
-        '''
-        self.vars = {n: link_down.vars[n][0] for n in ('v', 'q')}
 
 
 class MeteredOnRamp(Origin[sym_var]):
@@ -53,30 +46,34 @@ class MeteredOnRamp(Origin[sym_var]):
 
     def init_vars(
         self,
-        initial_conditions: Dict[str, sym_var] = None,
+        init_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None
     ) -> None:
-        '''initializes the queue length `w` (state) and the ramp metering rate
-        `r` (control action).
+        '''Initializes
+        - `w`: queue length (state)
+        - `r`: ramp metering rate (control action)
+        - `d`: demand (disturbance).
 
         Parameters
         ----------
-        initial_conditions : dict[str, variable]
-            Provides name-variable tuples to initialize variables with specific
-            values. These values must be compatible with the symbolic engine in
-            type and shape.
+        init_conditions : dict[str, variable], optional
+            Provides name-variable tuples to initialize states and actions with
+            specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are
+            initialized automatically.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
         '''
-        if initial_conditions is None:
-            initial_conditions = {}
+        if init_conditions is None:
+            init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-
         self.vars = {
             name: (
-                initial_conditions[name]
-                if name in initial_conditions else
+                init_conditions[name]
+                if name in init_conditions else
                 engine.var(name, (1, 1))
-            ) for name in ('w', 'r')
+            ) for name in ('w', 'r', 'd')
         }
 
 
@@ -91,28 +88,32 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
 
     def init_vars(
         self,
-        initial_conditions: Dict[str, sym_var] = None,
+        init_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None
     ) -> None:
-        '''initializes the queue length `w` (state) and the ramp flow `q`
-        (control action).
+        '''Initializes
+        - `w`: queue length (state)
+        - `q`: ramp flow (control action)
+        - `d`: demand (disturbance).
 
         Parameters
         ----------
-        initial_conditions : dict[str, variable]
-            Provides name-variable tuples to initialize variables with specific
-            values. These values must be compatible with the symbolic engine in
-            type and shape.
+        init_conditions : dict[str, variable], optional
+            Provides name-variable tuples to initialize states and actions with
+            specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are
+            initialized automatically.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
         '''
-        if initial_conditions is None:
-            initial_conditions = {}
+        if init_conditions is None:
+            init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-
         self.vars = {
             name: (
-                initial_conditions[name]
-                if name in initial_conditions else
+                init_conditions[name]
+                if name in init_conditions else
                 engine.var(name, (1, 1))
-            ) for name in ('w', 'q')
+            ) for name in ('w', 'q', 'd')
         }
