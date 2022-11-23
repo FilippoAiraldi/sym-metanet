@@ -321,22 +321,6 @@ class TestNetwork(unittest.TestCase):
         with self.assertRaises(InvalidNetworkError):
             net.is_valid(raises=True)
 
-    def test_is_valid__raises__node_with_multiple_in_and_out_links(self):
-        Nin1 = Node(name='Nin1')
-        Nin2 = Node(name='Nin2')
-        Ncenter = Node(name='Ncenter')
-        Nout1 = Node(name='Nout1')
-        Nout2 = Node(name='Nout2')
-        Lin1 = Link(4, 3, 1, 100, 30, 1.8, name='Lin1')
-        Lin2 = Link(4, 3, 1, 100, 30, 1.8, name='Lin2')
-        Lout1 = Link(4, 3, 1, 100, 30, 1.8, name='Lout1')
-        Lout2 = Link(4, 3, 1, 100, 30, 1.8, name='Lout2')
-        net = Network(name='.Net that does not raise')
-        net.add_path((Nin1, Lin1, Ncenter, Lout1, Nout1))
-        net.add_path((Nin2, Lin2, Ncenter, Lout2, Nout2))
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
-
     def test_init_vars__calls_init_vars_in_elements(self):
         L = 1
         lanes = 2
