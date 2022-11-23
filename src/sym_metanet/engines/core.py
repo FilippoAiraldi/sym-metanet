@@ -405,20 +405,36 @@ class EngineBase(ABC):
         pass
 
     @abstractmethod
-    def var(self, name: str, shape: Tuple[int, ...], *args, **kwargs):
+    def var(self, name: str, shape: Tuple[int, int], *args, **kwargs):
         '''Creates a variable.
 
         Parameters
         ----------
         name : str
             Name of the variable.
-        shape : Tuple[int, ...]
+        shape : Tuple[int, int]
             Shape of the variable.
 
         Returns
         -------
         sym variable
             The symbolic variable.
+        '''
+        pass
+
+    @abstractmethod
+    def vcat(self, x1, x2):
+        '''Concatenates vertically two elements/variables.
+
+        Parameters
+        ----------
+        x1, x2
+            Values to be vertically concatenated.
+
+        Returns
+        -------
+        sym variable
+            A unique variable resulting from the vertical concatenation.
         '''
         pass
 

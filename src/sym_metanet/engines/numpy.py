@@ -182,6 +182,13 @@ class Engine(EngineBase):
     ) -> np.ndarray:
         return self._var_gen(shape)
 
+    def vcat(self, x1: np.ndarray, x2: np.ndarray):
+        if x1.ndim == 1:
+            x1 = x1.reshape(-1, 1)
+        if x2.ndim == 1:
+            x2 = x2.reshape(-1, 1)
+        return np.concatenate((x1, x2), axis=0)
+
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(numpy)'
 

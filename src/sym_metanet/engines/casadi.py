@@ -145,6 +145,9 @@ class Engine(EngineBase, Generic[csXX]):
     def var(self, name: str, shape: Tuple[int, int], *args, **kwargs) -> csXX:
         return self._csXX.sym(name, *shape)
 
+    def vcat(self, x1, x2):
+        return cs.vertcat(x1, x2)
+
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(casadi)'
 
