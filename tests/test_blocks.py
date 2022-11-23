@@ -20,10 +20,15 @@ engine = engines.use('numpy', var_type='randn')
 
 
 class TestNodes(unittest.TestCase):
-    def test_init_vars__no_value_is_initialized(self):
+    def test_init_vars__raises(self):
         N = Node()
-        N.init_vars()
-        self.assertEqual(N.vars, NO_VARS)
+        with self.assertRaises(RuntimeError):
+            N.init_vars()
+
+    def test_step__raises(self):
+        N = Node()
+        with self.assertRaises(RuntimeError):
+            N.step()
 
 
 class TestLinks(unittest.TestCase):

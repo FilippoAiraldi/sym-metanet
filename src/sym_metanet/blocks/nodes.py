@@ -14,5 +14,10 @@ class Node(ElementBase[sym_var]):
         control measures", Netherlands TRAIL Research School.
     '''
 
-    def init_vars(self, *args, **kwargs) -> None:
-        pass
+    def init_vars(self, *args, **kwargs):
+        raise RuntimeError('Nodes are virtual elements that do not implement '
+                           '`init_vars`.')
+
+    def step(self, *args, **kwargs):
+        raise RuntimeError('Nodes are virtual elements that do not implement '
+                           '`step`.')
