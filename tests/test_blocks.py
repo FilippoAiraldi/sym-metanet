@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
+from typing import List
 import numpy as np
-from sym_metanet.blocks.base import NO_VARS
+from sym_metanet.blocks.base import NO_VARS, ElementBase
 from sym_metanet import (
     Node,
     Link,
@@ -351,22 +352,25 @@ class TestNetwork(unittest.TestCase):
         O1 = MeteredOnRamp(C[0], name='O1')
         O2 = SimpleMeteredOnRamp(C[1], name='O2')
         D1 = Destination(name='D1')
-        for el in [N1, N2, N3, L1, L2, O1, O2, D1]:
+        elements: List[ElementBase] = [N1, N2, N3, L1, L2, O1, O2, D1]
+        for el in elements:
             el.init_vars = MagicMock(return_value=None)
         net = (Network(name='A1')
                .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
                .add_origin(O2, N2))
 
         engine = object()
-        init_conds = {el: object() for el in [N1, N2, N3, L1, L2, O1, O2, D1]}
+        init_conds = {el: object() for el in elements}
         net.init_vars(init_conds, engine)
 
-        for el in [N1, N2, N3, L1, L2, O1, O2, D1]:
-            el.init_vars.assert_called_once()
-            el.init_vars.assert_called_with(
-                init_conditions=init_conds[el],
-                engine=engine
-            )
+        for el in elements:
+            if isinstance(el, Node):
+                el.init_vars.assert_not_called()
+            else:
+                el.init_vars.assert_called_once()
+                el.init_vars.assert_called_with(
+                    init_conditions=init_conds[el],
+                    engine=engine)
 
 
 if __name__ == '__main__':

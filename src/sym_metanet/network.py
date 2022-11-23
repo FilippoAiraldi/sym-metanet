@@ -420,8 +420,7 @@ class Network(ElementBase[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        for el in chain(self.nodes,
-                        (link[-1] for link in self.links),
+        for el in chain((link[-1] for link in self.links),
                         self.origins,
                         self.destinations):
             el.init_vars(
