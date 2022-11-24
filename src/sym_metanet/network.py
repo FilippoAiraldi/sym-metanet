@@ -324,6 +324,7 @@ class Network(ElementBase[sym_var]):
              - a node with an origin that is not a ramp has also entering links
              - a node with an origin has multiple exiting links
              - a node with a destination has also exiting links
+             - a node has no entering and no exiting links.
         '''
         msgs = []
         # nodes must not have origins and destinations
@@ -332,6 +333,11 @@ class Network(ElementBase[sym_var]):
                 msgs.append(
                     f'Node {node.name} must either have an origin or a '
                     'destination, but not both.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
+            if not (any(self.in_links(node)) or any(self.out_links(node))):
+                msgs.append(
+                    f'Node {node.name} is connected to no link.')
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
 

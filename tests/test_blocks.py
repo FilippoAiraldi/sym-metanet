@@ -264,6 +264,12 @@ class TestNetwork(unittest.TestCase):
         with self.assertRaises(InvalidNetworkError):
             net.is_valid(raises=True)
 
+    def test_is_valid__raises__with_node_with_no_links_attached(self):
+        net = Network(name='.Net')
+        net.add_node(Node(name='N'))
+        with self.assertRaises(InvalidNetworkError):
+            net.is_valid(raises=True)
+
     def test_is_valid__raises__with_duplicate_link(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
