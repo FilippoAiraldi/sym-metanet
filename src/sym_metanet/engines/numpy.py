@@ -13,8 +13,14 @@ class NodesEngine(NodesEngineBase):
     '''NumPy implementation of `sym_metanet.engines.core.NodesEngineBase`.'''
 
     @staticmethod
-    def get_upstream_flow(q_lasts: np.ndarray, beta: np.ndarray) -> np.ndarray:
-        return beta * np.sum(q_lasts, axis=0)
+    def get_upstream_flow(
+        q_lasts: np.ndarray, beta: np.ndarray, betas: np.ndarray,
+        q_orig: np.ndarray = None
+    ) -> np.ndarray:
+        Q = np.sum(q_lasts, axis=0)
+        if q_orig is not None:
+            Q += q_orig
+        return (beta / np.sum(betas, axis=0)) * Q
 
     @staticmethod
     def get_upstream_speed(q_lasts: np.ndarray,

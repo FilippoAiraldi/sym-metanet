@@ -20,8 +20,13 @@ class NodesEngine(NodesEngineBase, Generic[csXX]):
     '''CasADi implementation of `sym_metanet.engines.core.NodesEngineBase`.'''
 
     @staticmethod
-    def get_upstream_flow(q_lasts: csXX, beta: csXX) -> csXX:
-        return beta * cs.sum1(q_lasts)
+    def get_upstream_flow(
+        q_lasts: csXX, beta: csXX, betas: csXX, q_orig: csXX = None
+    ) -> csXX:
+        Q = cs.sum1(q_lasts)
+        if q_orig is not None:
+            Q += q_orig
+        return (beta / cs.sum1(betas)) * Q
 
     @staticmethod
     def get_upstream_speed(q_lasts: csXX, v_lasts: csXX) -> csXX:
