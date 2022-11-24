@@ -58,9 +58,12 @@ class Node(ElementBase[sym_var]):
                 if destination.has_var('rho') else link.vars['rho'][-1]
 
         # if no destination, then there must be 1 or more exiting links
+        down_links = net.out_links(self)
+        if len(down_links) == 1:
+            return next(iter(down_links))[-1].vars['rho'][0]
+
         if engine is None:
             engine = get_current_engine()
-        down_links = net.out_links(self)
         rho_firsts = engine.vcat(
             *(dlink.vars['rho'][-1] for _, _, dlink in down_links))
         return engine.nodes.get_downstream_density(rho_firsts)
