@@ -1,6 +1,7 @@
 import unittest
 import sym_metanet as metanet
 from sym_metanet.errors import EngineNotFoundError
+from sym_metanet.util.funcs import first
 
 
 class TestEngines(unittest.TestCase):
@@ -10,7 +11,7 @@ class TestEngines(unittest.TestCase):
     def test_get_available_engines__gets_available_engines_correctly(self):
         engines = metanet.engines.get_available_engines()
         self.assertIsInstance(engines, dict)
-        self.assertIsInstance(next(iter(engines.keys())), str)
+        self.assertIsInstance(first(engines.keys()), str)
 
     def test_use__sets_the_engine_correctly(self):
         old_engine = metanet.engine

@@ -1,6 +1,7 @@
 from typing import Tuple, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
+from sym_metanet.util.funcs import first
 if TYPE_CHECKING:
     from sym_metanet.network import Network
     from sym_metanet.blocks.links import Link
@@ -56,7 +57,7 @@ class Node(ElementBase[sym_var]):
         # if no destination, then there must be 1 or more exiting links
         links_down = net.out_links(self)
         if len(links_down) == 1:
-            return next(iter(links_down))[-1].vars['rho'][0]
+            return first(links_down)[-1].vars['rho'][0]
         rho_firsts = engine.vcat(
             *(dlink.vars['rho'][-1] for _, _, dlink in links_down))
         return engine.nodes.get_downstream_density(rho_firsts)

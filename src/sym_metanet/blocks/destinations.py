@@ -1,6 +1,7 @@
 from typing import Dict, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
+from sym_metanet.util.funcs import first
 if TYPE_CHECKING:
     from sym_metanet.network import Network
     from sym_metanet.blocks.links import Link
@@ -39,10 +40,10 @@ class Destination(ElementBase[sym_var]):
     def _get_entering_link(self, net: 'Network') -> 'Link':
         '''Internal utility to fetch the link entering this destination (can
         only be one).'''
-        up_links = net.in_links(net.destinations[self])
-        assert len(up_links) == 1, \
+        links_up = net.in_links(net.destinations[self])
+        assert len(links_up) == 1, \
             'Internal error. Only one link can enter a destination.'
-        return next(iter(up_links))[-1]
+        return first(links_up)[-1]
 
 
 class CongestedDestination(Destination[sym_var]):
@@ -103,9 +104,9 @@ class CongestedDestination(Destination[sym_var]):
         '''
         if engine is None:
             engine = get_current_engine()
-        up_link = self._get_entering_link(net=net)
+        link_up = self._get_entering_link(net=net)
         return engine.destinations.get_congested_downstream_density(
-            rho_last=up_link.vars['rho'][-1],
-            rho_crit=up_link.rho_crit,
+            rho_last=link_up.vars['rho'][-1],
+            rho_crit=link_up.rho_crit,
             rho_destination=self.vars['d']
         )

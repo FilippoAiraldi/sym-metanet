@@ -1,5 +1,24 @@
 from functools import cached_property, _lru_cache_wrapper, wraps
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Iterable, TypeVar
+
+
+T = TypeVar('T')
+
+
+def first(o: Iterable[T]) -> T:
+    '''Returns the first item of an iterable. Use `next` for iterators.
+
+    Parameters
+    ----------
+    o : iterable of T
+        Object that can be iterated over.
+
+    Returns
+    -------
+    T
+        The first element in the iterable.
+    '''
+    return next(iter(o))
 
 
 def cache_clearer(

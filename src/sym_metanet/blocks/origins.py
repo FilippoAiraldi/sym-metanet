@@ -1,6 +1,7 @@
 from typing import Dict, Literal, Tuple, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
+from sym_metanet.util.funcs import first
 if TYPE_CHECKING:
     from sym_metanet.network import Network
     from sym_metanet.blocks.links import Link
@@ -40,16 +41,16 @@ class Origin(ElementBase[sym_var]):
         tuple[sym_var, sym_var]
             The origin's upstream speed and flow.
         '''
-        down_link = self._get_exiting_link(net=net)
-        return down_link.vars['v'][0], down_link.get_flow(engine=engine)[0]
+        link_down = self._get_exiting_link(net=net)
+        return link_down.vars['v'][0], link_down.get_flow(engine=engine)[0]
 
     def _get_exiting_link(self, net: 'Network') -> 'Link':
         '''Internal utility to fetch the link leaving this destination (can
         only be one).'''
-        down_links = net.out_links(net.origins[self])
-        assert len(down_links) == 1, \
+        links_down = net.out_links(net.origins[self])
+        assert len(links_down) == 1, \
             'Internal error. Only one link can leave an origin.'
-        return next(iter(down_links))[-1]
+        return first(links_down)[-1]
 
 
 class MeteredOnRamp(Origin[sym_var]):
@@ -143,16 +144,16 @@ class MeteredOnRamp(Origin[sym_var]):
         '''
         if engine is None:
             engine = get_current_engine()
-        down_link = self._get_exiting_link(net=net)
-        v = down_link.vars['v'][0]
+        link_down = self._get_exiting_link(net=net)
+        v = link_down.vars['v'][0]
         q = engine.origins.get_ramp_flow(
             d=self.vars['d'],
             w=self.vars['w'],
             C=self.C,
             r=self.vars['r'],
-            rho_max=down_link.rho_max,
-            rho_crit=down_link.rho_crit,
-            rho_first=down_link.vars['rho'][0],
+            rho_max=link_down.rho_max,
+            rho_crit=link_down.rho_crit,
+            rho_first=link_down.vars['rho'][0],
             T=T,
             type=self.flow_eq_type
         )
