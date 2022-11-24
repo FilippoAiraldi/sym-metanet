@@ -1,11 +1,12 @@
 from typing import Tuple, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
-from sym_metanet.views import ORIGINENTRY
+from sym_metanet.views import ORIGINENTRY, DESTINATIONENTRY
 if TYPE_CHECKING:
     from sym_metanet.network import Network
     from sym_metanet.blocks.links import Link
     from sym_metanet.blocks.origins import Origin
+    from sym_metanet.blocks.destinations import Destination
 
 
 class Node(ElementBase[sym_var]):
@@ -29,7 +30,30 @@ class Node(ElementBase[sym_var]):
         raise RuntimeError('Nodes are virtual elements that do not implement '
                            '`step`.')
 
-    def get_upstream_quantities(
+    def get_downstream_density(
+        self,
+        link: 'Link',
+        net: 'Network',
+        engine: EngineBase = None
+    ) -> sym_var:
+
+        # following the link entering this node, this node can only be a
+        # destination or have multiple exiting links
+        nodedata = net.nodes[self]
+        if DESTINATIONENTRY in nodedata:
+            destination: 'Destination' = nodedata[DESTINATIONENTRY]
+            return destination.vars['rho'] \
+                if destination.has_var('rho') else link.vars['rho'][-1]
+
+        # if no destination, then there must be 1 or more exiting links
+        if engine is None:
+            engine = get_current_engine()
+        down_links = net.out_links(self)
+        rho_firsts = engine.vcat(
+            *(dlink.vars['rho'][-1] for _, _, dlink in down_links))
+        return engine.nodes.get_downstream_density(rho_firsts)
+
+    def get_upstream_flow_and_speed(
         self,
         link: 'Link',
         net: 'Network',
@@ -74,7 +98,7 @@ class Node(ElementBase[sym_var]):
         # from the link (ideal origin).
         nodedata = net.nodes[self]
         if ORIGINENTRY in nodedata:
-            origin: Origin = nodedata[ORIGINENTRY]
+            origin: 'Origin' = nodedata[ORIGINENTRY]
             q_orig = origin.vars['q'] \
                 if origin.has_var('q') else link.vars['q'][0]
         else:
