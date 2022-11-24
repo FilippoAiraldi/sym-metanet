@@ -108,7 +108,7 @@ class Node(ElementBase[sym_var]):
             v = v_o
             q = q_o
         elif n_up == 1:
-            link_up: 'Link' = next(iter(links_up))[-1]
+            link_up = next(iter(links_up))[-1]
             v = link_up.vars['v'][-1]
             q = link_up.get_flow(engine=engine)[-1]
             if q_o is not None:

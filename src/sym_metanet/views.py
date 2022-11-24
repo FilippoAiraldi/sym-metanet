@@ -1,4 +1,4 @@
-from typing import Any, Dict, Collection, Generator, Sequence, Tuple, Union,\
+from typing import Any, Dict, Collection, Generator, Iterable, Tuple, Union,\
     TYPE_CHECKING
 import networkx as nx
 if TYPE_CHECKING:
@@ -25,13 +25,10 @@ class OutLinkViewWrapper(nx.classes.reportviews.OutEdgeView):
 
     def __call__(
         self,
-        nbunch: Union['Node', Sequence['Node']] = None,
+        nbunch: Union['Node', Iterable['Node']] = None,
         data: Union[bool, str] = LINKENTRY,
         default: Dict[str, Any] = None
-    ) -> Union[
-        Collection[Tuple['Node', 'Node']],
-        Collection[Tuple['Node', 'Node', 'Link']]
-    ]:
+    ) -> Collection[Tuple['Node', 'Node', 'Link']]:
         return super().__call__(nbunch, data, default)
 
 
@@ -49,8 +46,8 @@ class InLinkViewWrapper(nx.classes.reportviews.InEdgeView):
 
     def __call__(
         self,
-        nbunch: Union['Node', Sequence['Node']] = None,
+        nbunch: Union['Node', Iterable['Node']] = None,
         data: Union[bool, str] = LINKENTRY,
         default: Dict[str, Any] = None
-    ) -> Union[Tuple['Node', 'Node'], Tuple['Node', 'Node', 'Link']]:
+    ) -> Collection[Tuple['Node', 'Node', 'Link']]:
         return super().__call__(nbunch, data, default)
