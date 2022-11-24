@@ -1,6 +1,7 @@
 import unittest
+import re
 from unittest.mock import MagicMock
-from typing import List
+from typing import Iterable, List
 import numpy as np
 from sym_metanet.blocks.base import NO_VARS, ElementBase
 from sym_metanet import (
@@ -138,6 +139,12 @@ class TestSimpleMeteredOnRamp(unittest.TestCase):
 
 
 class TestNetwork(unittest.TestCase):
+    def assertAtLeastOneRegexMatch(self, pattern: str, strings: Iterable[str]):
+        for string in strings:
+            if re.match(pattern, string):
+                return
+        raise self.failureException(f'no string matches pattern: {pattern}')
+
     def test_add_node__adds_node_correctly(self):
         node = Node(name='This is a random name')
         net = Network(name='Another random name')
@@ -259,24 +266,8 @@ class TestNetwork(unittest.TestCase):
         net.add_links(((N1, L1, N2), (N3, L2, N2)))
         self.assertEqual({(N1, N2, L1), (N3, N2, L2)}, set(net.in_links(N2)))
 
-    def test_is_valid__raises__with_node_with_origin_and_destination(self):
-        N = Node(name='N')
-        O = MeteredOnRamp(100, name='23423')
-        D = Destination(name='23423')
-        net = Network(name='.Net')
-        net.add_node(N)
-        net.add_origin(O, N)
-        net.add_destination(D, N)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
-
-    def test_is_valid__raises__with_node_with_no_links_attached(self):
-        net = Network(name='.Net')
-        net.add_node(Node(name='N'))
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
-
-    def test_is_valid__raises__with_duplicate_link(self):
+    def test_is_valid__raises__condition_1a(self):
+        # duplicate link
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
@@ -285,83 +276,141 @@ class TestNetwork(unittest.TestCase):
         net.add_nodes((N1, N2, N3))
         net.add_link(N1, L, N2)
         net.add_link(N1, L, N3)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Element L1 is duplicated in the network.', msgs)
 
-    def test_is_valid__raises__with_duplicate_origin(self):
+    def test_is_valid__raises__condition_1b(self):
+        # duplicate origin
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         net = Network(name='.Net')
-        O = MeteredOnRamp(100, name='23423')
+        O = MeteredOnRamp(100, name='O')
         net.add_origin(O, N1)
         net.add_origin(O, N2)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Element O is duplicated in the network.', msgs)
 
-    def test_is_valid__raises__with_duplicate_destination(self):
+    def test_is_valid__raises__condition_1c(self):
+        # duplicate destination
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         net = Network(name='.Net')
-        D = Destination(name='23423')
+        D = Destination(name='D')
         net.add_destination(D, N1)
         net.add_destination(D, N2)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Element D is duplicated in the network.', msgs)
 
-    def test_is_valid__raises__destination_on_node_with_out_link(self):
-        N1 = Node(name='N1')
-        N2 = Node(name='N2')
-        L = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
-        net = Network(name='.Net that does not raise')
+    def test_is_valid__raises__condition2(self):
+        N = Node(name='N')
+        O = MeteredOnRamp(100, name='23423')
         D = Destination(name='23423')
-        net.add_link(N1, L, N2)
-        net.add_destination(D, N1)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
+        net = Network(name='.Net')
+        net.add_node(N)
+        net.add_origin(O, N)
+        net.add_destination(D, N)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Node N must either have an origin or a destination, but not '
+            'both.', msgs
+        )
 
-    def test_is_valid__raises__origin_on_node_with_in_link(self):
+    def test_is_valid__raises__condition_3(self):
+        net = Network(name='.Net')
+        net.add_node(Node(name='N'))
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Node N is connected to no link.', msgs)
+
+    def test_is_valid__raises__condition_4_and_5(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         L = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         net = Network(name='.Net that does not raise')
-        R = MeteredOnRamp(100, name='ramp does not raise')
         net.add_link(N1, L, N2)
-        net.add_origin(R, N2)
-        net.is_valid(raises=True)
-        O = Origin(name='origin raises')
-        net.add_origin(O, N2)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Node N1 has neither any entering links nor an origin.', msgs)
+        self.assertAtLeastOneRegexMatch(
+            'Node N2 has neither any exiting links nor a destination.', msgs)
 
-    def test_is_valid__raises__origin_with_multple_exiting_links(self):
+    def test_is_valid__raises__condition_6(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
         L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L3')
-        O = Origin(name='origin raises')
+        O = Origin(name='O')
+        net = Network(name='.Net')
+        net.add_nodes((N1, N2, N3))
+        net.add_link(N1, L1, N2)
+        net.add_link(N2, L2, N3)
+        net.add_origin(O, N2)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            r'Expected node N2 to have no entering links, as it is connected '
+            r'to origin O \(only ramps support entering links\).', msgs)
+
+    def test_is_valid__raises__condition_7(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L3')
+        O = Origin(name='O')
         net = Network(name='.Net')
         net.add_nodes((N1, N2, N3))
         net.add_link(N1, L1, N2)
         net.add_link(N1, L2, N3)
         net.add_origin(O, N1)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Expected node N1 to have at most one exiting link, as it is '
+            'connected to origin O.', msgs)
 
-    def test_is_valid__raises__destination_with_multple_entering_links(self):
+    def test_is_valid__raises__condition_8(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
         L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L3')
-        D = Destination(name='destination raises')
+        D = Destination(name='D')
         net = Network(name='.Net')
         net.add_nodes((N1, N2, N3))
         net.add_link(N1, L1, N3)
         net.add_link(N2, L2, N3)
         net.add_destination(D, N3)
-        with self.assertRaises(InvalidNetworkError):
-            net.is_valid(raises=True)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Expected node N3 to have at most one entering link, as it is '
+            'connected to destination D.', msgs)
+
+    def test_is_valid__raises__condition_9(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        L = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
+        net = Network(name='.Net that does not raise')
+        D = Destination(name='D')
+        net.add_link(N1, L, N2)
+        net.add_destination(D, N1)
+        ok, msgs = net.is_valid(raises=False)
+        self.assertFalse(ok)
+        self.assertAtLeastOneRegexMatch(
+            'Expected node N1 to have no exiting links, as it is connected '
+            'to destination D.', msgs
+        )
 
     def test_init_vars__calls_init_vars_in_elements(self):
         L = 1

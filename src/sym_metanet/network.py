@@ -342,36 +342,33 @@ class Network(ElementBase[sym_var]):
         ------
         InvalidNetworkError
             Raises if `raises=True` and if
-             - a link, origin or destination is duplicated in the network
-             - a node has both an origin and a destination
-             - a node has no entering and no exiting links
-             - a node with an origin that is not a ramp has also entering links
-             - a node with an origin has multiple exiting links
-             - a node with a destination has multiple entering links
-             - a node with a destination has also exiting links.
+             1) a link, origin or destination is duplicated in the network
+
+             2) a node has both an origin and a destination
+
+             3) a node has no entering and no exiting links
+
+             4) a node with no entering links has no origin
+
+             5) a node with no exiting links has no destination
+
+             6) a node with an origin (not a ramp) has also entering links
+
+             7) a node with an origin has multiple exiting links
+
+             8) a node with a destination has multiple entering links
+
+             9) a node with a destination has also exiting links.
         '''
         msgs = []
-        # nodes must not have origins and destinations
-        for node, nodedata in self.nodes.data():
-            if ORIGINENTRY in nodedata and DESTINATIONENTRY in nodedata:
-                msgs.append(
-                    f'Node {node.name} must either have an origin or a '
-                    'destination, but not both.')
-                if raises:
-                    raise InvalidNetworkError(msgs[-1])
-            if not (any(self.in_links(node)) or any(self.out_links(node))):
-                msgs.append(
-                    f'Node {node.name} is connected to no link.')
-                if raises:
-                    raise InvalidNetworkError(msgs[-1])
 
-        # no duplicate elements
         def origin_destination_yielder():
             for data, entry in product(self._graph.nodes.values(),
                                        (ORIGINENTRY, DESTINATIONENTRY)):
                 if entry in data:
                     yield data[entry]
 
+        # (1)
         count: Dict[ElementBase[sym_var], int] = {}
         for o in chain((link[2] for link in self.links),
                        iter(origin_destination_yielder())):
@@ -382,8 +379,34 @@ class Network(ElementBase[sym_var]):
                     raise InvalidNetworkError(msgs[-1])
             count[o] = d
 
-        # nodes with origins (that are not a ramps) must have no entering links
-        # and only one exiting link
+        # (2); (3); (4); (5)
+        for node, nodedata in self.nodes.data():
+            if ORIGINENTRY in nodedata and DESTINATIONENTRY in nodedata:
+                msgs.append(
+                    f'Node {node.name} must either have an origin or a '
+                    'destination, but not both.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
+            n_in, n_out = len(self.in_links(node)), len(self.out_links(node))
+            if n_in == 0 and n_out == 0:
+                msgs.append(
+                    f'Node {node.name} is connected to no link.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
+            if n_in == 0 and ORIGINENTRY not in nodedata:
+                msgs.append(
+                    f'Node {node.name} has neither any entering links nor an '
+                    'origin.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
+            if n_out == 0 and DESTINATIONENTRY not in nodedata:
+                msgs.append(
+                    f'Node {node.name} has neither any exiting links nor a '
+                    'destination.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
+
+        # (6); (7)
         for origin, node in self.origins.items():
             if not isinstance(origin, MeteredOnRamp) and \
                     any(self.in_links(node)):
@@ -400,19 +423,19 @@ class Network(ElementBase[sym_var]):
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
 
-        # nodes with destinations must have no exiting links and only one
-        # entering link
+        # (8); (9)
         for destination, node in self.destinations.items():
+            if len(self.in_links(node)) > 1:
+                msgs.append(
+                    f'Expected node {node.name} to have at most one entering '
+                    'link, as it is connected to destination '
+                    + destination.name + '.')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
             if any(self.out_links(node)):
                 msgs.append(
                     f'Expected node {node.name} to have no exiting links, as '
                     f'it is connected to destination {destination.name}.')
-                if raises:
-                    raise InvalidNetworkError(msgs[-1])
-            if len(self.in_links(node)) > 1:
-                msgs.append(
-                    f'Expected node {node.name} to have at most one entering '
-                    f'link, as it is connected to origin {destination.name}.')
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
         return not msgs, msgs
