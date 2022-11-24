@@ -58,7 +58,7 @@ class CongestedDestination(Destination[sym_var]):
             if init_conditions is None or 'd' not in init_conditions else
             init_conditions['d']
         )
-        up_links = net.out_links(net.origins[self])
+        up_links = net.in_links(net.destinations[self])
         assert len(up_links) == 1, \
             'Internal error. Only one link can enter a destination.'
         up_link: 'Link' = next(iter(up_links))[-1]

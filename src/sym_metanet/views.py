@@ -1,4 +1,5 @@
-from typing import Any, Dict, Generator, Sequence, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, Collection, Generator, Sequence, Tuple, Union,\
+    TYPE_CHECKING
 import networkx as nx
 if TYPE_CHECKING:
     from sym_metanet.blocks.nodes import Node
@@ -27,7 +28,10 @@ class OutLinkViewWrapper(nx.classes.reportviews.OutEdgeView):
         nbunch: Union['Node', Sequence['Node']] = None,
         data: Union[bool, str] = LINKENTRY,
         default: Dict[str, Any] = None
-    ) -> Union[Tuple['Node', 'Node'], Tuple['Node', 'Node', 'Link']]:
+    ) -> Union[
+        Collection[Tuple['Node', 'Node']],
+        Collection[Tuple['Node', 'Node', 'Link']]
+    ]:
         return super().__call__(nbunch, data, default)
 
 
