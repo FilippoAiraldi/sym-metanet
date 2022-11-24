@@ -104,6 +104,18 @@ class Link(ElementBase[sym_var]):
         }
 
     def get_flow(self, engine: EngineBase = None) -> sym_var:
+        '''Gets the flow in this link's segments.
+
+        Parameters
+        ----------
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        sym_var
+            The flow in this link.
+        '''
         if engine is None:
             engine = get_current_engine()
         return engine.links.get_flow(
