@@ -28,18 +28,12 @@ class Node(ElementBase[sym_var]):
                            '`step`.')
 
     def get_downstream_density(
-        self,
-        link: 'Link',
-        net: 'Network',
-        engine: EngineBase = None
+        self, net: 'Network', engine: EngineBase = None, **kwargs
     ) -> sym_var:
         '''Computes the (virtual) downstream density of the node.
 
         Parameters
         ----------
-        link : Link
-            The current link (which enter this node) querying this information
-            from the nde.
         net : Network
             The network which node and link belongs to.
         engine : EngineBase, optional
@@ -50,91 +44,90 @@ class Node(ElementBase[sym_var]):
         sym_var
             Returns the (virtual) downstream density.
         '''
+        if engine is None:
+            engine = get_current_engine()
+
         # following the link entering this node, this node can only be a
         # destination or have multiple exiting links
         if self in net.destinations_by_node:
-            destination = net.destinations_by_node[self]
-            return destination.vars['rho'] \
-                if destination.has_var('rho') else link.vars['rho'][-1]
+            return net.destinations_by_node[self].get_density(
+                net=net, engine=engine, **kwargs)
 
         # if no destination, then there must be 1 or more exiting links
-        down_links = net.out_links(self)
-        if len(down_links) == 1:
-            return next(iter(down_links))[-1].vars['rho'][0]
-
-        if engine is None:
-            engine = get_current_engine()
+        links_down = net.out_links(self)
+        if len(links_down) == 1:
+            return next(iter(links_down))[-1].vars['rho'][0]
         rho_firsts = engine.vcat(
-            *(dlink.vars['rho'][-1] for _, _, dlink in down_links))
+            *(dlink.vars['rho'][-1] for _, _, dlink in links_down))
         return engine.nodes.get_downstream_density(rho_firsts)
 
-    def get_upstream_flow_and_speed(
+    def get_upstream_speed_and_flow(
         self,
-        link: 'Link',
         net: 'Network',
-        engine: EngineBase = None
+        link: 'Link',
+        engine: EngineBase = None,
+        **kwargs
     ) -> Tuple[sym_var, sym_var]:
-        '''Computes the (virtual) upstream flow and speed of the node.
+        '''Computes the (virtual) upstream speed and flow of the node for this
+        the current link.
 
         Parameters
         ----------
-        link : Link
-            The current link (which departs from this node) querying this
-            information from the nde.
         net : Network
             The network which node and link belongs to.
+        link : Link
+            The current link (which departs from this node) querying this
+            information from the node.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
 
         Returns
         -------
         tuple[sym_var, sym_var]
-            Returns the (virtual) upstream flow and speed.
+            Returns the (virtual) upstream speed and flow.
         '''
         if engine is None:
             engine = get_current_engine()
 
-        # check incoming links
-        up_links = net.in_links(self)
-        if any(up_links):
-            v_last = []
-            q_last = []
-            for _, _, ulink in up_links:
-                v_last.append(ulink.vars['v'][-1])
-                q_last.append(ulink.vars['q'][-1])
-            v_last = engine.vcat(*v_last)
-            q_last = engine.vcat(*q_last)
-        else:
-            v_last = None
-            q_last = 0
-
-        # check for origins. If no origin exists, then q_orig is zero;
-        # otherwise, take the q_orig from the origin itself, if it has one, or
-        # from the link (ideal origin).
+        # the node can have 1 or more entering links, as well as a ramp origin.
+        # Speed is dictated by the entering links, if any; otherwise by the
+        # origin (same as first segment). Flow is dictated both by entering
+        # links and origin.
+        links_up = net.in_links(self)
+        n_up = len(links_up)
         if self in net.origins_by_node:
             origin = net.origins_by_node[self]
-            q_orig = origin.vars['q'] \
-                if origin.has_var('q') else link.vars['q'][0]
+            v_o, q_o = origin.get_speed_and_flow(
+                net=net, engine=engine, **kwargs)
         else:
-            q_orig = 0
+            v_o = None
+            q_o = None
 
-        # there are always downstream links (includes this link)
-        down_links = net.out_links(self)
-        betas = engine.vcat(*(dlink.turnrate for _, _, dlink in down_links))
+        if n_up == 0:
+            v = v_o
+            q = q_o
+        elif n_up == 1:
+            link_up: 'Link' = next(iter(links_up))[-1]
+            v = link_up.vars['v'][-1]
+            q = link_up.get_flow(engine=engine)[-1]
+            if q_o is not None:
+                q += q_o
+        else:
+            v_last = []
+            q_last = []
+            for _, _, link_up in links_up:
+                v_last.append(link_up.vars['v'][-1])
+                q_last.append(link_up.get_flow(engine=engine)[-1])
+            v_last = engine.vcat(*v_last)
+            q_last = engine.vcat(*q_last)
+            betas = engine.vcat(
+                *(dlink.turnrate for _, _, dlink in net.out_links(self)))
 
-        # if no virtual speed (i.e., no entering link), assume speed is the
-        # same as first segment in link
-        q = engine.nodes.get_upstream_flow(
-            q_lasts=q_last,
-            beta=link.turnrate,
-            betas=betas,
-            q_orig=q_orig
-        )
-        if v_last is not None:
-            v = engine.nodes.get_upstream_speed(
+            v = engine.nodes.get_upstream_speed(q_lasts=q_last, v_lasts=v_last)
+            q = engine.nodes.get_upstream_flow(
                 q_lasts=q_last,
-                v_lasts=v_last
+                beta=link.turnrate,
+                betas=betas,
+                q_orig=q_o
             )
-        else:
-            v = link.vars['v'][0]
-        return q, v
+        return v, q
