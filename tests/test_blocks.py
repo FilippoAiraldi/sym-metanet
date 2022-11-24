@@ -398,6 +398,9 @@ class TestNetwork(unittest.TestCase):
                 el.init_vars.assert_not_called()
             else:
                 el.init_vars.assert_called_once()
+                el.init_vars.assert_called_with(
+                    init_conditions=init_conds[el],
+                    engine=engine)
 
     def test_step__raises__if_variables_not_init(self):
         L = 1
