@@ -46,22 +46,6 @@ class ElementBase(Generic[sym_var], ABC):
         raise NotImplementedError('Stepping the dynamics not supported for '
                                   + self.__class__.__name__ + '.')
 
-    def has_var(self, name: str) -> bool:
-        '''Checks if the element has the specific variable.
-
-        Parameters
-        ----------
-        name : str
-            Name of the variable to check for.
-
-        Returns
-        -------
-        bool
-            `True`, if `element.vars` exists and contains this name; `False`
-            otherwise.
-        '''
-        return self.vars is not NO_VARS and name in self.vars
-
     def __str__(self) -> str:
         return self.name
 

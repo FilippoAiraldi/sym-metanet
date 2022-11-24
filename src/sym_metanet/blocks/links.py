@@ -75,8 +75,7 @@ class Link(ElementBase[sym_var]):
     def init_vars(
         self,
         init_conditions: Dict[str, sym_var] = None,
-        engine: EngineBase = None,
-        **kwargs
+        engine: EngineBase = None
     ) -> None:
         '''For each segment in the link, initializes
         -  `rho`: densities (state)
@@ -103,5 +102,9 @@ class Link(ElementBase[sym_var]):
                 engine.var(f'{name}_{self.name}', self.N)
             ) for name in ('rho', 'v')
         }
-        self.vars['q'] = engine.links.get_flow(
+
+    def get_flow(self, engine: EngineBase = None) -> sym_var:
+        if engine is None:
+            engine = get_current_engine()
+        return engine.links.get_flow(
             rho=self.vars['rho'], v=self.vars['v'], lanes=self.lam)
