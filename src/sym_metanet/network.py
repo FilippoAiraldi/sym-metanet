@@ -482,3 +482,27 @@ class Network(ElementBase[sym_var]):
                 engine=engine
             )
         self._vars_initialized = True
+
+    def step(
+        self,
+        engine: EngineBase = None,
+        **other_parameters: sym_var
+    ) -> None:
+        '''Steps the dynamics of the network's elements. If not initialized,
+        `init_vars` is called automatically.
+
+        Parameters
+        ----------
+        engine : EngineBase, optional
+            The engine to be used for stepping the dynamics. If `None`, the
+            current engine is used.
+        other_parameters : variables
+            All the other parameters (e.g., sampling time) required during
+            the computations.
+        '''
+        if not self._vars_initialized:
+            self.init_vars(init_conditions=None, engine=engine)
+        for origin in self.origins:
+            origin.step(net=self, engine=engine, **other_parameters)
+        for _, _, link in self.links:
+            link.step(net=self, engine=engine, **other_parameters)
