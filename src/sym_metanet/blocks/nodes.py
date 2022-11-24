@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from sym_metanet.blocks.links import Link
 
 
-class Node(ElementBase[sym_var]):
+class Node(ElementBase):
     '''
     Node of the highway [1, Section 3.2.2] representing, e.g., the connection
     between two links. Nodes do not correspond to actual physical components of
@@ -19,14 +19,6 @@ class Node(ElementBase[sym_var]):
     [1] Hegyi, A., 2004, "Model predictive control for integrating traffic
         control measures", Netherlands TRAIL Research School.
     '''
-
-    def init_vars(self, *args, **kwargs) -> None:
-        raise RuntimeError('Nodes are virtual elements that do not implement '
-                           '`init_vars`.')
-
-    def step(self, *args, **kwargs) -> None:
-        raise RuntimeError('Nodes are virtual elements that do not implement '
-                           '`step`.')
 
     def get_downstream_density(
         self, net: 'Network', engine: EngineBase = None, **kwargs

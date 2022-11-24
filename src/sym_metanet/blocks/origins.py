@@ -1,5 +1,5 @@
 from typing import Dict, Literal, Tuple, TYPE_CHECKING
-from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.blocks.base import ElementWithVars, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
 if TYPE_CHECKING:
@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from sym_metanet.blocks.links import Link
 
 
-class Origin(ElementBase[sym_var]):
+class Origin(ElementWithVars[sym_var]):
     '''
     Ideal, state-less highway origin that conveys to the attached link as much
     flow as the flow in such link.

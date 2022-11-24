@@ -1,5 +1,5 @@
 from typing import Dict, TYPE_CHECKING
-from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.blocks.base import ElementWithVars, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
 if TYPE_CHECKING:
@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from sym_metanet.blocks.links import Link
 
 
-class Destination(ElementBase[sym_var]):
+class Destination(ElementWithVars[sym_var]):
     '''
     Ideal congestion-free destination, representing a sink where cars can leave
     the highway with no congestion (i.e., no slowing down due to downstream

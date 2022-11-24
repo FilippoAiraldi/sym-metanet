@@ -2,7 +2,7 @@ from functools import cached_property
 from itertools import chain, product
 from typing import Dict, Iterable, Tuple, Union, List
 import networkx as nx
-from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.blocks.base import ElementBase, ElementWithVars, sym_var
 from sym_metanet.views import (
     LINKENTRY,
     ORIGINENTRY,
@@ -19,7 +19,7 @@ from sym_metanet.errors import InvalidNetworkError
 from sym_metanet.util.funcs import cache_clearer
 
 
-class Network(ElementBase[sym_var]):
+class Network(ElementBase):
     '''Highway network.'''
 
     def __init__(self, name: str = None):
@@ -369,7 +369,7 @@ class Network(ElementBase[sym_var]):
                     yield data[entry]
 
         # (1)
-        count: Dict[ElementBase[sym_var], int] = {}
+        count: Dict[ElementWithVars[sym_var], int] = {}
         for o in chain((link[2] for link in self.links),
                        iter(origin_destination_yielder())):
             d = count.get(o, 0) + 1
@@ -442,7 +442,8 @@ class Network(ElementBase[sym_var]):
 
     def init_vars(
         self,
-        init_conditions: Dict[ElementBase[sym_var], Dict[str, sym_var]] = None,
+        init_conditions:
+            Dict[ElementWithVars[sym_var], Dict[str, sym_var]] = None,
         engine: EngineBase = None,
     ) -> None:
         '''Initializes the variables (states, inputs, disturbances) of the

@@ -3,7 +3,7 @@ import re
 from unittest.mock import MagicMock
 from typing import Iterable, List
 import numpy as np
-from sym_metanet.blocks.base import NO_VARS, ElementBase
+from sym_metanet.blocks.base import NO_VARS, ElementWithVars
 from sym_metanet import (
     Node,
     Link,
@@ -12,25 +12,12 @@ from sym_metanet import (
     SimpleMeteredOnRamp,
     Network,
     Destination,
-    CongestedDestination,
-    InvalidNetworkError,
+    CongestedDestination
 )
 from sym_metanet import engines
 
 
 engine = engines.use('numpy', var_type='randn')
-
-
-class TestNodes(unittest.TestCase):
-    def test_init_vars__raises(self):
-        N = Node()
-        with self.assertRaises(RuntimeError):
-            N.init_vars()
-
-    def test_step__raises(self):
-        N = Node()
-        with self.assertRaises(RuntimeError):
-            N.step()
 
 
 class TestLinks(unittest.TestCase):
@@ -454,7 +441,7 @@ class TestNetwork(unittest.TestCase):
                .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
                .add_origin(O2, N2))
 
-        elements: List[ElementBase] = [N1, N2, N3, L1, L2, O1, O2, D1]
+        elements: List[ElementWithVars] = [N1, N2, N3, L1, L2, O1, O2, D1]
         for el in elements:
             el.init_vars = MagicMock(return_value=None)
 
@@ -470,31 +457,6 @@ class TestNetwork(unittest.TestCase):
                 el.init_vars.assert_called_with(
                     init_conditions=init_conds[el],
                     engine=engine)
-
-    def test_step__raises__if_variables_not_init(self):
-        L = 1
-        lanes = 2
-        C = (3500, 2000)
-        rho_max = 180
-        a_sym = 1.8
-        v_free_sym = 110
-        rho_crit_sym = 30
-        N1 = Node(name='N1')
-        N2 = Node(name='N2')
-        N3 = Node(name='N3')
-        L1 = Link(
-            4, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L1')
-        L2 = Link(
-            2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L2')
-        O1 = MeteredOnRamp(C[0], name='O1')
-        O2 = SimpleMeteredOnRamp(C[1], name='O2')
-        D1 = Destination(name='D1')
-        net = (Network(name='A1')
-               .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
-               .add_origin(O2, N2))
-
-        with self.assertRaises(RuntimeError):
-            net.step()
 
 
 if __name__ == '__main__':

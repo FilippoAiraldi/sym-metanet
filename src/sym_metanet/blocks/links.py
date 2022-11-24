@@ -1,5 +1,5 @@
 from typing import Dict, TYPE_CHECKING
-from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.blocks.base import ElementWithVars, sym_var
 from sym_metanet.blocks.origins import MeteredOnRamp
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from sym_metanet.network import Network
 
 
-class Link(ElementBase[sym_var]):
+class Link(ElementWithVars[sym_var]):
     '''
     Highway link between two nodes [1, Section 3.2.1]. Links represent stretch
     of highway with similar traffic characteristics and no road changes (e.g.,
