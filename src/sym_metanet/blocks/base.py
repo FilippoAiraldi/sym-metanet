@@ -32,11 +32,14 @@ class ElementBase(Generic[sym_var], ABC):
             _id = count(0)
             self.__ids[cls] = _id
         self.name = name or f'{cls.__name__}{next(_id)}'
-        self.vars: Optional[Dict[str, sym_var]] = NO_VARS
+        self.states: Optional[Dict[str, sym_var]] = NO_VARS
+        self.actions: Optional[Dict[str, sym_var]] = NO_VARS
+        self.disturbances: Optional[Dict[str, sym_var]] = NO_VARS
 
     @abstractmethod
     def init_vars(self, *args, **kwargs) -> None:
-        '''Initializes the variables of this element.'''
+        '''Initializes the variable dicts (`states`, `actions`, `disturbances`)
+        of this element.'''
         raise NotImplementedError('Variable initialization not supported for '
                                   + self.__class__.__name__ + '.')
 

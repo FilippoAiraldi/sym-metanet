@@ -57,9 +57,9 @@ class Node(ElementBase[sym_var]):
         # if no destination, then there must be 1 or more exiting links
         links_down = net.out_links(self)
         if len(links_down) == 1:
-            return first(links_down)[-1].vars['rho'][0]
+            return first(links_down)[-1].states['rho'][0]
         rho_firsts = engine.vcat(
-            *(dlink.vars['rho'][-1] for _, _, dlink in links_down))
+            *(dlink.states['rho'][-1] for _, _, dlink in links_down))
         return engine.nodes.get_downstream_density(rho_firsts)
 
     def get_upstream_speed_and_flow(
@@ -109,7 +109,7 @@ class Node(ElementBase[sym_var]):
             q = q_o
         elif n_up == 1:
             link_up = next(iter(links_up))[-1]
-            v = link_up.vars['v'][-1]
+            v = link_up.states['v'][-1]
             q = link_up.get_flow(engine=engine)[-1]
             if q_o is not None:
                 q += q_o
@@ -117,7 +117,7 @@ class Node(ElementBase[sym_var]):
             v_last = []
             q_last = []
             for _, _, link_up in links_up:
-                v_last.append(link_up.vars['v'][-1])
+                v_last.append(link_up.states['v'][-1])
                 q_last.append(link_up.get_flow(engine=engine)[-1])
             v_last = engine.vcat(*v_last)
             q_last = engine.vcat(*q_last)

@@ -38,10 +38,12 @@ class TestLinks(unittest.TestCase):
         nb_seg = 4
         L = Link[np.ndarray](nb_seg, 3, 1, 180, 30, 100, 1.8)
         L.init_vars()
-        self.assertIsNot(L.vars, NO_VARS)
+        self.assertIsNot(L.states, NO_VARS)
+        self.assertIs(L.actions, NO_VARS)
+        self.assertIs(L.disturbances, NO_VARS)
         for n in ['rho', 'v']:
-            self.assertIn(n, L.vars)
-            self.assertEqual(L.vars[n].shape, (nb_seg,))
+            self.assertIn(n, L.states)
+            self.assertEqual(L.states[n].shape, (nb_seg,))
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         nb_seg = 4
@@ -51,53 +53,65 @@ class TestLinks(unittest.TestCase):
             'v': np.random.rand(nb_seg)
         }
         L.init_vars(init_conds)
-        self.assertIsNot(L, NO_VARS)
+        self.assertIsNot(L.states, NO_VARS)
+        self.assertIs(L.actions, NO_VARS)
+        self.assertIs(L.disturbances, NO_VARS)
         for n in ['rho', 'v']:
-            self.assertIn(n, L.vars)
-            self.assertEqual(L.vars[n].shape, (nb_seg,))
-            np.testing.assert_equal(init_conds[n], L.vars[n])
+            self.assertIn(n, L.states)
+            self.assertEqual(L.states[n].shape, (nb_seg,))
+            np.testing.assert_equal(init_conds[n], L.states[n])
 
 
 class TestDestinations(unittest.TestCase):
     def test_init_vars__no_value_is_initialized(self):
         D = Destination()
         D.init_vars()
-        self.assertEqual(D.vars, NO_VARS)
+        self.assertIs(D.states, NO_VARS)
+        self.assertIs(D.states, NO_VARS)
+        self.assertIs(D.disturbances, NO_VARS)
 
 
 class TestCongestedDestinations(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
         D = CongestedDestination[np.ndarray]()
         D.init_vars()
-        self.assertIsNot(D.vars, NO_VARS)
-        self.assertIn('d', D.vars)
-        self.assertIn(D.vars['d'].shape, {(1,), ()})
+        self.assertIs(D.states, NO_VARS)
+        self.assertIs(D.states, NO_VARS)
+        self.assertIsNot(D.disturbances, NO_VARS)
+        self.assertIn('d', D.disturbances)
+        self.assertIn(D.disturbances['d'].shape, {(1,), ()})
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         D = CongestedDestination[np.ndarray]()
         init_conds = {'d': np.random.rand(1)}
         D.init_vars(init_conds)
-        self.assertIsNot(D, NO_VARS)
-        self.assertIn('d', D.vars)
-        self.assertIn(D.vars['d'].shape, {(1,), ()})
-        np.testing.assert_equal(init_conds['d'], D.vars['d'])
+        self.assertIs(D.states, NO_VARS)
+        self.assertIs(D.states, NO_VARS)
+        self.assertIsNot(D.disturbances, NO_VARS)
+        self.assertIn('d', D.disturbances)
+        self.assertIn(D.disturbances['d'].shape, {(1,), ()})
+        np.testing.assert_equal(init_conds['d'], D.disturbances['d'])
 
 
 class TestOrigins(unittest.TestCase):
     def test_init_vars__no_value_is_initialized(self):
         O = Origin()
         O.init_vars()
-        self.assertEqual(O.vars, NO_VARS)
+        self.assertIs(O.states, NO_VARS)
+        self.assertIs(O.states, NO_VARS)
+        self.assertIs(O.disturbances, NO_VARS)
 
 
 class TestMeteredOnRamp(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
         R = MeteredOnRamp[np.ndarray](1e5)
         R.init_vars()
-        self.assertIsNot(R.vars, NO_VARS)
-        for n in ['w', 'r', 'd']:
-            self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1,), ()})
+        self.assertIsNot(R.states, NO_VARS)
+        self.assertIsNot(R.actions, NO_VARS)
+        self.assertIsNot(R.disturbances, NO_VARS)
+        for n, d in [('w', R.states), ('r', R.actions), ('d', R.disturbances)]:
+            self.assertIn(n, d)
+            self.assertIn(d[n].shape, {(1,), ()})
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         R = MeteredOnRamp[np.ndarray](1e5)
@@ -107,21 +121,25 @@ class TestMeteredOnRamp(unittest.TestCase):
             'd': np.random.rand(1)
         }
         R.init_vars(init_conds)
-        self.assertIsNot(R, NO_VARS)
-        for n in ['w', 'r', 'd']:
-            self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1,), ()})
-            np.testing.assert_equal(init_conds[n], R.vars[n])
+        self.assertIsNot(R.states, NO_VARS)
+        self.assertIsNot(R.actions, NO_VARS)
+        self.assertIsNot(R.disturbances, NO_VARS)
+        for n, d in [('w', R.states), ('r', R.actions), ('d', R.disturbances)]:
+            self.assertIn(n, d)
+            self.assertIn(d[n].shape, {(1,), ()})
+            np.testing.assert_equal(init_conds[n], d[n])
 
 
 class TestSimpleMeteredOnRamp(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
         R = SimpleMeteredOnRamp[np.ndarray](1e5)
         R.init_vars()
-        self.assertIsNot(R.vars, NO_VARS)
-        for n in ['w', 'q', 'd']:
-            self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1,), ()})
+        self.assertIsNot(R.states, NO_VARS)
+        self.assertIsNot(R.actions, NO_VARS)
+        self.assertIsNot(R.disturbances, NO_VARS)
+        for n, d in [('w', R.states), ('q', R.actions), ('d', R.disturbances)]:
+            self.assertIn(n, d)
+            self.assertIn(d[n].shape, {(1,), ()})
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         R = SimpleMeteredOnRamp[np.ndarray](1e5)
@@ -131,11 +149,13 @@ class TestSimpleMeteredOnRamp(unittest.TestCase):
             'd': np.random.rand(1)
         }
         R.init_vars(init_conds)
-        self.assertIsNot(R, NO_VARS)
-        for n in ['w', 'q', 'd']:
-            self.assertIn(n, R.vars)
-            self.assertIn(R.vars[n].shape, {(1,), ()})
-            np.testing.assert_equal(init_conds[n], R.vars[n])
+        self.assertIsNot(R.states, NO_VARS)
+        self.assertIsNot(R.actions, NO_VARS)
+        self.assertIsNot(R.disturbances, NO_VARS)
+        for n, d in [('w', R.states), ('q', R.actions), ('d', R.disturbances)]:
+            self.assertIn(n, d)
+            self.assertIn(d[n].shape, {(1,), ()})
+            np.testing.assert_equal(init_conds[n], d[n])
 
 
 class TestNetwork(unittest.TestCase):

@@ -35,7 +35,7 @@ class Destination(ElementBase[sym_var]):
         sym_var
             The destination's downstream density.
         '''
-        return self._get_entering_link(net=net).vars['rho'][-1]
+        return self._get_entering_link(net=net).states['rho'][-1]
 
     def _get_entering_link(self, net: 'Network') -> 'Link':
         '''Internal utility to fetch the link entering this destination (can
@@ -75,7 +75,7 @@ class CongestedDestination(Destination[sym_var]):
         '''
         if engine is None:
             engine = get_current_engine()
-        self.vars = {
+        self.disturbances = {
             'd': engine.var(f'd_{self.name}')
             if init_conditions is None or 'd' not in init_conditions else
             init_conditions['d']
@@ -106,7 +106,7 @@ class CongestedDestination(Destination[sym_var]):
             engine = get_current_engine()
         link_up = self._get_entering_link(net=net)
         return engine.destinations.get_congested_downstream_density(
-            rho_last=link_up.vars['rho'][-1],
+            rho_last=link_up.states['rho'][-1],
             rho_crit=link_up.rho_crit,
-            rho_destination=self.vars['d']
+            rho_destination=self.disturbances['d']
         )

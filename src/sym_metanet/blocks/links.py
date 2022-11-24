@@ -98,7 +98,7 @@ class Link(ElementBase[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.vars = {
+        self.states = {
             name: (
                 init_conditions[name]
                 if name in init_conditions else
@@ -122,7 +122,7 @@ class Link(ElementBase[sym_var]):
         if engine is None:
             engine = get_current_engine()
         return engine.links.get_flow(
-            rho=self.vars['rho'], v=self.vars['v'], lanes=self.lam)
+            rho=self.states['rho'], v=self.states['v'], lanes=self.lam)
 
     def step(
         self,
@@ -162,8 +162,8 @@ class Link(ElementBase[sym_var]):
             engine = get_current_engine()
 
         node_up, node_down = net.nodes_by_link[self]
-        rho = self.vars['rho']
-        v = self.vars['v']
+        rho = self.states['rho']
+        v = self.states['v']
         q = self.get_flow(engine=engine)
 
         # get upstream flow and speed, and downstream density
@@ -219,6 +219,6 @@ class Link(ElementBase[sym_var]):
         )
 
         # save new vars to dict
-        self.prev_vars = self.vars.copy()
-        self.vars['rho'] = rho_next
-        self.vars['v'] = v_next
+        self.previous_vars = self.states.copy()
+        self.states['rho'] = rho_next
+        self.states['v'] = v_next

@@ -42,7 +42,7 @@ class Origin(ElementBase[sym_var]):
             The origin's upstream speed and flow.
         '''
         link_down = self._get_exiting_link(net=net)
-        return link_down.vars['v'][0], link_down.get_flow(engine=engine)[0]
+        return link_down.states['v'][0], link_down.get_flow(engine=engine)[0]
 
     def _get_exiting_link(self, net: 'Network') -> 'Link':
         '''Internal utility to fetch the link leaving this destination (can
@@ -111,12 +111,20 @@ class MeteredOnRamp(Origin[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.vars = {
-            name: (
-                init_conditions[name]
-                if name in init_conditions else
-                engine.var(f'{name}_{self.name}')
-            ) for name in ('w', 'r', 'd')
+        self.states = {
+            'w': init_conditions['w']
+            if 'w' in init_conditions else
+            engine.var(f'w_{self.name}')
+        }
+        self.actions = {
+            'r': init_conditions['r']
+            if 'r' in init_conditions else
+            engine.var(f'r_{self.name}')
+        }
+        self.disturbances = {
+            'd': init_conditions['d']
+            if 'd' in init_conditions else
+            engine.var(f'd_{self.name}')
         }
 
     def get_speed_and_flow(
@@ -145,15 +153,15 @@ class MeteredOnRamp(Origin[sym_var]):
         if engine is None:
             engine = get_current_engine()
         link_down = self._get_exiting_link(net=net)
-        v = link_down.vars['v'][0]
+        v = link_down.states['v'][0]
         q = engine.origins.get_ramp_flow(
-            d=self.vars['d'],
-            w=self.vars['w'],
+            d=self.disturbances['d'],
+            w=self.states['w'],
             C=self.C,
-            r=self.vars['r'],
+            r=self.actions['r'],
             rho_max=link_down.rho_max,
             rho_crit=link_down.rho_crit,
-            rho_first=link_down.vars['rho'][0],
+            rho_first=link_down.states['rho'][0],
             T=T,
             type=self.flow_eq_type
         )
@@ -197,12 +205,20 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.vars = {
-            name: (
-                init_conditions[name]
-                if name in init_conditions else
-                engine.var(f'{name}_{self.name}')
-            ) for name in ('w', 'q', 'd')
+        self.states = {
+            'w': init_conditions['w']
+            if 'w' in init_conditions else
+            engine.var(f'w_{self.name}')
+        }
+        self.actions = {
+            'q': init_conditions['q']
+            if 'q' in init_conditions else
+            engine.var(f'q_{self.name}')
+        }
+        self.disturbances = {
+            'd': init_conditions['d']
+            if 'd' in init_conditions else
+            engine.var(f'd_{self.name}')
         }
 
     def get_speed_and_flow(
@@ -225,4 +241,5 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
         tuple[sym_var, sym_var]
             The origin's upstream speed and flow.
         '''
-        return self._get_exiting_link(net=net).vars['v'][0], self.vars['q']
+        return \
+            self._get_exiting_link(net=net).states['v'][0], self.actions['q']
