@@ -14,7 +14,7 @@ from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.links import Link
 from sym_metanet.blocks.origins import Origin, MeteredOnRamp
 from sym_metanet.blocks.destinations import Destination
-from sym_metanet.engines.core import EngineBase, get_current_engine
+from sym_metanet.engines.core import EngineBase
 from sym_metanet.errors import InvalidNetworkError
 from sym_metanet.util.funcs import cache_clearer
 
@@ -421,7 +421,6 @@ class Network(ElementBase[sym_var]):
         self,
         init_conditions: Dict[ElementBase[sym_var], Dict[str, sym_var]] = None,
         engine: EngineBase = None,
-        **constants: sym_var
     ) -> None:
         '''Initializes the variables (states, inputs, disturbances) of the
         elements in the network. In particular, it initializes the states
@@ -449,21 +448,14 @@ class Network(ElementBase[sym_var]):
         engine : EngineBase, optional
             The engine to be used for initialization. If `None`, the current
             engine is used.
-        constants : variables
-            All the other variables (e.g., sampling time) required during the
-            computations.
         '''
         if init_conditions is None:
             init_conditions = {}
-        if engine is None:
-            engine = get_current_engine()
         for el in chain((link[-1] for link in self.links),
                         self.origins,
                         self.destinations):
             el.init_vars(
-                net=self,
                 init_conditions=init_conditions.get(el),
-                engine=engine,
-                **constants
+                engine=engine
             )
         self._vars_initialized = True
