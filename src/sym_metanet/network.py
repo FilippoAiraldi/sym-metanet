@@ -32,7 +32,6 @@ class Network(ElementBase):
         '''
         super().__init__(name=name)
         self._graph = nx.DiGraph(name=name)
-        self._vars_initialized = False
 
     @property
     def G(self) -> nx.DiGraph:
@@ -130,7 +129,6 @@ class Network(ElementBase):
             A reference to itself.
         '''
         self._graph.add_node(node)
-        self._vars_initialized = False
         return self
 
     @cache_clearer(nodes_by_name)
@@ -148,7 +146,6 @@ class Network(ElementBase):
             A reference to itself.
         '''
         self._graph.add_nodes_from(nodes)
-        self._vars_initialized = False
         return self
 
     @cache_clearer(links_by_name, nodes_by_link)
@@ -171,7 +168,6 @@ class Network(ElementBase):
             A reference to itself.
         '''
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
-        self._vars_initialized = False
         return self
 
     @cache_clearer(links_by_name, nodes_by_link)
@@ -193,7 +189,6 @@ class Network(ElementBase):
             return (node_up, node_down, {LINKENTRY: link})
 
         self._graph.add_edges_from(get_edge(link) for link in links)
-        self._vars_initialized = False
         return self
 
     @cache_clearer(origins, origins_by_node, origins_by_name)
@@ -216,7 +211,6 @@ class Network(ElementBase):
             self._graph.add_node(node, **{ORIGINENTRY: origin})
         else:
             self.nodes[node][ORIGINENTRY] = origin
-        self._vars_initialized = False
         return self
 
     @cache_clearer(destinations, destinations_by_node, destinations_by_name)
@@ -241,7 +235,6 @@ class Network(ElementBase):
         else:
             self.nodes[node][DESTINATIONENTRY] = destination
         self.destinations_by_name[destination.name] = destination
-        self._vars_initialized = False
         return self
 
     def add_path(
@@ -440,26 +433,14 @@ class Network(ElementBase):
                     raise InvalidNetworkError(msgs[-1])
         return not msgs, msgs
 
-    def init_vars(
+    def step(
         self,
         init_conditions:
             Dict[ElementWithVars[sym_var], Dict[str, sym_var]] = None,
         engine: EngineBase = None,
+        **other_parameters: sym_var
     ) -> None:
-        '''Initializes the variables (states, inputs, disturbances) of the
-        elements in the network. In particular, it initializes the states
-         - densities `rho`, speeds `v` in links
-         - queues `w` and flows `q` in ramps and origins with queues;
-
-        the control actions
-         - ramp rates `r` or flows `q`;
-
-        the disturbances
-         - entering demands `d` in origins
-         - congestion scenarios `d` in congested destinations.
-
-        The initiliazed variables can be found in the property `vars` of
-        each element.
+        '''Steps the dynamics of the network's elements.
 
         Parameters
         ----------
@@ -470,39 +451,22 @@ class Network(ElementBase):
             and shape. If not provided, variables are initialized
             automatically.
         engine : EngineBase, optional
-            The engine to be used for initialization. If `None`, the current
-            engine is used.
-        '''
-        if init_conditions is None:
-            init_conditions = {}
-        for el in chain((link[-1] for link in self.links),
-                        self.origins,
-                        self.destinations):
-            el.init_vars(
-                init_conditions=init_conditions.get(el),
-                engine=engine
-            )
-        self._vars_initialized = True
-
-    def step(
-        self,
-        engine: EngineBase = None,
-        **other_parameters: sym_var
-    ) -> None:
-        '''Steps the dynamics of the network's elements. If not initialized,
-        `init_vars` is called automatically.
-
-        Parameters
-        ----------
-        engine : EngineBase, optional
             The engine to be used for stepping the dynamics. If `None`, the
             current engine is used.
         other_parameters : variables
             All the other parameters (e.g., sampling time) required during
             the computations.
         '''
-        if not self._vars_initialized:
-            self.init_vars(init_conditions=None, engine=engine)
+        # initialization
+        if init_conditions is None:
+            init_conditions = {}
+        for el in self.elements:
+            el.init_vars(
+                init_conditions=init_conditions.get(el),
+                engine=engine
+            )
+
+        # dynamics
         for origin in self.origins:
             origin.step(net=self, engine=engine, **other_parameters)
         for _, _, link in self.links:
