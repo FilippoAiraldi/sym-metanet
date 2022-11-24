@@ -219,6 +219,6 @@ class Link(ElementBase[sym_var]):
         )
 
         # save new vars to dict
-        self.previous_vars = self.states.copy()
+        self.previous_states = self.states.copy()
         self.states['rho'] = rho_next
         self.states['v'] = v_next
