@@ -36,7 +36,23 @@ class Node(ElementBase[sym_var]):
         net: 'Network',
         engine: EngineBase = None
     ) -> sym_var:
+        '''Computes the (virtual) downstream density of the node.
 
+        Parameters
+        ----------
+        link : Link
+            The current link (which enter this node) querying this information
+            from the nde.
+        net : Network
+            The network which node and link belongs to.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        sym_var
+            Returns the (virtual) downstream density.
+        '''
         # following the link entering this node, this node can only be a
         # destination or have multiple exiting links
         nodedata = net.nodes[self]
