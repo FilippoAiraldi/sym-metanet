@@ -1,4 +1,4 @@
-from typing import Dict, Literal, TYPE_CHECKING
+from typing import Dict, Literal, Tuple, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
 if TYPE_CHECKING:
@@ -19,6 +19,37 @@ class Origin(ElementBase[sym_var]):
     def step(self, *args, **kwargs) -> None:
         '''No dynamics to steps in the ideal origin.'''
         pass
+
+    def get_speed_and_flow(
+        self,
+        net: 'Network',
+        engine: EngineBase = None,
+        **kwargs
+    ) -> Tuple[sym_var, sym_var]:
+        '''Computes the (upstream) speed and flow induced by the ideal origin.
+
+        Parameters
+        ----------
+        net : Network
+            The network this destination belongs to.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        tuple[sym_var, sym_var]
+            The origin's upstream speed and flow.
+        '''
+        down_link = self._get_exiting_link(net=net)
+        return down_link.vars['v'][0], down_link.get_flow(engine=engine)[0]
+
+    def _get_exiting_link(self, net: 'Network') -> 'Link':
+        '''Internal utility to fetch the link leaving this destination (can
+        only be one).'''
+        down_links = net.out_links(net.origins[self])
+        assert len(down_links) == 1, \
+            'Internal error. Only one link can leave an origin.'
+        return next(iter(down_links))[-1]
 
 
 class MeteredOnRamp(Origin[sym_var]):
@@ -57,11 +88,8 @@ class MeteredOnRamp(Origin[sym_var]):
 
     def init_vars(
         self,
-        net: 'Network',
-        T: sym_var,
         init_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None,
-        **kwargs
     ) -> None:
         '''Initializes
         - `w`: queue length (state)
@@ -70,10 +98,6 @@ class MeteredOnRamp(Origin[sym_var]):
 
         Parameters
         ----------
-        net : Network
-            The network this origin belongs to.
-        T : sym variable
-            Sampling time of the simulation.
         init_conditions : dict[str, variable], optional
             Provides name-variable tuples to initialize states, actions and
             disturbances with specific values. These values must be compatible
@@ -93,11 +117,35 @@ class MeteredOnRamp(Origin[sym_var]):
                 engine.var(f'{name}_{self.name}')
             ) for name in ('w', 'r', 'd')
         }
-        down_links = net.out_links(net.origins[self])
-        assert len(down_links) == 1, \
-            'Internal error. Only one link can leave an origin.'
-        down_link: 'Link' = next(iter(down_links))[-1]
-        self.vars['q'] = engine.origins.get_ramp_flow(
+
+    def get_speed_and_flow(
+        self,
+        net: 'Network',
+        T: sym_var,
+        engine: EngineBase = None,
+        **kwargs
+    ) -> Tuple[sym_var, sym_var]:
+        '''Computes the (upstream) speed and flow induced by the metered ramp.
+
+        Parameters
+        ----------
+        net : Network
+            The network this destination belongs to.
+        T : sym variable
+            Sampling time of the simulation.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        tuple[sym_var, sym_var]
+            The origin's upstream speed and flow.
+        '''
+        if engine is None:
+            engine = get_current_engine()
+        down_link = self._get_exiting_link(net=net)
+        v = down_link.vars['v'][0]
+        q = engine.origins.get_ramp_flow(
             d=self.vars['d'],
             w=self.vars['w'],
             C=self.C,
@@ -108,6 +156,7 @@ class MeteredOnRamp(Origin[sym_var]):
             T=T,
             type=self.flow_eq_type
         )
+        return v, q
 
 
 class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
@@ -126,8 +175,7 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
     def init_vars(
         self,
         init_conditions: Dict[str, sym_var] = None,
-        engine: EngineBase = None,
-        **kwargs
+        engine: EngineBase = None
     ) -> None:
         '''Initializes
         - `w`: queue length (state)
@@ -155,3 +203,25 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
                 engine.var(f'{name}_{self.name}')
             ) for name in ('w', 'q', 'd')
         }
+
+    def get_speed_and_flow(
+        self,
+        net: 'Network',
+        **kwargs
+    ) -> Tuple[sym_var, sym_var]:
+        '''Computes the (upstream) speed and flow induced by the simple-metered
+        ramp.
+
+        Parameters
+        ----------
+        net : Network
+            The network this destination belongs to.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        tuple[sym_var, sym_var]
+            The origin's upstream speed and flow.
+        '''
+        return self._get_exiting_link(net=net).vars['v'][0], self.vars['q']

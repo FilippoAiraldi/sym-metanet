@@ -21,6 +21,29 @@ class Destination(ElementBase[sym_var]):
         '''No dynamics to steps in the ideal destination.'''
         pass
 
+    def get_density(self, net: 'Network', **kwargs) -> sym_var:
+        '''Computes the (downstream) density induced by the ideal destination.
+
+        Parameters
+        ----------
+        net : Network
+            The network this destination belongs to.
+
+        Returns
+        -------
+        sym_var
+            The destination's downstream density.
+        '''
+        return self._get_entering_link(net=net).vars['rho'][-1]
+
+    def _get_entering_link(self, net: 'Network') -> 'Link':
+        '''Internal utility to fetch the link entering this destination (can
+        only be one).'''
+        up_links = net.in_links(net.destinations[self])
+        assert len(up_links) == 1, \
+            'Internal error. Only one link can enter a destination.'
+        return next(iter(up_links))[-1]
+
 
 class CongestedDestination(Destination[sym_var]):
     '''
@@ -31,10 +54,8 @@ class CongestedDestination(Destination[sym_var]):
 
     def init_vars(
         self,
-        net: 'Network',
         init_conditions: Dict[str, sym_var] = None,
-        engine: EngineBase = None,
-        **kwargs
+        engine: EngineBase = None
     ) -> None:
         '''Initializes
         - `d`: downstream density scenario (disturbance).
@@ -53,18 +74,38 @@ class CongestedDestination(Destination[sym_var]):
         '''
         if engine is None:
             engine = get_current_engine()
-        d = (
-            engine.var(f'd_{self.name}')
+        self.vars = {
+            'd': engine.var(f'd_{self.name}')
             if init_conditions is None or 'd' not in init_conditions else
             init_conditions['d']
-        )
-        up_links = net.in_links(net.destinations[self])
-        assert len(up_links) == 1, \
-            'Internal error. Only one link can enter a destination.'
-        up_link: 'Link' = next(iter(up_links))[-1]
-        rho = engine.destinations.get_congested_downstream_density(
+        }
+
+    def get_density(
+        self,
+        net: 'Network',
+        engine: EngineBase = None,
+        **kwargs
+    ) -> sym_var:
+        '''Computes the (downstream) density induced by the congested
+        destination.
+
+        Parameters
+        ----------
+        net : Network
+            The network this destination belongs to.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        sym_var
+            The destination's downstream density.
+        '''
+        if engine is None:
+            engine = get_current_engine()
+        up_link = self._get_entering_link(net=net)
+        return engine.destinations.get_congested_downstream_density(
             rho_last=up_link.vars['rho'][-1],
             rho_crit=up_link.rho_crit,
-            rho_destination=d
+            rho_destination=self.vars['d']
         )
-        self.vars = {'d': d, 'rho': rho}
