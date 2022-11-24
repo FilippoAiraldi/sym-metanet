@@ -18,7 +18,7 @@ class Destination(ElementWithVars[sym_var]):
         '''Initializes no variable in the ideal destination.'''
         pass
 
-    def step(self, *args, **kwargs) -> None:
+    def step_dynamics(self, *args, **kwargs) -> None:
         '''No dynamics to steps in the ideal destination.'''
         pass
 

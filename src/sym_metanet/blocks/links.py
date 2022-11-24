@@ -124,7 +124,7 @@ class Link(ElementWithVars[sym_var]):
         return engine.links.get_flow(
             rho=self.states['rho'], v=self.states['v'], lanes=self.lam)
 
-    def step(
+    def step_dynamics(
         self,
         net: 'Network',
         tau: sym_var,
@@ -135,7 +135,7 @@ class Link(ElementWithVars[sym_var]):
         phi: sym_var = None,
         engine: EngineBase = None,
         **kwargs
-    ) -> None:
+    ) -> Dict[str, sym_var]:
         '''Steps the dynamics of this link.
 
         Parameters
@@ -157,6 +157,12 @@ class Link(ElementWithVars[sym_var]):
             considered.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        Dict[str, sym_var]
+            A dict with the states of the link (speeds and densities) at the
+            next time step.
         '''
         if engine is None:
             engine = get_current_engine()
@@ -217,5 +223,4 @@ class Link(ElementWithVars[sym_var]):
             phi=phi,
             rho_crit=self.rho_crit
         )
-        self.next_states['rho'] = rho_next
-        self.next_states['v'] = v_next
+        return {'rho': rho_next, 'v': v_next}

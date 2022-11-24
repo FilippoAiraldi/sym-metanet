@@ -17,7 +17,7 @@ class Origin(ElementWithVars[sym_var]):
         '''Initializes no variable in the ideal origin.'''
         pass
 
-    def step(self, *args, **kwargs) -> None:
+    def step_dynamics(self, *args, **kwargs) -> None:
         '''No dynamics to steps in the ideal origin.'''
         pass
 
@@ -127,6 +127,36 @@ class MeteredOnRamp(Origin[sym_var]):
             engine.var(f'd_{self.name}')
         }
 
+    def step_dynamics(
+        self,
+        net: 'Network',
+        T: sym_var,
+        engine: EngineBase = None,
+        **kwargs
+    ) -> Dict[str, sym_var]:
+        '''Steps the dynamics of this origin.
+
+        Parameters
+        ----------
+        net : Network
+            The network the origin belongs to.
+        T : sym_var
+            Sampling time.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        Dict[str, sym_var]
+            A dict with the states of the origin (queue) at the next time step.
+        '''
+        if engine is None:
+            engine = get_current_engine()
+        q = self.get_speed_and_flow(net=net, T=T, engine=engine, **kwargs)[-1]
+        w_next = engine.origins.step_queue(
+            w=self.states['w'], d=self.disturbances['d'], q=q, T=T)
+        return {'w': w_next}
+
     def get_speed_and_flow(
         self,
         net: 'Network',
@@ -166,31 +196,6 @@ class MeteredOnRamp(Origin[sym_var]):
             type=self.flow_eq_type
         )
         return v, q
-
-    def step(
-        self,
-        net: 'Network',
-        T: sym_var,
-        engine: EngineBase = None,
-        **kwargs
-    ) -> None:
-        '''Steps the dynamics of this origin.
-
-        Parameters
-        ----------
-        net : Network
-            The network the origin belongs to.
-        T : sym_var
-            Sampling time.
-        engine : EngineBase, optional
-            The engine to be used. If `None`, the current engine is used.
-        '''
-        if engine is None:
-            engine = get_current_engine()
-        q = self.get_speed_and_flow(net=net, T=T, engine=engine, **kwargs)[-1]
-        w_next = engine.origins.step_queue(
-            w=self.states['w'], d=self.disturbances['d'], q=q, T=T)
-        self.next_states['w'] = w_next
 
 
 class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):

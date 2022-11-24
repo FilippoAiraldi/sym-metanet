@@ -87,10 +87,26 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
                                   + self.__class__.__name__ + '.')
 
     @abstractmethod
-    def step(self, *args, **kwargs) -> None:
-        '''Steps the dynamics of this element.'''
+    def step_dynamics(self, *args, **kwargs) -> Dict[str, sym_var]:
+        '''Internal method for stepping the element's dynamics by one time
+        step.
+
+        Returns
+        -------
+        Dict[str, sym_var]
+            A dict with the states at the next time step.
+        '''
         raise NotImplementedError('Stepping the dynamics not supported for '
                                   + self.__class__.__name__ + '.')
+
+    def step(self, *args, **kwargs) -> None:
+        '''Steps the dynamics of this element.'''
+        assert self.states is not NO_VARS, 'States not initialized.'
+        next_states = self.step_dynamics(*args, **kwargs)
+        if self.next_states is NO_VARS:
+            self.next_states = {}
+        for name in self.states:
+            self.next_states[name] = next_states[name]
 
     def __str__(self) -> str:
         return self.name
