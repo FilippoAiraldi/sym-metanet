@@ -217,8 +217,5 @@ class Link(ElementWithVars[sym_var]):
             phi=phi,
             rho_crit=self.rho_crit
         )
-
-        # save new vars to dict
-        self.previous_states = self.states.copy()
-        self.states['rho'] = rho_next
-        self.states['v'] = v_next
+        self.next_states['rho'] = rho_next
+        self.next_states['v'] = v_next

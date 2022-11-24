@@ -54,6 +54,7 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
         '''
         super().__init__(name=name)
         self.states: Optional[Dict[str, sym_var]] = NO_VARS
+        self.next_states: Optional[Dict[str, sym_var]] = NO_VARS
         self.actions: Optional[Dict[str, sym_var]] = NO_VARS
         self.disturbances: Optional[Dict[str, sym_var]] = NO_VARS
 
@@ -61,6 +62,12 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
     def has_states(self) -> bool:
         '''Gets whether this element has state variables.'''
         return self.states is not NO_VARS
+
+    @property
+    def has_next_states(self) -> bool:
+        '''Gets whether this element has state variables (computed by stepping
+        the dynamics).'''
+        return self.next_states is not NO_VARS
 
     @property
     def has_actions(self) -> bool:

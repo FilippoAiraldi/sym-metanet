@@ -187,13 +187,10 @@ class MeteredOnRamp(Origin[sym_var]):
         '''
         if engine is None:
             engine = get_current_engine()
-
         q = self.get_speed_and_flow(net=net, T=T, engine=engine, **kwargs)[-1]
         w_next = engine.origins.step_queue(
             w=self.states['w'], d=self.disturbances['d'], q=q, T=T)
-
-        self.previous_states = self.states.copy()
-        self.states['w'] = w_next
+        self.next_states['w'] = w_next
 
 
 class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
