@@ -57,11 +57,11 @@ class MeteredOnRamp(Origin[sym_var]):
 
     def init_vars(
         self,
-        T: sym_var,
         net: 'Network',
+        T: sym_var,
         init_conditions: Dict[str, sym_var] = None,
         engine: EngineBase = None,
-        ** kwargs
+        **kwargs
     ) -> None:
         '''Initializes
         - `w`: queue length (state)
@@ -70,10 +70,10 @@ class MeteredOnRamp(Origin[sym_var]):
 
         Parameters
         ----------
+        net : Network
+            The network this origin belongs to.
         T : sym variable
-            Sampling time.
-        rho_max : sym variable
-            A constant characterizing the network's maximum density.
+            Sampling time of the simulation.
         init_conditions : dict[str, variable], optional
             Provides name-variable tuples to initialize states, actions and
             disturbances with specific values. These values must be compatible

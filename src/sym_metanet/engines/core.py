@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Literal, Tuple, Type, Union
+from typing import Dict, Literal, Type, Union
 import sym_metanet
 from sym_metanet.errors import EngineNotFoundError
 
@@ -346,7 +346,7 @@ class DestinationsEngineBase(ABC):
         rho_last
             Density in the link's last segment.
         rho_destination
-            Density scenerio of the congested destination.
+            Density scenario of the congested destination.
         rho_crit
             Critical density of the link entering the destination.
 
