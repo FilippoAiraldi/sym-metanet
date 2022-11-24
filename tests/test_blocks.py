@@ -35,7 +35,7 @@ class TestNodes(unittest.TestCase):
 class TestLinks(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
         nb_seg = 4
-        L = Link[np.ndarray](nb_seg, 3, 1, 100, 30, 1.8)
+        L = Link[np.ndarray](nb_seg, 3, 1, 180, 30, 100, 1.8)
         L.init_vars()
         self.assertIsNot(L.vars, NO_VARS)
         for n in ['rho', 'v']:
@@ -44,7 +44,7 @@ class TestLinks(unittest.TestCase):
 
     def test_init_vars__with_inital_condition__copies_vars(self):
         nb_seg = 4
-        L = Link[np.ndarray](nb_seg, 3, 1, 100, 30, 1.8)
+        L = Link[np.ndarray](nb_seg, 3, 1, 180, 30, 100, 1.8)
         init_conds = {
             'rho': np.random.rand(nb_seg),
             'v': np.random.rand(nb_seg)
@@ -158,7 +158,7 @@ class TestNetwork(unittest.TestCase):
     def test_add_link__adds_link_correctly(self):
         upnode = Node(name='N1')
         downnode = Node(name='N2')
-        link = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        link = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         net = Network(name='Net')
         net.add_nodes((upnode, downnode))
         net.add_link(upnode, link, downnode)
@@ -171,10 +171,10 @@ class TestNetwork(unittest.TestCase):
     def test_add_links__adds_links_correctly(self):
         upnode1 = Node(name='N11')
         downnode1 = Node(name='N12')
-        link1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        link1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         upnode2 = Node(name='N21')
         downnode2 = Node(name='N21')
-        link2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
+        link2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L2')
         net = Network(name='Net')
         net.add_nodes((upnode1, downnode1, upnode2, downnode2))
         net.add_links((
@@ -191,9 +191,9 @@ class TestNetwork(unittest.TestCase):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
-        L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
-        L3 = Link(4, 3, 1, 100, 30, 1.8, name='L3')
+        L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L2')
+        L3 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L3')
         O1 = Origin(name='23423')
         D1 = Destination(name='23421')
         net = Network(name='Net')
@@ -237,8 +237,8 @@ class TestNetwork(unittest.TestCase):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
-        L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
+        L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L2')
         net = Network(name='.Net')
         net.add_links(((N1, L1, N2), (N1, L2, N3)))
         self.assertEqual({(N1, N3, L2), (N1, N2, L1)}, set(net.out_links(N1)))
@@ -247,8 +247,8 @@ class TestNetwork(unittest.TestCase):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
-        L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
+        L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L2')
         net = Network(name='.Net')
         net.add_links(((N1, L1, N2), (N3, L2, N2)))
         self.assertEqual({(N1, N2, L1), (N3, N2, L2)}, set(net.in_links(N2)))
@@ -268,7 +268,7 @@ class TestNetwork(unittest.TestCase):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        L = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         net = Network(name='.Net')
         net.add_nodes((N1, N2, N3))
         net.add_link(N1, L, N2)
@@ -299,7 +299,7 @@ class TestNetwork(unittest.TestCase):
     def test_is_valid__raises__destination_on_node_with_out_link(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
-        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        L = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         net = Network(name='.Net that does not raise')
         D = Destination(name='23423')
         net.add_link(N1, L, N2)
@@ -310,7 +310,7 @@ class TestNetwork(unittest.TestCase):
     def test_is_valid__raises__origin_on_node_with_in_link(self):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
-        L = Link(4, 3, 1, 100, 30, 1.8, name='L1')
+        L = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
         net = Network(name='.Net that does not raise')
         R = MeteredOnRamp(100, name='ramp does not raise')
         net.add_link(N1, L, N2)
@@ -325,8 +325,8 @@ class TestNetwork(unittest.TestCase):
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L1 = Link(4, 3, 1, 100, 30, 1.8, name='L1')
-        L2 = Link(4, 3, 1, 100, 30, 1.8, name='L2')
+        L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L3')
         O = Origin(name='origin raises')
         net = Network(name='.Net')
         net.add_nodes((N1, N2, N3))
@@ -341,13 +341,16 @@ class TestNetwork(unittest.TestCase):
         lanes = 2
         C = (3500, 2000)
         a_sym = 1.8
+        rho_max = 180
         v_free_sym = 110
         rho_crit_sym = 30
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L1 = Link(4, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L1')
-        L2 = Link(2, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L2')
+        L1 = Link(
+            4, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L1')
+        L2 = Link(
+            2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L2')
         O1 = MeteredOnRamp(C[0], name='O1')
         O2 = SimpleMeteredOnRamp(C[1], name='O2')
         D1 = Destination(name='D1')
@@ -373,14 +376,17 @@ class TestNetwork(unittest.TestCase):
         L = 1
         lanes = 2
         C = (3500, 2000)
+        rho_max = 180
         a_sym = 1.8
         v_free_sym = 110
         rho_crit_sym = 30
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L1 = Link(4, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L1')
-        L2 = Link(2, lanes, L, v_free_sym, rho_crit_sym, a_sym, name='L2')
+        L1 = Link(
+            4, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L1')
+        L2 = Link(
+            2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L2')
         O1 = MeteredOnRamp(C[0], name='O1')
         O2 = SimpleMeteredOnRamp(C[1], name='O2')
         D1 = Destination(name='D1')

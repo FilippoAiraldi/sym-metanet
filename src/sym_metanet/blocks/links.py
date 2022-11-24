@@ -1,6 +1,7 @@
 from typing import Dict, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
+if TYPE_CHECKING:
 
 
 class Link(ElementBase[sym_var]):
@@ -20,8 +21,9 @@ class Link(ElementBase[sym_var]):
         nb_segments: int,
         lanes: sym_var,
         length: sym_var,
-        free_flow_velocity: sym_var,
+        maximum_density: sym_var,
         critical_density: sym_var,
+        free_flow_velocity: sym_var,
         a: sym_var,
         turnrate: sym_var = 1.0,
         name: str = None
@@ -36,12 +38,14 @@ class Link(ElementBase[sym_var]):
             Number of lanes in each segment, i.e., `lam`.
         lengths : float or symbolic
             Length of each segment in the link, i.e., `L`.
-        free_flow_velocities : float or symbolic
-            Average speed of cars when traffic is freely flowing, i.e.,
-            `v_free`.
+        maximum density : float or symbolic
+            Maximum density that the link can withstand, i.e., `rho_max`.
         critical_densities : float or symbolic
             Critical density at which the traffic flow is maximal, i.e.,
             `rho_crit`.
+        free_flow_velocities : float or symbolic
+            Average speed of cars when traffic is freely flowing, i.e.,
+            `v_free`.
         a : float or symbolic
             Model parameter in the computations of the equivalent speed
             [1, Equation 3.4].
@@ -62,8 +66,9 @@ class Link(ElementBase[sym_var]):
         self.N = nb_segments
         self.lam = lanes
         self.L = length
-        self.v_free = free_flow_velocity
+        self.rho_max = maximum_density
         self.rho_crit = critical_density
+        self.v_free = free_flow_velocity
         self.a = a
         self.turnrate = turnrate
 
