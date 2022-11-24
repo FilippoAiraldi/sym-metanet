@@ -190,13 +190,15 @@ class Link(ElementWithVars[sym_var]):
                 q_ramp = origin.get_speed_and_flow(
                     net=net, T=T, engine=engine)[1]
 
-        # check for lane drops in the next link (only if 1 link downstream)
+        # check for lane drops in the next link (only if one link downstream)
         lanes_drop = None
         if phi is not None:
             links_down = net.out_links(node_down)
             if len(links_down) == 1:
                 link_down = first(links_down)[-1]
                 lanes_drop = self.lam - link_down.lam
+            if lanes_drop == 0:
+                lanes_drop = None
 
         # step densities
         rho_next = engine.links.step_density(
