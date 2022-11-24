@@ -427,12 +427,12 @@ class EngineBase(ABC):
         pass
 
     @abstractmethod
-    def vcat(self, x1, x2):
+    def vcat(self, *arrays):
         '''Concatenates vertically two elements/variables.
 
         Parameters
         ----------
-        x1, x2
+        arrays
             Values to be vertically concatenated.
 
         Returns

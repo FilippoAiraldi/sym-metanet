@@ -24,7 +24,8 @@ class CongestedDestination(Destination[sym_var]):
     def init_vars(
         self,
         init_conditions: Dict[str, sym_var] = None,
-        engine: EngineBase = None
+        engine: EngineBase = None,
+        **kwargs
     ) -> None:
         '''Initializes
         - `d`: downstream density scenario (disturbance).

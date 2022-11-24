@@ -1,4 +1,4 @@
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Literal, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var, NO_VARS
 from sym_metanet.engines.core import EngineBase, get_current_engine
 if TYPE_CHECKING:
@@ -11,12 +11,13 @@ class Origin(ElementBase[sym_var]):
     flow as the flow in such link.
     '''
 
-    def __init__(self, name: str = None) -> None:
-        super().__init__(name)
-
     def init_vars(self, *args, **kwargs) -> None:
+        '''Initializes no variable in the ideal origin.'''
         pass
 
+    def step(self, *args, **kwargs) -> None:
+        '''No dynamics to steps in the ideal origin.'''
+        pass
 
 
 class MeteredOnRamp(Origin[sym_var]):

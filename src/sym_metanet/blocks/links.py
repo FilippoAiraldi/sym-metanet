@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
 
@@ -70,7 +70,8 @@ class Link(ElementBase[sym_var]):
     def init_vars(
         self,
         init_conditions: Dict[str, sym_var] = None,
-        engine: EngineBase = None
+        engine: EngineBase = None,
+        **kwargs
     ) -> None:
         '''For each segment in the link, initializes
         -  `rho`: densities (state)
@@ -79,7 +80,7 @@ class Link(ElementBase[sym_var]):
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and 
+            Provides name-variable tuples to initialize states, actions and
             disturbances with specific values. These values must be compatible
             with the symbolic engine in type and shape. If not provided,
             variables are initialized automatically.
