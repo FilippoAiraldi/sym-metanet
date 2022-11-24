@@ -1,7 +1,10 @@
 from typing import Dict, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.blocks.origins import MeteredOnRamp
 from sym_metanet.engines.core import EngineBase, get_current_engine
+from sym_metanet.util.funcs import first
 if TYPE_CHECKING:
+    from sym_metanet.network import Network
 
 
 class Link(ElementBase[sym_var]):
@@ -120,3 +123,102 @@ class Link(ElementBase[sym_var]):
             engine = get_current_engine()
         return engine.links.get_flow(
             rho=self.vars['rho'], v=self.vars['v'], lanes=self.lam)
+
+    def step(
+        self,
+        net: 'Network',
+        tau: sym_var,
+        eta: sym_var,
+        kappa: sym_var,
+        T: sym_var,
+        delta: sym_var = None,
+        phi: sym_var = None,
+        engine: EngineBase = None,
+        **kwargs
+    ) -> None:
+        '''Steps the dynamics of this link.
+
+        Parameters
+        ----------
+        net : Network
+            The network the link belongs to.
+        tau : sym_var
+            Model parameter for the speed relaxation term.
+        eta : sym_var
+            Model parameter for the speed anticipation term.
+        kappa : sym_var
+            Model parameter for the speed anticipation term.
+        T : sym_var
+            Sampling time.
+        delta : sym_var, optional
+            Model parameter for merging phenomenum. By default, not considered.
+        phi : sym_var, optional
+            Model parameter for lane drop phenomenum. By defaul, not
+            considered.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+        '''
+        if engine is None:
+            engine = get_current_engine()
+
+        node_up, node_down = net.nodes_by_link[self]
+        rho = self.vars['rho']
+        v = self.vars['v']
+        q = self.get_flow(engine=engine)
+
+        # get upstream flow and speed, and downstream density
+        v0, q0 = node_up.get_upstream_speed_and_flow(
+            net=net, link=self, T=T, engine=engine)
+        q_up = engine.vcat(q0, q[:-1])
+        v_up = engine.vcat(v0, v[:-1])
+        rhoN_1 = node_down.get_downstream_density(net=net, engine=engine)
+        rho_down = engine.vcat(rho[1:], rhoN_1)
+
+        # check for ramp merging in this link's upstream node with other
+        # entering links.
+        q_ramp = None
+        if delta is not None and \
+                node_up in net.origins_by_node and any(net.in_links(node_up)):
+            origin = net.origins_by_node[node_up]
+            if isinstance(origin, MeteredOnRamp):
+                q_ramp = origin.get_speed_and_flow(
+                    net=net, T=T, engine=engine)[1]
+
+        # check for lane drops in the next link (only if 1 link downstream)
+        lanes_drop = None
+        if phi is not None:
+            links_down = net.out_links(node_down)
+            if len(links_down) == 1:
+                link_down = first(links_down)[-1]
+                lanes_drop = self.lam - link_down.lam
+
+        # step densities
+        rho_next = engine.links.step_density(
+            rho=rho, q=q, q_up=q_up, lanes=self.lam, L=self.L, T=T)
+
+        # step speeds
+        Veq = engine.links.Veq(
+            rho=rho, v_free=self.v_free, rho_crit=self.rho_crit, a=self.a)
+        v_next = engine.links.step_speed(
+            v=v,
+            v_up=v_up,
+            rho=rho,
+            rho_down=rho_down,
+            Veq=Veq,
+            lanes=self.lam,
+            L=self.L,
+            tau=tau,
+            eta=eta,
+            kappa=kappa,
+            T=T,
+            q_ramp=q_ramp,
+            delta=delta,
+            lanes_drop=lanes_drop,
+            phi=phi,
+            rho_crit=self.rho_crit
+        )
+
+        # save new vars to dict
+        self.prev_vars = self.vars.copy()
+        self.vars['rho'] = rho_next
+        self.vars['v'] = v_next
