@@ -319,9 +319,10 @@ class Network(ElementBase[sym_var]):
         ------
         InvalidNetworkError
             Raises if `raises=True` and if
-             - a node has both an origin and a destination
              - a link, origin or destination is duplicated in the network
+             - a node has both an origin and a destination
              - a node with an origin that is not a ramp has also entering links
+             - a node with an origin has multiple exiting links
              - a node with a destination has also exiting links
         '''
         msgs = []
@@ -352,13 +353,20 @@ class Network(ElementBase[sym_var]):
             count[o] = d
 
         # nodes with origins (that are not a ramps) must have no entering links
+        # and only one exiting link
         for origin, node in self.origins.items():
             if not isinstance(origin, MeteredOnRamp) and \
-                        any(self.in_links(node)):
+                    any(self.in_links(node)):
                 msgs.append(
                     f'Expected node {node.name} to have no entering links, as '
                     f'it is connected to origin {origin.name} (only ramps '
                     'support entering links).')
+                if raises:
+                    raise InvalidNetworkError(msgs[-1])
+            if len(self.out_links(node)) > 1:
+                msgs.append(
+                    f'Expected node {node.name} to have at most one exiting '
+                    f'link, as it is connected to origin {origin.name}.')
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
 
