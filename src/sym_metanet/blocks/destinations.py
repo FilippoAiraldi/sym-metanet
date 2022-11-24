@@ -54,7 +54,7 @@ class CongestedDestination(Destination[sym_var]):
         if engine is None:
             engine = get_current_engine()
         d = (
-            engine.var('d')
+            engine.var(f'd_{self.name}')
             if init_conditions is None or 'd' not in init_conditions else
             init_conditions['d']
         )

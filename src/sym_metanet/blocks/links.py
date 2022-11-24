@@ -100,6 +100,8 @@ class Link(ElementBase[sym_var]):
             name: (
                 init_conditions[name]
                 if name in init_conditions else
-                engine.var(name, self.N)
+                engine.var(f'{name}_{self.name}', self.N)
             ) for name in ('rho', 'v')
         }
+        self.vars['q'] = engine.links.get_flow(
+            rho=self.vars['rho'], v=self.vars['v'], lanes=self.lam)

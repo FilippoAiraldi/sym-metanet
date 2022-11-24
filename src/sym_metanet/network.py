@@ -398,7 +398,7 @@ class Network(ElementBase[sym_var]):
         self,
         init_conditions: Dict[ElementBase[sym_var], Dict[str, sym_var]] = None,
         engine: EngineBase = None,
-        **constants
+        **constants: sym_var
     ) -> None:
         '''Initializes the variables (states, inputs, disturbances) of the
         elements in the network. In particular, it initializes the states

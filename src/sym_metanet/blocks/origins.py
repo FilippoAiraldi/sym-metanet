@@ -90,7 +90,7 @@ class MeteredOnRamp(Origin[sym_var]):
             name: (
                 init_conditions[name]
                 if name in init_conditions else
-                engine.var(name)
+                engine.var(f'{name}_{self.name}')
             ) for name in ('w', 'r', 'd')
         }
         down_links = net.out_links(net.origins[self])
@@ -152,6 +152,6 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
             name: (
                 init_conditions[name]
                 if name in init_conditions else
-                engine.var(name)
+                engine.var(f'{name}_{self.name}')
             ) for name in ('w', 'q', 'd')
         }
