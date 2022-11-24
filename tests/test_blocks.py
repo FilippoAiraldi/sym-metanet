@@ -222,6 +222,9 @@ class TestNetwork(unittest.TestCase):
         self.assertIn(origin, net.origins)
         self.assertIs(net.origins[origin], node)
         self.assertIn(origin.name, net.origins_by_name)
+        self.assertIs(net.origins_by_name[origin.name], origin)
+        self.assertIn(node, net.origins_by_node)
+        self.assertIs(net.origins_by_node[node], origin)
 
     def test_add_destination__adds_destination_correctly(self):
         node = Node(name='This is a random name')
@@ -232,6 +235,9 @@ class TestNetwork(unittest.TestCase):
         self.assertIn(destination, net.destinations)
         self.assertIs(net.destinations[destination], node)
         self.assertIn(destination.name, net.destinations_by_name)
+        self.assertIs(net.destinations_by_name[destination.name], destination)
+        self.assertIn(node, net.destinations_by_node)
+        self.assertIs(net.destinations_by_node[node], destination)
 
     def test_out_links__gets_correct_outward_links(self):
         N1 = Node(name='N1')

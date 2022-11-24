@@ -32,11 +32,6 @@ class Network(ElementBase[sym_var]):
         '''
         super().__init__(name=name)
         self._graph = nx.DiGraph(name=name)
-        self.nodes_by_name: Dict[str, Node] = {}
-        self.links_by_name: Dict[str, Link] = {}
-        self.origins_by_name: Dict[str, Origin] = {}
-        self.destinations_by_name: Dict[str, Destination] = {}
-        self.nodes_by_link: Dict[Link, Tuple[Node, Node]] = {}
         self._vars_initialized = False
 
     @property
@@ -60,6 +55,10 @@ class Network(ElementBase[sym_var]):
         return self._graph.nodes
 
     @cached_property
+    def nodes_by_name(self) -> Dict[str, Node]:
+        return {node.name: node for node in self._graph.nodes}
+
+    @cached_property
     def links(self) -> OutLinkViewWrapper:
         '''Returns a view on the links of the network.'''
         return OutLinkViewWrapper(self._graph)
@@ -75,11 +74,28 @@ class Network(ElementBase[sym_var]):
         return InLinkViewWrapper(self._graph)
 
     @cached_property
+    def links_by_name(self) -> Dict[str, Link]:
+        return {link.name: link for _, _, link in self.links}
+
+    @cached_property
+    def nodes_by_link(self) -> Dict[Link, Tuple[Node, Node]]:
+        return {link: (unode, dnode) for unode, dnode, link in self.links}
+
+    @cached_property
     def origins(self) -> Dict[Origin, Node]:
         return {
             data[ORIGINENTRY]: node for node, data in self._graph.nodes.data()
             if ORIGINENTRY in data
         }
+
+    @cached_property
+    def origins_by_name(self) -> Dict[str, Origin]:
+        return {origin.name: origin for origin in self.origins}
+
+    @cached_property
+    def origins_by_node(self) -> Dict[Node, Origin]:
+        d = self.origins
+        return dict(zip(d.values(), d.keys()))
 
     @cached_property
     def destinations(self) -> Dict[Destination, Node]:
@@ -89,6 +105,17 @@ class Network(ElementBase[sym_var]):
             if DESTINATIONENTRY in data
         }
 
+    @cached_property
+    def destinations_by_name(self) -> Dict[str, Origin]:
+        return {
+            destination.name: destination for destination in self.destinations}
+
+    @cached_property
+    def destinations_by_node(self) -> Dict[Node, Destination]:
+        d = self.destinations
+        return dict(zip(d.values(), d.keys()))
+
+    @cache_clearer(nodes_by_name)
     def add_node(self, node: Node) -> 'Network':
         '''Adds a node to the highway network.
 
@@ -103,10 +130,10 @@ class Network(ElementBase[sym_var]):
             A reference to itself.
         '''
         self._graph.add_node(node)
-        self.nodes_by_name[node.name] = node
         self._vars_initialized = False
         return self
 
+    @cache_clearer(nodes_by_name)
     def add_nodes(self, nodes: Iterable[Node]) -> 'Network':
         '''Adds multiple nodes. See `Network.add_node`.
 
@@ -121,10 +148,10 @@ class Network(ElementBase[sym_var]):
             A reference to itself.
         '''
         self._graph.add_nodes_from(nodes)
-        self.nodes_by_name.update({node.name: node for node in nodes})
         self._vars_initialized = False
         return self
 
+    @cache_clearer(links_by_name, nodes_by_link)
     def add_link(
             self, node_up: Node, link: Link, node_down: Node) -> 'Network':
         '''Adds a link to the highway network, between two nodes.
@@ -144,11 +171,10 @@ class Network(ElementBase[sym_var]):
             A reference to itself.
         '''
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
-        self.nodes_by_link[link] = (node_up, node_down)
-        self.links_by_name[link.name] = link
         self._vars_initialized = False
         return self
 
+    @cache_clearer(links_by_name, nodes_by_link)
     def add_links(self, links: Iterable[Tuple[Node, Link, Node]]) -> 'Network':
         '''Adds multiple links. See `Network.add_link`.
 
@@ -164,15 +190,13 @@ class Network(ElementBase[sym_var]):
         '''
         def get_edge(linkdata: Tuple[Node, Link, Node]):
             node_up, link, node_down = linkdata
-            self.nodes_by_link[link] = (node_up, node_down)
-            self.links_by_name[link.name] = link
             return (node_up, node_down, {LINKENTRY: link})
 
         self._graph.add_edges_from(get_edge(link) for link in links)
         self._vars_initialized = False
         return self
 
-    @cache_clearer(origins)
+    @cache_clearer(origins, origins_by_node, origins_by_name)
     def add_origin(self, origin: Origin, node: Node) -> 'Network':
         '''Adds the given traffic origin to the node.
 
@@ -192,11 +216,10 @@ class Network(ElementBase[sym_var]):
             self._graph.add_node(node, **{ORIGINENTRY: origin})
         else:
             self.nodes[node][ORIGINENTRY] = origin
-        self.origins_by_name[origin.name] = origin
         self._vars_initialized = False
         return self
 
-    @cache_clearer(destinations)
+    @cache_clearer(destinations, destinations_by_node, destinations_by_name)
     def add_destination(
             self, destination: Destination, node: Node) -> 'Network':
         '''Adds the given traffic destination to the node.

@@ -1,12 +1,9 @@
 from typing import Tuple, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
-from sym_metanet.views import ORIGINENTRY, DESTINATIONENTRY
 if TYPE_CHECKING:
     from sym_metanet.network import Network
     from sym_metanet.blocks.links import Link
-    from sym_metanet.blocks.origins import Origin
-    from sym_metanet.blocks.destinations import Destination
 
 
 class Node(ElementBase[sym_var]):
@@ -55,9 +52,8 @@ class Node(ElementBase[sym_var]):
         '''
         # following the link entering this node, this node can only be a
         # destination or have multiple exiting links
-        nodedata = net.nodes[self]
-        if DESTINATIONENTRY in nodedata:
-            destination: 'Destination' = nodedata[DESTINATIONENTRY]
+        if self in net.destinations_by_node:
+            destination = net.destinations_by_node[self]
             return destination.vars['rho'] \
                 if destination.has_var('rho') else link.vars['rho'][-1]
 
@@ -112,9 +108,8 @@ class Node(ElementBase[sym_var]):
         # check for origins. If no origin exists, then q_orig is zero;
         # otherwise, take the q_orig from the origin itself, if it has one, or
         # from the link (ideal origin).
-        nodedata = net.nodes[self]
-        if ORIGINENTRY in nodedata:
-            origin: 'Origin' = nodedata[ORIGINENTRY]
+        if self in net.origins_by_node:
+            origin = net.origins_by_node[self]
             q_orig = origin.vars['q'] \
                 if origin.has_var('q') else link.vars['q'][0]
         else:
