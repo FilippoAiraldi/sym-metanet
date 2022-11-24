@@ -1,4 +1,4 @@
-from typing import Callable, Literal, Type, Tuple, Union
+from typing import Callable, Literal, Type, Union
 import numpy as np
 from sym_metanet.engines.core import (
     NodesEngineBase,
