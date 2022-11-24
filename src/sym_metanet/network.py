@@ -114,6 +114,35 @@ class Network(ElementBase):
         d = self.destinations
         return dict(zip(d.values(), d.keys()))
 
+    @property
+    def elements(self) -> Iterable[ElementWithVars[sym_var]]:
+        '''Gets an iterator to all the elements of the network.'''
+        return chain(
+            (link[-1] for link in self.links), self.origins, self.destinations)
+
+    @property
+    def states(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+        '''Gets the states of the network's elements.'''
+        return {el: el.states for el in self.elements if el.has_states}
+
+    @property
+    def next_states(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+        '''Gets the states of the network's elements after stepping the
+        dynamics for one time step.'''
+        return {
+            el: el.next_states for el in self.elements if el.has_next_states}
+
+    @property
+    def actions(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+        '''Gets the control action of the network's elements.'''
+        return {el: el.actions for el in self.elements if el.has_actions}
+
+    @property
+    def disturbances(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+        '''Gets the disturbances of the network's elements.'''
+        return {
+            el: el.disturbances for el in self.elements if el.has_disturbances}
+
     @cache_clearer(nodes_by_name)
     def add_node(self, node: Node) -> 'Network':
         '''Adds a node to the highway network.
