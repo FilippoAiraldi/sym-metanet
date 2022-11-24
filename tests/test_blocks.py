@@ -342,6 +342,21 @@ class TestNetwork(unittest.TestCase):
         with self.assertRaises(InvalidNetworkError):
             net.is_valid(raises=True)
 
+    def test_is_valid__raises__destination_with_multple_entering_links(self):
+        N1 = Node(name='N1')
+        N2 = Node(name='N2')
+        N3 = Node(name='N3')
+        L1 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L1')
+        L2 = Link(4, 3, 1, 180, 30, 100, 1.8, name='L3')
+        D = Destination(name='destination raises')
+        net = Network(name='.Net')
+        net.add_nodes((N1, N2, N3))
+        net.add_link(N1, L1, N3)
+        net.add_link(N2, L2, N3)
+        net.add_destination(D, N3)
+        with self.assertRaises(InvalidNetworkError):
+            net.is_valid(raises=True)
+
     def test_init_vars__calls_init_vars_in_elements(self):
         L = 1
         lanes = 2
