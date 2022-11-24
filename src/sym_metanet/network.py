@@ -383,7 +383,8 @@ class Network(ElementBase[sym_var]):
     def init_vars(
         self,
         init_conditions: Dict[ElementBase[sym_var], Dict[str, sym_var]] = None,
-        engine: EngineBase = None
+        engine: EngineBase = None,
+        **constants
     ) -> None:
         '''Initializes the variables (states, inputs, disturbances) of the
         elements in the network. In particular, it initializes the states
@@ -411,6 +412,9 @@ class Network(ElementBase[sym_var]):
         engine : EngineBase, optional
             The engine to be used for initialization. If `None`, the current
             engine is used.
+        constants : variables
+            All the other variables (e.g., sampling time) required during the
+            computations.
         '''
         if init_conditions is None:
             init_conditions = {}
@@ -420,5 +424,9 @@ class Network(ElementBase[sym_var]):
                         self.origins,
                         self.destinations):
             el.init_vars(
-                init_conditions=init_conditions.get(el), engine=engine)
+                net=self,
+                init_conditions=init_conditions.get(el),
+                engine=engine,
+                **constants
+            )
         self._vars_initialized = True
