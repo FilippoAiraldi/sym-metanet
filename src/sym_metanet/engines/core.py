@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Literal, Type, Union
+from typing import Callable, Dict, Literal, Type, Union, TYPE_CHECKING
 import sym_metanet
 from sym_metanet.errors import EngineNotFoundError
+if TYPE_CHECKING:
+    from sym_metanet.network import Network
 
 
 class NodesEngineBase(ABC):
@@ -439,6 +441,23 @@ class EngineBase(ABC):
         -------
         sym variable
             A unique variable resulting from the vertical concatenation.
+        '''
+        pass
+
+    @abstractmethod
+    def to_function(self, net: 'Network', *args, **kwargs) -> Callable:
+        '''Returns the network's dynamics as a callable function, with
+        different nature depending on the engine implementation.
+
+        Parameters
+        ----------
+        net : Network
+            The network whose dynamics must be translated into a function.
+
+        Returns
+        -------
+        Callable
+            The function representing the dynamics.
         '''
         pass
 

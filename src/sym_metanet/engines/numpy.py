@@ -192,6 +192,10 @@ class Engine(EngineBase):
     def vcat(self, *arrays: np.ndarray):
         return np.hstack(arrays)
 
+    def to_function(self, *args, **kwargs) -> Callable:
+        raise NotImplementedError(
+            '`to_function` not available for NumPy engine.')
+
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(numpy)'
 
