@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import count
-from typing import Dict, Generic, TypeVar, Optional
+from typing import Dict, Generic, Set, TypeVar, Optional
 
 
 class ElementBase:
@@ -42,6 +42,10 @@ NO_VARS = None
 
 class ElementWithVars(ElementBase, Generic[sym_var], ABC):
     '''Base class for any element with states, actions or disturbances.'''
+
+    _states: Set[str] = set()
+    _actions: Set[str] = set()
+    _disturbances: Set[str] = set()
 
     def __init__(self, name: str = None) -> None:
         '''Instantiates the element with the given `name` attribute.

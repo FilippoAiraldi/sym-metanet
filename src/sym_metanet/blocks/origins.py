@@ -75,6 +75,10 @@ class MeteredOnRamp(Origin[sym_var]):
         control measures", Netherlands TRAIL Research School.
     '''
 
+    _states = {'w'}
+    _actions = {'r'}
+    _disturbances = {'d'}
+
     def __init__(
         self,
         capacity: sym_var,
@@ -214,6 +218,8 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
 
     See `MeteredOnRamp` for the original version.
     '''
+
+    _actions = {'q'}
 
     def __init__(self, capacity: sym_var, name: str = None) -> None:
         super().__init__(capacity=capacity, name=name)

@@ -19,6 +19,8 @@ class Link(ElementWithVars[sym_var]):
         control measures", Netherlands TRAIL Research School.
     '''
 
+    _states = {'rho', 'v'}
+
     def __init__(
         self,
         nb_segments: int,

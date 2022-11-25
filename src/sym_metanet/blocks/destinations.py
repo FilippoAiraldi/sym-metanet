@@ -53,6 +53,8 @@ class CongestedDestination(Destination[sym_var]):
     create a congestion.
     '''
 
+    _disturbances = {'d'}
+
     def init_vars(
         self,
         init_conditions: Dict[str, sym_var] = None,
