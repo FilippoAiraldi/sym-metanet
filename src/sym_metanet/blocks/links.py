@@ -175,10 +175,15 @@ class Link(ElementWithVars[sym_var]):
         # get upstream flow and speed, and downstream density
         v0, q0 = node_up.get_upstream_speed_and_flow(
             net=net, link=self, T=T, engine=engine)
-        q_up = engine.vcat(q0, q[:-1])
-        v_up = engine.vcat(v0, v[:-1])
         rhoN_1 = node_down.get_downstream_density(net=net, engine=engine)
-        rho_down = engine.vcat(rho[1:], rhoN_1)
+        if self.N > 1:
+            q_up = engine.vcat(q0, q[:-1])
+            v_up = engine.vcat(v0, v[:-1])
+            rho_down = engine.vcat(rho[1:], rhoN_1)
+        else:
+            q_up = q0
+            v_up = v0
+            rho_down = rhoN_1
 
         # check for ramp merging in this link's upstream node with other
         # entering links.

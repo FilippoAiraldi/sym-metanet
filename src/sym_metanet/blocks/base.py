@@ -105,8 +105,10 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
         next_states = self.step_dynamics(*args, **kwargs)
         if self.next_states is NO_VARS:
             self.next_states = {}
-        for name in self.states:
-            self.next_states[name] = next_states[name]
+        for name, state in self.states.items():
+            next_state = next_states[name]
+            self.next_states[name] = next_state
+            assert next_state.shape == state.shape
 
     def __str__(self) -> str:
         return self.name
