@@ -1,4 +1,4 @@
-from typing import Dict, Literal, Tuple, TYPE_CHECKING
+from typing import Dict, Literal, TYPE_CHECKING
 from sym_metanet.blocks.base import ElementWithVars, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
@@ -21,13 +21,24 @@ class Origin(ElementWithVars[sym_var]):
         '''No dynamics to steps in the ideal origin.'''
         pass
 
-    def get_speed_and_flow(
-        self,
-        net: 'Network',
-        engine: EngineBase = None,
-        **kwargs
-    ) -> Tuple[sym_var, sym_var]:
-        '''Computes the (upstream) speed and flow induced by the ideal origin.
+    def get_speed(self, net: 'Network', **kwargs) -> sym_var:
+        '''Computes the (upstream) speed induced by the ideal origin.
+
+        Parameters
+        ----------
+        net : Network
+            The network this destination belongs to.
+
+        Returns
+        -------
+        sym_var
+            The origin's upstream speed.
+        '''
+        return self._get_exiting_link(net=net).states['v'][0]
+
+    def get_flow(self, net: 'Network', engine: EngineBase = None,
+                 **kwargs) -> sym_var:
+        '''Computes the (upstream) flow induced by the ideal origin.
 
         Parameters
         ----------
@@ -38,11 +49,10 @@ class Origin(ElementWithVars[sym_var]):
 
         Returns
         -------
-        tuple[sym_var, sym_var]
-            The origin's upstream speed and flow.
+        sym_var
+            The origin's upstream flow.
         '''
-        link_down = self._get_exiting_link(net=net)
-        return link_down.states['v'][0], link_down.get_flow(engine=engine)[0]
+        return self._get_exiting_link(net=net).get_flow(engine=engine)[0]
 
     def _get_exiting_link(self, net: 'Network') -> 'Link':
         '''Internal utility to fetch the link leaving this destination (can
@@ -152,19 +162,19 @@ class MeteredOnRamp(Origin[sym_var]):
         '''
         if engine is None:
             engine = get_current_engine()
-        q = self.get_speed_and_flow(net=net, T=T, engine=engine, **kwargs)[-1]
+        q = self.get_flow(net=net, T=T, engine=engine, **kwargs)
         w_next = engine.origins.step_queue(
             w=self.states['w'], d=self.disturbances['d'], q=q, T=T)
         return {'w': w_next}
 
-    def get_speed_and_flow(
+    def get_flow(
         self,
         net: 'Network',
         T: sym_var,
         engine: EngineBase = None,
         **kwargs
-    ) -> Tuple[sym_var, sym_var]:
-        '''Computes the (upstream) speed and flow induced by the metered ramp.
+    ) -> sym_var:
+        '''Computes the (upstream) flow induced by the metered ramp.
 
         Parameters
         ----------
@@ -177,14 +187,13 @@ class MeteredOnRamp(Origin[sym_var]):
 
         Returns
         -------
-        tuple[sym_var, sym_var]
-            The origin's upstream speed and flow.
+        sym_var
+            The origin's upstream flow.
         '''
         if engine is None:
             engine = get_current_engine()
         link_down = self._get_exiting_link(net=net)
-        v = link_down.states['v'][0]
-        q = engine.origins.get_ramp_flow(
+        return engine.origins.get_ramp_flow(
             d=self.disturbances['d'],
             w=self.states['w'],
             C=self.C,
@@ -195,7 +204,6 @@ class MeteredOnRamp(Origin[sym_var]):
             T=T,
             type=self.flow_eq_type
         )
-        return v, q
 
 
 class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
@@ -251,25 +259,13 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
             engine.var(f'd_{self.name}')
         }
 
-    def get_speed_and_flow(
-        self,
-        net: 'Network',
-        **kwargs
-    ) -> Tuple[sym_var, sym_var]:
-        '''Computes the (upstream) speed and flow induced by the simple-metered
+    def get_flow(self, *args, **kwargs) -> sym_var:
+        '''Computes the (upstream) flow induced by the simple-metered
         ramp.
-
-        Parameters
-        ----------
-        net : Network
-            The network this destination belongs to.
-        engine : EngineBase, optional
-            The engine to be used. If `None`, the current engine is used.
 
         Returns
         -------
-        tuple[sym_var, sym_var]
-            The origin's upstream speed and flow.
+        sym_var
+            The origin's upstream flow.
         '''
-        return \
-            self._get_exiting_link(net=net).states['v'][0], self.actions['q']
+        return self.actions['q']

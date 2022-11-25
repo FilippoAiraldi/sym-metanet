@@ -106,7 +106,7 @@ class Link(ElementWithVars[sym_var]):
             ) for name in ('rho', 'v')
         }
 
-    def get_flow(self, engine: EngineBase = None) -> sym_var:
+    def get_flow(self, engine: EngineBase = None, **kwargs) -> sym_var:
         '''Gets the flow in this link's segments.
 
         Parameters
@@ -192,8 +192,7 @@ class Link(ElementWithVars[sym_var]):
                 node_up in net.origins_by_node and any(net.in_links(node_up)):
             origin = net.origins_by_node[node_up]
             if isinstance(origin, MeteredOnRamp):
-                q_ramp = origin.get_speed_and_flow(
-                    net=net, T=T, engine=engine)[1]
+                q_ramp = origin.get_flow(net=net, T=T, engine=engine)
 
         # check for lane drops in the next link (only if one link downstream)
         lanes_drop = None

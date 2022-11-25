@@ -90,8 +90,8 @@ class Node(ElementBase):
         n_up = len(links_up)
         if self in net.origins_by_node:
             origin = net.origins_by_node[self]
-            v_o, q_o = origin.get_speed_and_flow(
-                net=net, engine=engine, **kwargs)
+            v_o = origin.get_speed(net=net, engine=engine, **kwargs)
+            q_o = origin.get_flow(net=net, engine=engine, **kwargs)
         else:
             v_o = None
             q_o = None
