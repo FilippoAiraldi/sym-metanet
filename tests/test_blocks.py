@@ -1,9 +1,11 @@
+import sys
 import unittest
 import re
 from unittest.mock import MagicMock
-from typing import Iterable, List
+from typing import Iterable
+sys.path.insert(1, 'src')
 import numpy as np
-from sym_metanet.blocks.base import NO_VARS, ElementWithVars
+from sym_metanet.blocks.base import NO_VARS
 from sym_metanet import (
     Node,
     Link,
@@ -12,9 +14,9 @@ from sym_metanet import (
     SimpleMeteredOnRamp,
     Network,
     Destination,
-    CongestedDestination
+    CongestedDestination,
+    engines
 )
-from sym_metanet import engines
 
 
 engine = engines.use('numpy', var_type='randn')
@@ -419,44 +421,48 @@ class TestNetwork(unittest.TestCase):
             'to destination D.', msgs
         )
 
-    def test_init_vars__calls_init_vars_in_elements(self):
+    def test_step__calls_init_vars_and_step_in_elements(self):
         L = 1
         lanes = 2
         C = (3500, 2000)
-        a_sym = 1.8
+        tau = 18 / 3600
+        kappa = 40
+        eta = 60
         rho_max = 180
-        v_free_sym = 110
-        rho_crit_sym = 30
+        delta = 0.0122
+        T = 10 / 3600
+        a = 1.867
+        v_free = 102
+        rho_crit = 33.5
         N1 = Node(name='N1')
         N2 = Node(name='N2')
         N3 = Node(name='N3')
-        L1 = Link(
-            4, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L1')
-        L2 = Link(
-            2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name='L2')
+        L1 = Link(2, lanes, L, rho_max, rho_crit, v_free, a, name='L1')
+        L2 = Link(1, lanes, L, rho_max, rho_crit, v_free, a, name='L2')
         O1 = MeteredOnRamp(C[0], name='O1')
         O2 = SimpleMeteredOnRamp(C[1], name='O2')
-        D1 = Destination(name='D1')
+        D1 = CongestedDestination(name='D1')
         net = (Network(name='A1')
-               .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
-               .add_origin(O2, N2))
+            .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
+            .add_origin(O2, N2))
 
-        elements: List[ElementWithVars] = [N1, N2, N3, L1, L2, O1, O2, D1]
-        for el in elements:
+        self.assertTrue(net.is_valid(raises=False)[0])
+
+        for el in net.elements:
             el.init_vars = MagicMock(return_value=None)
+            el.step = MagicMock(return_value=None)
 
-        engine = object()
-        init_conds = {el: object() for el in elements}
-        net.init_vars(init_conds, engine)
+        net.step(T=T, tau=tau, eta=eta, kappa=kappa, delta=delta)
 
-        for el in elements:
-            if isinstance(el, Node):
-                el.init_vars.assert_not_called()
-            else:
-                el.init_vars.assert_called_once()
-                el.init_vars.assert_called_with(
-                    init_conditions=init_conds[el],
-                    engine=engine)
+        for _, _, link in net.links:
+            link.init_vars.assert_called_once()
+            link.step.assert_called_once()
+        for origin in net.origins:
+            origin.init_vars.assert_called_once()
+            origin.step.assert_called_once()
+        for destination in net.destinations:
+            destination.init_vars.assert_called_once()
+            destination.step.assert_not_called()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,8 @@
 import unittest
 from importlib.abc import MetaPathFinder
 import warnings
+import sys
+sys.path.insert(1, 'src')
 
 
 class ForbiddenModules(MetaPathFinder):
