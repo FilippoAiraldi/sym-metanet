@@ -1,31 +1,17 @@
 import unittest
-from importlib.abc import MetaPathFinder
 import warnings
 import sys
 sys.path.insert(1, 'src')
 
 
-class ForbiddenModules(MetaPathFinder):
-    '''Prevents some modules from being loaded.'''
-
-    def __init__(self, modules):
-        super().__init__()
-        self.modules = modules
-
-    def find_spec(self, fullname, path, target=None):
-        if fullname in self.modules:
-            raise ImportError(fullname)
-
-
 class TestImport(unittest.TestCase):
     def test_import__warns__when_no_import_succeeds(self):
-        forbidden_modules = {'numpy', 'casadi'}
         import sys
-        sys.meta_path.insert(0, ForbiddenModules(forbidden_modules))
+        for module in ('casadi', 'numpy'):
+            sys.modules[module] = None
         with warnings.catch_warnings(record=True) as w:
             import sym_metanet as metanet
 
-        # can only perform this import after the warning-raising import
         from sym_metanet.errors import EngineNotFoundWarning
         self.assertFalse(hasattr(metanet, 'engine'))
         self.assertEqual(len(w), 1)
