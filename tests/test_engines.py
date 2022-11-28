@@ -135,34 +135,26 @@ class TestCasadiEngine(unittest.TestCase):
             "T": T,
             "parameters": {"rho_crit": rho_crit, "a": a, "v_free": v_free},
         }
-        Factual = metanet.engine.to_function(**args, compact=1)
-        Fexpected = cs.Function.load(r"tests\data\F.casadi")
+        F = metanet.engine.to_function(**args, compact=1)
 
-        for _ in range(1_000):
-            p = [
-                np.maximum(4, np.random.randn() * 5 + 20),  # rho_crit
-                np.maximum(1, np.random.randn() * 0.5 + 2),  # a
-                np.maximum(10, np.random.randn() * 10 + 80),  # v_free
-            ]
-            rho = np.maximum(4, np.random.randn(3) * 5 + 20)
-            v = np.maximum(10, np.random.randn(3) * 10 + 80)
-            w = np.maximum(0, np.random.randn(2) * 3 + 10)
-            d = np.maximum(0, np.random.randn(3) * 100 + 1000)
-            q = np.maximum(0, np.random.randn() * 100 + 1000)
-            q = np.minimum(q, d[1] + w[1] / T)
-            q = np.minimum(q, C[1] * (rho_max - rho[2]) / (rho_max - p[0]))
+        p = [33, 1.8, 130]
+        rho = [15, 20, 25]
+        v = [90, 80, 70]
+        w = [50, 30]
+        d = [2e3, 1e3, 50]
+        q = 800
+        rho_next, v_next, w_next, q, q_o = F(rho, v, w, 1, q, d, p)
 
-            rho_next1, v_next1, w_next1, q1, q_o1 = Factual(rho, v, w, 1, q, d, p)
-            q_o2, w_next2, q2, rho_next2, v_next2 = Fexpected(w, rho, v, q, d, *p)
-
-            for name, x, y in [
-                ("rho", rho_next1, rho_next2),
-                ("v", v_next1, v_next2),
-                ("w", w_next1, w_next2),
-                ("q", q1, q2),
-                ("q_o", q_o1, q_o2),
-            ]:
-                np.testing.assert_allclose(x, y, atol=1e-12, rtol=1e-12, err_msg=name)
+        for name, x, y in [
+            ("rho", rho_next, [16.11111111, 19.30555556, 25.69444444]),
+            ("v", v_next, [100.10991104,  92.63849965,  71.7779459]),
+            ("w", w_next, [45.83333333, 30.55555556]),
+            ("q", q, [2700, 3200, 3500]),
+            ("q_o", q_o, [3500, 800]),
+        ]:
+            np.testing.assert_allclose(
+                x.full().flatten(), y, atol=1e-6, rtol=1e-6, err_msg=name
+            )
 
 
 if __name__ == "__main__":
