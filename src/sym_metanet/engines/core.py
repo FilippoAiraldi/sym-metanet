@@ -323,25 +323,6 @@ class OriginsEngineBase(ABC):
         """
         pass
 
-    # @staticmethod
-    # def get_upstream_speed(v_first):
-    #     '''For a link with only an upstream origin, returns the upstream
-    #     speed, that is the same as the speed in the first segment of this
-    #     link, according to [1, Section 3.2.3].
-
-    #     Parameters
-    #     ----------
-    #     v_first
-    #         Speed in the link's first segment.
-
-    #     Returns
-    #     -------
-    #     speed
-    #         The upstream speed for a link connected only to an upstream
-    #         origin.
-    #     '''
-    #     return v_first
-
 
 class DestinationsEngineBase(ABC):
     """
@@ -376,24 +357,6 @@ class DestinationsEngineBase(ABC):
             The downstream density for a link connected to a destination.
         """
         pass
-
-    # @staticmethod
-    # def get_downstream_density(rho_last):
-    #     '''For a link with a downstream destination, returns the downstream
-    #     density, that is the same as the density in the last segment of this
-    #     link, according to [1, Section 3.2.3].
-
-    #     Parameters
-    #     ----------
-    #     rho_last
-    #         Density in the link's last segment.
-
-    #     Returns
-    #     -------
-    #     density
-    #         The downstream density for a link connected to a destination.
-    #     '''
-    #     return rho_last
 
 
 class EngineBase(ABC):
