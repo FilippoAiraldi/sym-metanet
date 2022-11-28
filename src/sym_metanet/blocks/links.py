@@ -1,8 +1,10 @@
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
+
 from sym_metanet.blocks.base import ElementWithVars, sym_var
 from sym_metanet.blocks.origins import MeteredOnRamp
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
+
 if TYPE_CHECKING:
     from sym_metanet.network import Network
 

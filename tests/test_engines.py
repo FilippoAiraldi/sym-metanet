@@ -1,21 +1,22 @@
-import unittest
 import sys
-import numpy as np
+import unittest
+
 import casadi as cs
+import numpy as np
 
 sys.path.insert(1, "src")
 import sym_metanet as metanet
-from sym_metanet.errors import EngineNotFoundError
-from sym_metanet.util.funcs import first
 from sym_metanet import (
-    Node,
+    CongestedDestination,
     Link,
     MeteredOnRamp,
-    SimpleMeteredOnRamp,
     Network,
-    CongestedDestination,
+    Node,
+    SimpleMeteredOnRamp,
     engines,
 )
+from sym_metanet.errors import EngineNotFoundError
+from sym_metanet.util.funcs import first
 
 
 def get_net():

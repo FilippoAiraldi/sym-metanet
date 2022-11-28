@@ -1,14 +1,16 @@
 from itertools import product
-from typing import Any, Dict, Literal, Type, Generic, TypeVar, Union, \
-    TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Generic, Literal, Type, TypeVar, Union
+
 import casadi as cs
+
 from sym_metanet.engines.core import (
-    NodesEngineBase,
-    LinksEngineBase,
-    OriginsEngineBase,
     DestinationsEngineBase,
     EngineBase,
+    LinksEngineBase,
+    NodesEngineBase,
+    OriginsEngineBase,
 )
+
 if TYPE_CHECKING:
     from sym_metanet.network import Network
 

@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Literal, Type, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Dict, Literal, Type, Union
+
 import sym_metanet
 from sym_metanet.errors import EngineNotFoundError
+
 if TYPE_CHECKING:
     from sym_metanet.network import Network
 

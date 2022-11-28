@@ -1,23 +1,24 @@
+import re
 import sys
 import unittest
-import re
-from unittest.mock import MagicMock
 from typing import Iterable
+from unittest.mock import MagicMock
+
 sys.path.insert(1, 'src')
 import numpy as np
-from sym_metanet.blocks.base import NO_VARS
-from sym_metanet import (
-    Node,
-    Link,
-    Origin,
-    MeteredOnRamp,
-    SimpleMeteredOnRamp,
-    Network,
-    Destination,
-    CongestedDestination,
-    engines
-)
 
+from sym_metanet import (
+    CongestedDestination,
+    Destination,
+    Link,
+    MeteredOnRamp,
+    Network,
+    Node,
+    Origin,
+    SimpleMeteredOnRamp,
+    engines,
+)
+from sym_metanet.blocks.base import NO_VARS
 
 engine = engines.use('numpy', var_type='randn')
 

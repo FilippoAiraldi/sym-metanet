@@ -1,6 +1,5 @@
-from functools import cached_property, _lru_cache_wrapper, wraps
-from typing import Callable, List, Union, Iterable, TypeVar
-
+from functools import _lru_cache_wrapper, cached_property, wraps
+from typing import Callable, Iterable, List, TypeVar, Union
 
 T = TypeVar('T')
 

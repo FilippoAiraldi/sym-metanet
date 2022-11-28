@@ -1,9 +1,19 @@
-from typing import Any, Dict, Collection, Generator, Iterable, Tuple, Union,\
-    TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Collection,
+    Dict,
+    Generator,
+    Iterable,
+    Tuple,
+    Union,
+)
+
 import networkx as nx
+
 if TYPE_CHECKING:
-    from sym_metanet.blocks.nodes import Node
     from sym_metanet.blocks.links import Link
+    from sym_metanet.blocks.nodes import Node
 
 
 LINKENTRY = 'link'

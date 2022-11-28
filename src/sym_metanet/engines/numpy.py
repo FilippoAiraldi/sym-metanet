@@ -1,11 +1,13 @@
 from typing import Callable, Literal, Type, Union
+
 import numpy as np
+
 from sym_metanet.engines.core import (
-    NodesEngineBase,
-    LinksEngineBase,
-    OriginsEngineBase,
     DestinationsEngineBase,
-    EngineBase
+    EngineBase,
+    LinksEngineBase,
+    NodesEngineBase,
+    OriginsEngineBase,
 )
 
 

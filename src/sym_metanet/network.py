@@ -1,22 +1,24 @@
 from functools import cached_property
 from itertools import chain, product
-from typing import Dict, Iterable, Tuple, Union, List
+from typing import Dict, Iterable, List, Tuple, Union
+
 import networkx as nx
+
 from sym_metanet.blocks.base import ElementBase, ElementWithVars, sym_var
-from sym_metanet.views import (
-    LINKENTRY,
-    ORIGINENTRY,
-    DESTINATIONENTRY,
-    InLinkViewWrapper,
-    OutLinkViewWrapper,
-)
-from sym_metanet.blocks.nodes import Node
-from sym_metanet.blocks.links import Link
-from sym_metanet.blocks.origins import Origin, MeteredOnRamp
 from sym_metanet.blocks.destinations import Destination
+from sym_metanet.blocks.links import Link
+from sym_metanet.blocks.nodes import Node
+from sym_metanet.blocks.origins import MeteredOnRamp, Origin
 from sym_metanet.engines.core import EngineBase
 from sym_metanet.errors import InvalidNetworkError
 from sym_metanet.util.funcs import cache_clearer
+from sym_metanet.views import (
+    DESTINATIONENTRY,
+    LINKENTRY,
+    ORIGINENTRY,
+    InLinkViewWrapper,
+    OutLinkViewWrapper,
+)
 
 
 class Network(ElementBase):

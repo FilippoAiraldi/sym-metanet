@@ -1,6 +1,7 @@
+import sys
 import unittest
 import warnings
-import sys
+
 sys.path.insert(1, 'src')
 
 

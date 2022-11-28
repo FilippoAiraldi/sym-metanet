@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import count
-from typing import Dict, Generic, Set, TypeVar, Optional
+from typing import Dict, Generic, Optional, Set, TypeVar
 
 
 class ElementBase:
