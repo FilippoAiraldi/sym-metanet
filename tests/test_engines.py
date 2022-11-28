@@ -13,6 +13,8 @@ from sym_metanet import (
     SimpleMeteredOnRamp,
     engines,
 )
+from sym_metanet.engines.casadi import Engine as CasadiEngine
+from sym_metanet.engines.numpy import Engine as NumpyEngine
 from sym_metanet.errors import EngineNotFoundError
 from sym_metanet.util.funcs import first
 
@@ -153,6 +155,160 @@ class TestCasadiEngine(unittest.TestCase):
             np.testing.assert_allclose(
                 x.full().flatten(), y, atol=1e-6, rtol=1e-6, err_msg=name
             )
+
+
+class TestCasadiVsNumpyEngine(unittest.TestCase):
+    N = 7
+    NE = NumpyEngine()
+    CE = CasadiEngine[cs.DM]()
+
+    def test_nodes__get_upstream_flow(self):
+        N = self.N
+        q_lasts = np.maximum(0, np.random.randn(N) * 50 + 200)
+        betas = np.random.randint(low=1, high=10, size=N)
+        q_orig = np.maximum(0, np.random.randn() * 50 + 200)
+        args = [q_lasts, betas[0], betas, q_orig]
+        np.testing.assert_allclose(
+            self.NE.nodes.get_upstream_flow(*args),
+            self.CE.nodes.get_upstream_flow(*map(cs.DM, args)).full().squeeze(),
+        )
+
+    def test_nodes__get_upstream_speed(self):
+        N = self.N
+        q_lasts = np.maximum(0, np.random.randn(N) * 50 + 200)
+        v_lasts = np.maximum(0, np.random.randn(N) * 10 + 60)
+        args = [q_lasts, v_lasts]
+        np.testing.assert_allclose(
+            self.NE.nodes.get_upstream_speed(*args),
+            self.CE.nodes.get_upstream_speed(*map(cs.DM, args)).full().squeeze(),
+        )
+
+    def test_nodes__get_downstream_density(self):
+        N = self.N
+        rho_firsts = np.maximum(0, np.random.randn(N) * 5 + 30)
+        np.testing.assert_allclose(
+            self.NE.nodes.get_downstream_density(rho_firsts),
+            self.CE.nodes.get_downstream_density(cs.DM(rho_firsts)).full().squeeze(),
+        )
+
+    def test_links__get_flow(self):
+        N = self.N
+        rho = np.maximum(0, np.random.randn(N) * 5 + 30)
+        v = np.maximum(0, np.random.randn(N) * 10 + 80)
+        lanes = np.random.randint(3, 7)
+        args = [rho, v, lanes]
+        np.testing.assert_allclose(
+            self.NE.links.get_flow(*args),
+            self.CE.links.get_flow(*map(cs.DM, args)).full().squeeze(),
+        )
+
+    def test_links__step_density(self):
+        N = self.N
+        rho = np.maximum(0, np.random.randn(N) * 5 + 30)
+        q = np.maximum(0, np.random.randn(N) * 10 + 800)
+        q_up = np.maximum(0, np.random.randn(N) * 10 + 800)
+        lanes = np.random.randint(3, 7)
+        L = np.random.rand() * 1000 + 1000
+        T = np.random.rand()
+        args = [rho, q, q_up, lanes, L, T]
+        np.testing.assert_allclose(
+            self.NE.links.step_density(*args),
+            self.CE.links.step_density(*map(cs.DM, args)).full().squeeze(),
+        )
+
+    def test_links__step_speed(self):
+        N = self.N
+        v = np.maximum(0, np.random.randn(N) * 10 + 100)
+        v_up = np.maximum(0, np.random.randn(N) * 10 + 100)
+        rho = np.maximum(0, np.random.randn(N) * 5 + 30)
+        rho_down = np.maximum(0, np.random.randn(N) * 5 + 30)
+        Veq = np.maximum(0, np.random.randn(N) * 10 + 100)
+        lanes = np.random.randint(3, 7)
+        L = np.random.rand() * 1000 + 1000
+        tau = np.random.rand()
+        eta = T = np.random.rand()
+        kappa = np.random.rand()
+        T = np.random.rand()
+        q_ramp = np.maximum(0, np.random.randn() * 100 + 800)
+        delta = np.random.rand()
+        lanes_drop = np.random.randint(1, 3)
+        phi = np.random.rand()
+        rho_crit = np.random.rand() * 10 + 30
+        args = [
+            v,
+            v_up,
+            rho,
+            rho_down,
+            Veq,
+            lanes,
+            L,
+            tau,
+            eta,
+            kappa,
+            T,
+            q_ramp,
+            delta,
+            lanes_drop,
+            phi,
+            rho_crit,
+        ]
+        np.testing.assert_allclose(
+            self.NE.links.step_speed(*args),
+            self.CE.links.step_speed(*map(cs.DM, args)).full().squeeze(),
+        )
+
+    def test_links__Veq(self):
+        N = self.N
+        rho = np.maximum(0, np.random.randn(N) * 5 + 30)
+        v_free = np.random.rand() * 40 + 80
+        rho_crit = np.random.rand() * 10 + 30
+        a = np.random.rand() + 1
+        args = [rho, v_free, rho_crit, a]
+        np.testing.assert_allclose(
+            self.NE.links.Veq(*args),
+            self.CE.links.Veq(*map(cs.DM, args)).full().squeeze(),
+        )
+
+    def test_origins__step_queue(self):
+        w = np.random.randint(low=1, high=3) * 100 + 300
+        d = np.random.randint(low=1, high=3) * 100 + 300
+        q = np.maximum(0, np.random.randn() * 200 + 800)
+        T = np.random.rand()
+        args = [w, d, q, T]
+        np.testing.assert_allclose(
+            self.NE.origins.step_queue(*args),
+            self.CE.origins.step_queue(*map(cs.DM, args)).full().squeeze(),
+        )
+
+    def test_origins__get_ramp_flow(self):
+        w = np.random.randint(low=1, high=3) * 100 + 300
+        d = np.random.randint(low=1, high=3) * 100 + 300
+        C = np.maximum(100, np.random.randn() * 500 + 2000)
+        r = np.random.rand()
+        rho_max = (np.random.rand() * 30 + 130) * 2
+        rho_first = np.random.rand() * 20 + 20
+        rho_crit = np.random.rand() * 20 + 20
+        T = np.random.rand()
+        args = [d, w, C, r, rho_max, rho_first, rho_crit, T]
+        for type_ in ("in", "out"):
+            np.testing.assert_allclose(
+                self.NE.origins.get_ramp_flow(*args, type_),
+                self.CE.origins.get_ramp_flow(*map(cs.DM, args), type_)
+                .full()
+                .squeeze(),
+            )
+
+    def test_destinations__get_ramp_flow(self):
+        rho_last = np.random.rand() * 20 + 20
+        rho_destination = np.random.rand() * 30 + 20
+        rho_crit = np.random.rand() * 20 + 20
+        args = [rho_last, rho_destination, rho_crit]
+        np.testing.assert_allclose(
+            self.NE.destinations.get_congested_downstream_density(*args),
+            self.CE.destinations.get_congested_downstream_density(*map(cs.DM, args))
+            .full()
+            .squeeze(),
+        )
 
 
 if __name__ == "__main__":
