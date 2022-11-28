@@ -1,3 +1,4 @@
 networkx>=2.8.4
 numpy>=1.23.4
 casadi>=3.5.5
+coverage
