@@ -16,14 +16,14 @@ if TYPE_CHECKING:
 
 
 csTYPES: Dict[str, Type] = {
-    'SX': cs.SX,
-    'MX': cs.MX,
+    "SX": cs.SX,
+    "MX": cs.MX,
 }
-csXX = TypeVar('csXX', cs.SX, cs.MX)
+csXX = TypeVar("csXX", cs.SX, cs.MX)
 
 
 class NodesEngine(NodesEngineBase, Generic[csXX]):
-    '''CasADi implementation of `sym_metanet.engines.core.NodesEngineBase`.'''
+    """CasADi implementation of `sym_metanet.engines.core.NodesEngineBase`."""
 
     @staticmethod
     def get_upstream_flow(
@@ -44,7 +44,7 @@ class NodesEngine(NodesEngineBase, Generic[csXX]):
 
 
 class LinksEngine(LinksEngineBase, Generic[csXX]):
-    '''CasADi implementation of `sym_metanet.engines.core.LinksEngineBase`.'''
+    """CasADi implementation of `sym_metanet.engines.core.LinksEngineBase`."""
 
     @staticmethod
     def get_flow(rho: csXX, v: csXX, lanes: csXX) -> csXX:
@@ -52,27 +52,39 @@ class LinksEngine(LinksEngineBase, Generic[csXX]):
 
     @staticmethod
     def step_density(
-            rho: csXX, q: csXX, q_up: csXX,
-            lanes: csXX, L: csXX, T: csXX) -> csXX:
+        rho: csXX, q: csXX, q_up: csXX, lanes: csXX, L: csXX, T: csXX
+    ) -> csXX:
         return rho + (T / lanes / L) * (q_up - q)
 
     @staticmethod
-    def step_speed(v: csXX, v_up: csXX, rho: csXX, rho_down: csXX,
-                   Veq: csXX, lanes: csXX, L: csXX, tau: csXX, eta: csXX,
-                   kappa: csXX, T: csXX,
-                   q_ramp: csXX = None, delta: csXX = None,
-                   lanes_drop: csXX = None, phi: csXX = None,
-                   rho_crit: csXX = None) -> csXX:
+    def step_speed(
+        v: csXX,
+        v_up: csXX,
+        rho: csXX,
+        rho_down: csXX,
+        Veq: csXX,
+        lanes: csXX,
+        L: csXX,
+        tau: csXX,
+        eta: csXX,
+        kappa: csXX,
+        T: csXX,
+        q_ramp: csXX = None,
+        delta: csXX = None,
+        lanes_drop: csXX = None,
+        phi: csXX = None,
+        rho_crit: csXX = None,
+    ) -> csXX:
         relaxation = (T / tau) * (Veq - v)
         convection = T * v / L * (v_up - v)
         anticipation = (eta * T / tau) * (rho_down - rho) / (L * (rho + kappa))
         v_next = v + relaxation + convection - anticipation
         if q_ramp is not None and delta is not None:
-            v_next[0] -= \
-                (delta * T * q_ramp * v[0]) / (L * lanes * (rho[0] + kappa))
+            v_next[0] -= (delta * T * q_ramp * v[0]) / (L * lanes * (rho[0] + kappa))
         if lanes_drop is not None and phi is not None and rho_crit is not None:
-            v_next[-1] -= (phi * T * lanes_drop * rho[-1] * v[-1]**2) / \
-                (L * lanes * rho_crit)
+            v_next[-1] -= (phi * T * lanes_drop * rho[-1] * v[-1] ** 2) / (
+                L * lanes * rho_crit
+            )
         return v_next
 
     @staticmethod
@@ -81,41 +93,50 @@ class LinksEngine(LinksEngineBase, Generic[csXX]):
 
 
 class OriginsEngine(OriginsEngineBase, Generic[csXX]):
-    '''
+    """
     CasADi implementation of `sym_metanet.engines.core.OriginsEngineBase`.
-    '''
+    """
 
     @staticmethod
     def step_queue(w: csXX, d: csXX, q: csXX, T: csXX) -> csXX:
         return w + T * (d - q)
 
     @staticmethod
-    def get_ramp_flow(d: csXX, w: csXX, C: csXX, r: csXX, rho_max: csXX,
-                      rho_first: csXX, rho_crit: csXX, T: csXX,
-                      type: Literal['in', 'out'] = 'out') -> csXX:
+    def get_ramp_flow(
+        d: csXX,
+        w: csXX,
+        C: csXX,
+        r: csXX,
+        rho_max: csXX,
+        rho_first: csXX,
+        rho_crit: csXX,
+        T: csXX,
+        type: Literal["in", "out"] = "out",
+    ) -> csXX:
         term1 = d + w / T
         term3 = (rho_max - rho_first) / (rho_max - rho_crit)
-        if type == 'in':
+        if type == "in":
             return cs.fmin(term1, C * cs.fmin(r, term3))
         return r * cs.fmin(term1, C * cs.fmin(1, term3))
 
 
 class DestinationsEngine(DestinationsEngineBase, Generic[csXX]):
-    '''
+    """
     CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`.
-    '''
+    """
 
     @staticmethod
     def get_congested_downstream_density(
-            rho_last: csXX, rho_destination: csXX, rho_crit: csXX) -> csXX:
+        rho_last: csXX, rho_destination: csXX, rho_crit: csXX
+    ) -> csXX:
         return cs.fmax(cs.fmin(rho_last, rho_crit), rho_destination)
 
 
 class Engine(EngineBase, Generic[csXX]):
-    '''Symbolic engine implemented with the CasADi framework'''
+    """Symbolic engine implemented with the CasADi framework"""
 
-    def __init__(self, sym_type: Literal['SX', 'MX'] = 'SX') -> None:
-        '''Instantiates a CasADi engine.
+    def __init__(self, sym_type: Literal["SX", "MX"] = "SX") -> None:
+        """Instantiates a CasADi engine.
 
         Parameters
         ----------
@@ -129,12 +150,13 @@ class Engine(EngineBase, Generic[csXX]):
         ------
         ValueError
             Raises if the provided string `type` is not valid.
-        '''
+        """
         super().__init__()
         if sym_type not in csTYPES:
             raise ValueError(
                 f'CasADi symbolic type must be in {{{", ".join(csTYPES)}}}; '
-                f'got {sym_type} instead.')
+                f"got {sym_type} instead."
+            )
         self._csXX: Union[Type[cs.SX], Type[cs.MX]] = csTYPES[sym_type]
 
     @property
@@ -161,14 +183,14 @@ class Engine(EngineBase, Generic[csXX]):
 
     def to_function(
         self,
-        net: 'Network',
+        net: "Network",
         compact: int = 0,
         more_out: bool = False,
         force_positive_speed: bool = True,
         parameters: Dict[str, csXX] = None,
-        **other_parameters
+        **other_parameters,
     ) -> cs.Function:
-        '''Converts the network's dynamics to a CasADi Function.
+        """Converts the network's dynamics to a CasADi Function.
 
         Parameters
         ----------
@@ -211,17 +233,20 @@ class Engine(EngineBase, Generic[csXX]):
             Raises if variables have not yet been initialized; or if the
             dynamics have not been stepped yet, so no state at the next time
             instant is found.
-        '''
-        for el, group in product(net.elements,
-                                 ['_states', '_actions', '_disturbances']):
-            if any(getattr(el, group)) and not getattr(el, f'has{group}'):
+        """
+        for el, group in product(
+            net.elements, ["_states", "_actions", "_disturbances"]
+        ):
+            if any(getattr(el, group)) and not getattr(el, f"has{group}"):
                 raise RuntimeError(
-                    f'Found no {group[1:-1]} in {el.name}; perhaps variables '
-                    'have not been initialized via `net.init_vars`?')
+                    f"Found no {group[1:-1]} in {el.name}; perhaps variables "
+                    "have not been initialized via `net.init_vars`?"
+                )
             if any(el._states) and not el.has_next_states:
                 raise RuntimeError(
-                    f'Found no next state in {el.name}; perhaps dynamics have '
-                    'not been stepped via `net.step`?')
+                    f"Found no next state in {el.name}; perhaps dynamics have "
+                    "not been stepped via `net.step`?"
+                )
 
         if parameters is None:
             parameters = {}
@@ -237,12 +262,11 @@ class Engine(EngineBase, Generic[csXX]):
             for vars_in in (x, u, d):
                 for el, vars in vars_in.items():
                     for varname, var in vars.items():
-                        names_in.append(f'{varname}_{el.name}')
+                        names_in.append(f"{varname}_{el.name}")
                         args_in.append(var)
         else:
             states, actions, disturbances = {}, {}, {}
-            for vars_in, group in [
-                    (x, states), (u, actions), (d, disturbances)]:
+            for vars_in, group in [(x, states), (u, actions), (d, disturbances)]:
                 for el, vars in vars_in.items():
                     for varname, var in vars.items():
                         if varname in group:
@@ -255,38 +279,46 @@ class Engine(EngineBase, Generic[csXX]):
                     group[varname] = cs.vertcat(*vars)
 
             if compact == 1:
-                names_in = list(states.keys()) + list(actions.keys()) + \
-                    list(disturbances.keys())
-                args_in = list(states.values()) + list(actions.values()) + \
-                    list(disturbances.values())
+                names_in = (
+                    list(states.keys())
+                    + list(actions.keys())
+                    + list(disturbances.keys())
+                )
+                args_in = (
+                    list(states.values())
+                    + list(actions.values())
+                    + list(disturbances.values())
+                )
             else:
-                names_in = ['x', 'u', 'd']
+                names_in = ["x", "u", "d"]
                 args_in = [
                     cs.vertcat(*states.values()),
                     cs.vertcat(*actions.values()),
-                    cs.vertcat(*disturbances.values())
+                    cs.vertcat(*disturbances.values()),
                 ]
 
         # process outputs
-        x_next = {el: _filter_vars(vars, independent=False)
-                  for el, vars in net.next_states.items()}
+        x_next = {
+            el: _filter_vars(vars, independent=False)
+            for el, vars in net.next_states.items()
+        }
         if force_positive_speed:
             for vars in x_next.values():
-                if 'v' in vars:
-                    vars['v'] = cs.fmax(0, vars['v'])
+                if "v" in vars:
+                    vars["v"] = cs.fmax(0, vars["v"])
 
         # gather outputs
         names_out, args_out = [], []
         if compact <= 0:
             for el, vars in x_next.items():
                 for varname, var in vars.items():
-                    names_out.append(f'{varname}_{el.name}+')
+                    names_out.append(f"{varname}_{el.name}+")
                     args_out.append(var)
         else:
             next_states = {}
             for el, vars in x_next.items():
                 for varname, var in vars.items():
-                    varname += '+'
+                    varname += "+"
                     if varname in next_states:
                         next_states[varname].append(var)
                     else:
@@ -299,7 +331,7 @@ class Engine(EngineBase, Generic[csXX]):
                 names_out = list(next_states.keys())
                 args_out = list(next_states.values())
             else:
-                names_out = ['x+']
+                names_out = ["x+"]
                 args_out = [cs.vertcat(*next_states.values())]
 
         # add link and origin flows (q_l, q_o) to output
@@ -307,21 +339,23 @@ class Engine(EngineBase, Generic[csXX]):
             names_link, flows_link = [], []
             names_origins, flows_origins = [], []
             for _, _, link in net.links:
-                names_link.append(f'q_{link.name}')
+                names_link.append(f"q_{link.name}")
                 flows_link.append(link.get_flow(engine=self))
             for origin in net.origins:
-                names_origins.append(f'q_o_{origin.name}')
+                names_origins.append(f"q_o_{origin.name}")
                 flows_origins.append(
-                    origin.get_flow(net=net, engine=self,
-                                    **parameters, **other_parameters))
+                    origin.get_flow(
+                        net=net, engine=self, **parameters, **other_parameters
+                    )
+                )
 
             if compact > 0:
-                names_link = ['q']
+                names_link = ["q"]
                 flows_link = [cs.vertcat(*flows_link)]
-                names_origins = ['q_o']
+                names_origins = ["q_o"]
                 flows_origins = [cs.vertcat(*flows_origins)]
             if compact > 1:
-                names_link = ['q']
+                names_link = ["q"]
                 flows_link = [cs.vertcat(flows_link[0], flows_origins[0])]
                 names_origins, flows_origins = [], []
             names_out += names_link + names_origins
@@ -333,25 +367,23 @@ class Engine(EngineBase, Generic[csXX]):
                 names_in.extend(parameters.keys())
                 args_in.extend(parameters.values())
             else:
-                names_in.append('p')
+                names_in.append("p")
                 args_in.append(cs.vertcat(*parameters.values()))
 
-        return cs.Function('F', args_in, args_out, names_in, names_out)
+        return cs.Function("F", args_in, args_out, names_in, names_out)
 
     def __str__(self) -> str:
-        return f'{self.__class__.__name__}(casadi)'
+        return f"{self.__class__.__name__}(casadi)"
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(casadi, type={self._csXX.__name__})'
+        return f"{self.__class__.__name__}(casadi, type={self._csXX.__name__})"
 
 
 def _filter_vars(
-    vars: Dict[str, Union[csXX, Any]],
-    symbolic: bool = True,
-    independent: bool = True
+    vars: Dict[str, Union[csXX, Any]], symbolic: bool = True, independent: bool = True
 ) -> Dict[str, csXX]:
-    '''Internal utility to filter out symbols that are either only symbolic
-    and/or independent (and thus can be inputs to  `casadi.Function`).'''
+    """Internal utility to filter out symbols that are either only symbolic
+    and/or independent (and thus can be inputs to  `casadi.Function`)."""
 
     def is_ok(var: Union[csXX, Any]) -> bool:
         if not symbolic:

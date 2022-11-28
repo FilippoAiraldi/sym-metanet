@@ -1,11 +1,16 @@
 __all__ = [
-    'InvalidNetworkError', 'EngineNotFoundWarning', 'EngineNotFoundError',
-    'engines',
-    'Node',
-    'Link',
-    'Origin', 'MeteredOnRamp', 'SimpleMeteredOnRamp',
-    'Destination', 'CongestedDestination',
-    'Network'
+    "InvalidNetworkError",
+    "EngineNotFoundWarning",
+    "EngineNotFoundError",
+    "engines",
+    "Node",
+    "Link",
+    "Origin",
+    "MeteredOnRamp",
+    "SimpleMeteredOnRamp",
+    "Destination",
+    "CongestedDestination",
+    "Network",
 ]
 
 import sym_metanet.engines as engines
@@ -25,7 +30,8 @@ for _engine in engines.get_available_engines().keys():
         continue
 if _notfound:
     import warnings
-    warnings.warn('No available symbolic engine found.', EngineNotFoundWarning)
+
+    warnings.warn("No available symbolic engine found.", EngineNotFoundWarning)
 del _notfound, _engine
 
 from sym_metanet.blocks.destinations import CongestedDestination, Destination

@@ -16,48 +16,48 @@ if TYPE_CHECKING:
     from sym_metanet.blocks.nodes import Node
 
 
-LINKENTRY = 'link'
-ORIGINENTRY = 'origin'
-DESTINATIONENTRY = 'destination'
+LINKENTRY = "link"
+ORIGINENTRY = "origin"
+DESTINATIONENTRY = "destination"
 
 
 class OutLinkViewWrapper(nx.classes.reportviews.OutEdgeView):
-    '''Wrapper around `networkx`'s outward edge view to facilitate operations
-    with link.'''
+    """Wrapper around `networkx`'s outward edge view to facilitate operations
+    with link."""
 
-    def __getitem__(self, e: Tuple['Node', 'Node']) -> 'Link':
+    def __getitem__(self, e: Tuple["Node", "Node"]) -> "Link":
         return super().__getitem__(e)[LINKENTRY]
 
-    def __iter__(self) -> Generator[Tuple['Node', 'Node', 'Link'], None, None]:
+    def __iter__(self) -> Generator[Tuple["Node", "Node", "Link"], None, None]:
         for un, dns in self._nodes_nbrs():
             for dn, l in dns.items():
                 yield (un, dn, l[LINKENTRY])
 
     def __call__(
         self,
-        nbunch: Union['Node', Iterable['Node']] = None,
+        nbunch: Union["Node", Iterable["Node"]] = None,
         data: Union[bool, str] = LINKENTRY,
-        default: Dict[str, Any] = None
-    ) -> Collection[Tuple['Node', 'Node', 'Link']]:
+        default: Dict[str, Any] = None,
+    ) -> Collection[Tuple["Node", "Node", "Link"]]:
         return super().__call__(nbunch, data, default)
 
 
 class InLinkViewWrapper(nx.classes.reportviews.InEdgeView):
-    '''Wrapper around `networkx`'s inward edge view to facilitate operations
-    with link.'''
+    """Wrapper around `networkx`'s inward edge view to facilitate operations
+    with link."""
 
-    def __getitem__(self, e: Tuple['Node', 'Node']) -> 'Link':
+    def __getitem__(self, e: Tuple["Node", "Node"]) -> "Link":
         return super().__getitem__(e)[LINKENTRY]
 
-    def __iter__(self) -> Generator[Tuple['Node', 'Node', 'Link'], None, None]:
+    def __iter__(self) -> Generator[Tuple["Node", "Node", "Link"], None, None]:
         for un, dns in self._nodes_nbrs():
             for dn, l in dns.items():
                 yield (un, dn, l[LINKENTRY])
 
     def __call__(
         self,
-        nbunch: Union['Node', Iterable['Node']] = None,
+        nbunch: Union["Node", Iterable["Node"]] = None,
         data: Union[bool, str] = LINKENTRY,
-        default: Dict[str, Any] = None
-    ) -> Collection[Tuple['Node', 'Node', 'Link']]:
+        default: Dict[str, Any] = None,
+    ) -> Collection[Tuple["Node", "Node", "Link"]]:
         return super().__call__(nbunch, data, default)

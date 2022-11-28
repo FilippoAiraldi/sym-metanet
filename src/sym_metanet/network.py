@@ -22,37 +22,37 @@ from sym_metanet.views import (
 
 
 class Network(ElementBase):
-    '''Highway network.'''
+    """Highway network."""
 
     def __init__(self, name: str = None):
-        '''Instantiates an highway network.
+        """Instantiates an highway network.
 
         Parameters
         ----------
         name : str, optional
             Name of the network, by default `None`.
-        '''
+        """
         super().__init__(name=name)
         self._graph = nx.DiGraph(name=name)
 
     @property
     def G(self) -> nx.DiGraph:
-        '''Returns the underlying `networkx`'s graph of the highway.'''
+        """Returns the underlying `networkx`'s graph of the highway."""
         return self._graph
 
     @property
     def graph(self) -> nx.DiGraph:
-        '''Returns the underlying `networkx`'s graph of the highway.'''
+        """Returns the underlying `networkx`'s graph of the highway."""
         return self._graph
 
     @property
     def asgraph(self) -> nx.DiGraph:
-        '''Returns the underlying `networkx`'s graph of the highway.'''
+        """Returns the underlying `networkx`'s graph of the highway."""
         return self._graph
 
     @property
     def nodes(self) -> nx.classes.reportviews.NodeView:
-        '''Returns a view on the nodes of the network.'''
+        """Returns a view on the nodes of the network."""
         return self._graph.nodes
 
     @cached_property
@@ -61,17 +61,17 @@ class Network(ElementBase):
 
     @cached_property
     def links(self) -> OutLinkViewWrapper:
-        '''Returns a view on the links of the network.'''
+        """Returns a view on the links of the network."""
         return OutLinkViewWrapper(self._graph)
 
     @property
     def out_links(self) -> OutLinkViewWrapper:
-        '''Alias of the `links` property.'''
+        """Alias of the `links` property."""
         return self.links
 
     @cached_property
     def in_links(self) -> InLinkViewWrapper:
-        '''Returns a view on the inward links of the network.'''
+        """Returns a view on the inward links of the network."""
         return InLinkViewWrapper(self._graph)
 
     @cached_property
@@ -85,7 +85,8 @@ class Network(ElementBase):
     @cached_property
     def origins(self) -> Dict[Origin, Node]:
         return {
-            data[ORIGINENTRY]: node for node, data in self._graph.nodes.data()
+            data[ORIGINENTRY]: node
+            for node, data in self._graph.nodes.data()
             if ORIGINENTRY in data
         }
 
@@ -108,8 +109,7 @@ class Network(ElementBase):
 
     @cached_property
     def destinations_by_name(self) -> Dict[str, Origin]:
-        return {
-            destination.name: destination for destination in self.destinations}
+        return {destination.name: destination for destination in self.destinations}
 
     @cached_property
     def destinations_by_node(self) -> Dict[Node, Destination]:
@@ -118,36 +118,33 @@ class Network(ElementBase):
 
     @property
     def elements(self) -> Iterable[ElementWithVars[sym_var]]:
-        '''Gets an iterator to all the elements of the network.'''
-        return chain(
-            (link[-1] for link in self.links), self.origins, self.destinations)
+        """Gets an iterator to all the elements of the network."""
+        return chain((link[-1] for link in self.links), self.origins, self.destinations)
 
     @property
     def states(self) -> Dict[ElementWithVars[sym_var], sym_var]:
-        '''Gets the states of the network's elements.'''
+        """Gets the states of the network's elements."""
         return {el: el.states for el in self.elements if el.has_states}
 
     @property
     def next_states(self) -> Dict[ElementWithVars[sym_var], sym_var]:
-        '''Gets the states of the network's elements after stepping the
-        dynamics for one time step.'''
-        return {
-            el: el.next_states for el in self.elements if el.has_next_states}
+        """Gets the states of the network's elements after stepping the
+        dynamics for one time step."""
+        return {el: el.next_states for el in self.elements if el.has_next_states}
 
     @property
     def actions(self) -> Dict[ElementWithVars[sym_var], sym_var]:
-        '''Gets the control action of the network's elements.'''
+        """Gets the control action of the network's elements."""
         return {el: el.actions for el in self.elements if el.has_actions}
 
     @property
     def disturbances(self) -> Dict[ElementWithVars[sym_var], sym_var]:
-        '''Gets the disturbances of the network's elements.'''
-        return {
-            el: el.disturbances for el in self.elements if el.has_disturbances}
+        """Gets the disturbances of the network's elements."""
+        return {el: el.disturbances for el in self.elements if el.has_disturbances}
 
     @cache_clearer(nodes_by_name)
-    def add_node(self, node: Node) -> 'Network':
-        '''Adds a node to the highway network.
+    def add_node(self, node: Node) -> "Network":
+        """Adds a node to the highway network.
 
         Parameters
         ----------
@@ -158,13 +155,13 @@ class Network(ElementBase):
         -------
         Network
             A reference to itself.
-        '''
+        """
         self._graph.add_node(node)
         return self
 
     @cache_clearer(nodes_by_name)
-    def add_nodes(self, nodes: Iterable[Node]) -> 'Network':
-        '''Adds multiple nodes. See `Network.add_node`.
+    def add_nodes(self, nodes: Iterable[Node]) -> "Network":
+        """Adds multiple nodes. See `Network.add_node`.
 
         Parameters
         ----------
@@ -175,14 +172,13 @@ class Network(ElementBase):
         -------
         Network
             A reference to itself.
-        '''
+        """
         self._graph.add_nodes_from(nodes)
         return self
 
     @cache_clearer(links_by_name, nodes_by_link)
-    def add_link(
-            self, node_up: Node, link: Link, node_down: Node) -> 'Network':
-        '''Adds a link to the highway network, between two nodes.
+    def add_link(self, node_up: Node, link: Link, node_down: Node) -> "Network":
+        """Adds a link to the highway network, between two nodes.
 
         Parameters
         ----------
@@ -197,13 +193,13 @@ class Network(ElementBase):
         -------
         Network
             A reference to itself.
-        '''
+        """
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
         return self
 
     @cache_clearer(links_by_name, nodes_by_link)
-    def add_links(self, links: Iterable[Tuple[Node, Link, Node]]) -> 'Network':
-        '''Adds multiple links. See `Network.add_link`.
+    def add_links(self, links: Iterable[Tuple[Node, Link, Node]]) -> "Network":
+        """Adds multiple links. See `Network.add_link`.
 
         Parameters
         ----------
@@ -214,7 +210,8 @@ class Network(ElementBase):
         -------
         Network
             A reference to itself.
-        '''
+        """
+
         def get_edge(linkdata: Tuple[Node, Link, Node]):
             node_up, link, node_down = linkdata
             return (node_up, node_down, {LINKENTRY: link})
@@ -223,8 +220,8 @@ class Network(ElementBase):
         return self
 
     @cache_clearer(origins, origins_by_node, origins_by_name)
-    def add_origin(self, origin: Origin, node: Node) -> 'Network':
-        '''Adds the given traffic origin to the node.
+    def add_origin(self, origin: Origin, node: Node) -> "Network":
+        """Adds the given traffic origin to the node.
 
         Parameters
         ----------
@@ -237,7 +234,7 @@ class Network(ElementBase):
         -------
         Network
             A reference to itself.
-        '''
+        """
         if node not in self.nodes:
             self._graph.add_node(node, **{ORIGINENTRY: origin})
         else:
@@ -245,9 +242,8 @@ class Network(ElementBase):
         return self
 
     @cache_clearer(destinations, destinations_by_node, destinations_by_name)
-    def add_destination(
-            self, destination: Destination, node: Node) -> 'Network':
-        '''Adds the given traffic destination to the node.
+    def add_destination(self, destination: Destination, node: Node) -> "Network":
+        """Adds the given traffic destination to the node.
 
         Parameters
         ----------
@@ -260,7 +256,7 @@ class Network(ElementBase):
         -------
         Network
             A reference to itself.
-        '''
+        """
         if node not in self.nodes:
             self._graph.add_node(node, **{DESTINATIONENTRY: destination})
         else:
@@ -272,9 +268,9 @@ class Network(ElementBase):
         self,
         path: Iterable[Union[Node, Link]],
         origin: Origin = None,
-        destination: Destination = None
-    ) -> 'Network':
-        '''Adds a path of nodes and links between the origin and the
+        destination: Destination = None,
+    ) -> "Network":
+        """Adds a path of nodes and links between the origin and the
         destination.
 
         Parameters
@@ -302,13 +298,14 @@ class Network(ElementBase):
             - the first or last points in `path` are not a `Node`
             - the alternation of `Link`s and `Node`s is not respected
             - the path has length 1, which is not accepted.
-        '''
+        """
         path = iter(path)
         first_node = next(path)
         if not isinstance(first_node, Node):
             raise TypeError(
-                f'First element of the path must be a `{Node.__name__}`; got '
-                f'{type(first_node)} instead.')
+                f"First element of the path must be a `{Node.__name__}`; got "
+                f"{type(first_node)} instead."
+            )
         self.add_node(first_node)
         if origin is not None:
             self.add_origin(origin, first_node)
@@ -322,30 +319,33 @@ class Network(ElementBase):
             if L == 2:
                 if not isinstance(point, Link):
                     raise TypeError(
-                        f'Expected a `{Link.__name__}` at index {i} of the '
-                        f'path; got {type(point)} instead.')
+                        f"Expected a `{Link.__name__}` at index {i} of the path; "
+                        f"got {type(point)} instead."
+                    )
             else:  # L == 3
                 if not isinstance(point, Node):
                     raise TypeError(
-                        f'Expected a `{Node.__name__}` at index {i} of the '
-                        f'path; got {type(point)} instead.')
+                        f"Expected a `{Node.__name__}` at index {i} of the path; "
+                        f"got {type(point)} instead."
+                    )
                 self.add_node(point)
                 self.add_link(*current_link)
                 current_link = current_link[-1:]
         if not longer_than_one:
-            raise ValueError('Path must be longer than a single node.')
+            raise ValueError("Path must be longer than a single node.")
 
         last_node = point
         if not isinstance(first_node, Node):
             raise TypeError(
-                f'Last element of the path must be a `{Node.__name__}`; got '
-                f'{type(first_node)} instead.')
+                f"Last element of the path must be a `{Node.__name__}`; got "
+                f"{type(first_node)} instead."
+            )
         if destination is not None:
             self.add_destination(destination, last_node)
         return self
 
     def is_valid(self, raises: bool = False) -> Tuple[bool, List[str]]:
-        '''Checks whether the network is consistent.
+        """Checks whether the network is consistent.
 
         Parameters
         ----------
@@ -383,22 +383,24 @@ class Network(ElementBase):
              8) a node with a destination has multiple entering links
 
              9) a node with a destination has also exiting links.
-        '''
+        """
         msgs = []
 
         def origin_destination_yielder():
-            for data, entry in product(self._graph.nodes.values(),
-                                       (ORIGINENTRY, DESTINATIONENTRY)):
+            for data, entry in product(
+                self._graph.nodes.values(), (ORIGINENTRY, DESTINATIONENTRY)
+            ):
                 if entry in data:
                     yield data[entry]
 
         # (1)
         count: Dict[ElementWithVars[sym_var], int] = {}
-        for o in chain((link[2] for link in self.links),
-                       iter(origin_destination_yielder())):
+        for o in chain(
+            (link[2] for link in self.links), iter(origin_destination_yielder())
+        ):
             d = count.get(o, 0) + 1
             if d > 1:
-                msgs.append(f'Element {o.name} is duplicated in the network.')
+                msgs.append(f"Element {o.name} is duplicated in the network.")
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
             count[o] = d
@@ -407,43 +409,45 @@ class Network(ElementBase):
         for node, nodedata in self.nodes.data():
             if ORIGINENTRY in nodedata and DESTINATIONENTRY in nodedata:
                 msgs.append(
-                    f'Node {node.name} must either have an origin or a '
-                    'destination, but not both.')
+                    f"Node {node.name} must either have an origin or a "
+                    "destination, but not both."
+                )
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
             n_in, n_out = len(self.in_links(node)), len(self.out_links(node))
             if n_in == 0 and n_out == 0:
-                msgs.append(
-                    f'Node {node.name} is connected to no link.')
+                msgs.append(f"Node {node.name} is connected to no link.")
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
             if n_in == 0 and ORIGINENTRY not in nodedata:
                 msgs.append(
-                    f'Node {node.name} has neither any entering links nor an '
-                    'origin.')
+                    f"Node {node.name} has neither any entering links nor an " "origin."
+                )
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
             if n_out == 0 and DESTINATIONENTRY not in nodedata:
                 msgs.append(
-                    f'Node {node.name} has neither any exiting links nor a '
-                    'destination.')
+                    f"Node {node.name} has neither any exiting links nor a "
+                    "destination."
+                )
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
 
         # (6); (7)
         for origin, node in self.origins.items():
-            if not isinstance(origin, MeteredOnRamp) and \
-                    any(self.in_links(node)):
+            if not isinstance(origin, MeteredOnRamp) and any(self.in_links(node)):
                 msgs.append(
-                    f'Expected node {node.name} to have no entering links, as '
-                    f'it is connected to origin {origin.name} (only ramps '
-                    'support entering links).')
+                    f"Expected node {node.name} to have no entering links, as "
+                    f"it is connected to origin {origin.name} (only ramps "
+                    "support entering links)."
+                )
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
             if len(self.out_links(node)) > 1:
                 msgs.append(
-                    f'Expected node {node.name} to have at most one exiting '
-                    f'link, as it is connected to origin {origin.name}.')
+                    f"Expected node {node.name} to have at most one exiting "
+                    f"link, as it is connected to origin {origin.name}."
+                )
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
 
@@ -451,27 +455,27 @@ class Network(ElementBase):
         for destination, node in self.destinations.items():
             if len(self.in_links(node)) > 1:
                 msgs.append(
-                    f'Expected node {node.name} to have at most one entering '
-                    'link, as it is connected to destination '
-                    + destination.name + '.')
+                    f"Expected node {node.name} to have at most one entering "
+                    "link, as it is connected to destination " + destination.name + "."
+                )
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
             if any(self.out_links(node)):
                 msgs.append(
-                    f'Expected node {node.name} to have no exiting links, as '
-                    f'it is connected to destination {destination.name}.')
+                    f"Expected node {node.name} to have no exiting links, as "
+                    f"it is connected to destination {destination.name}."
+                )
                 if raises:
                     raise InvalidNetworkError(msgs[-1])
         return not msgs, msgs
 
     def step(
         self,
-        init_conditions:
-            Dict[ElementWithVars[sym_var], Dict[str, sym_var]] = None,
+        init_conditions: Dict[ElementWithVars[sym_var], Dict[str, sym_var]] = None,
         engine: EngineBase = None,
-        **other_parameters: sym_var
+        **other_parameters: sym_var,
     ) -> None:
-        '''Steps the dynamics of the network's elements.
+        """Steps the dynamics of the network's elements.
 
         Parameters
         ----------
@@ -487,15 +491,12 @@ class Network(ElementBase):
         other_parameters : variables
             All the other parameters (e.g., sampling time) required during
             the computations.
-        '''
+        """
         # initialization
         if init_conditions is None:
             init_conditions = {}
         for el in self.elements:
-            el.init_vars(
-                init_conditions=init_conditions.get(el),
-                engine=engine
-            )
+            el.init_vars(init_conditions=init_conditions.get(el), engine=engine)
 
         # dynamics
         for origin in self.origins:

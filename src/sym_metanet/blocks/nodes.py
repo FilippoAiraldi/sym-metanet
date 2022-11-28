@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class Node(ElementBase):
-    '''
+    """
     Node of the highway [1, Section 3.2.2] representing, e.g., the connection
     between two links. Nodes do not correspond to actual physical components of
     the highway, but are used to separate links in case there is a major change
@@ -20,12 +20,12 @@ class Node(ElementBase):
     ----------
     [1] Hegyi, A., 2004, "Model predictive control for integrating traffic
         control measures", Netherlands TRAIL Research School.
-    '''
+    """
 
     def get_downstream_density(
-        self, net: 'Network', engine: EngineBase = None, **kwargs
+        self, net: "Network", engine: EngineBase = None, **kwargs
     ) -> sym_var:
-        '''Computes the (virtual) downstream density of the node.
+        """Computes the (virtual) downstream density of the node.
 
         Parameters
         ----------
@@ -38,7 +38,7 @@ class Node(ElementBase):
         -------
         sym_var
             Returns the (virtual) downstream density.
-        '''
+        """
         if engine is None:
             engine = get_current_engine()
 
@@ -46,24 +46,22 @@ class Node(ElementBase):
         # destination or have multiple exiting links
         if self in net.destinations_by_node:
             return net.destinations_by_node[self].get_density(
-                net=net, engine=engine, **kwargs)
+                net=net, engine=engine, **kwargs
+            )
 
         # if no destination, then there must be 1 or more exiting links
         links_down = net.out_links(self)
         if len(links_down) == 1:
-            return first(links_down)[-1].states['rho'][0]
+            return first(links_down)[-1].states["rho"][0]
         rho_firsts = engine.vcat(
-            *(dlink.states['rho'][-1] for _, _, dlink in links_down))
+            *(dlink.states["rho"][-1] for _, _, dlink in links_down)
+        )
         return engine.nodes.get_downstream_density(rho_firsts)
 
     def get_upstream_speed_and_flow(
-        self,
-        net: 'Network',
-        link: 'Link',
-        engine: EngineBase = None,
-        **kwargs
+        self, net: "Network", link: "Link", engine: EngineBase = None, **kwargs
     ) -> Tuple[sym_var, sym_var]:
-        '''Computes the (virtual) upstream speed and flow of the node for this
+        """Computes the (virtual) upstream speed and flow of the node for this
         the current link.
 
         Parameters
@@ -80,7 +78,7 @@ class Node(ElementBase):
         -------
         tuple[sym_var, sym_var]
             Returns the (virtual) upstream speed and flow.
-        '''
+        """
         if engine is None:
             engine = get_current_engine()
 
@@ -103,7 +101,7 @@ class Node(ElementBase):
             q = q_o
         elif n_up == 1:
             link_up = next(iter(links_up))[-1]
-            v = link_up.states['v'][-1]
+            v = link_up.states["v"][-1]
             q = link_up.get_flow(engine=engine)[-1]
             if q_o is not None:
                 q += q_o
@@ -111,18 +109,16 @@ class Node(ElementBase):
             v_last = []
             q_last = []
             for _, _, link_up in links_up:
-                v_last.append(link_up.states['v'][-1])
+                v_last.append(link_up.states["v"][-1])
                 q_last.append(link_up.get_flow(engine=engine)[-1])
             v_last = engine.vcat(*v_last)
             q_last = engine.vcat(*q_last)
             betas = engine.vcat(
-                *(dlink.turnrate for _, _, dlink in net.out_links(self)))
+                *(dlink.turnrate for _, _, dlink in net.out_links(self))
+            )
 
             v = engine.nodes.get_upstream_speed(q_lasts=q_last, v_lasts=v_last)
             q = engine.nodes.get_upstream_flow(
-                q_lasts=q_last,
-                beta=link.turnrate,
-                betas=betas,
-                q_orig=q_o
+                q_lasts=q_last, beta=link.turnrate, betas=betas, q_orig=q_o
             )
         return v, q
