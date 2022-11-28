@@ -1,13 +1,6 @@
 import casadi as cs
 
-try:
-    import sym_metanet as metanet
-except ImportError:
-    import sys
-
-    sys.path.insert(1, "src")
-    import sym_metanet as metanet
-
+import sym_metanet as metanet
 
 # set casadi as the symbolic engine
 metanet.engines.use("casadi", sym_type="SX")

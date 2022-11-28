@@ -4,7 +4,7 @@
 
 **sym-metanet** is a Python package to model traffic networks with the METANET framework, a collection of tools to mathematically model the macroscopic behaviour of traffic in highway systems (see [[1]](#1) and [[2]](#2) for more details).
 
-<!-- [![PyPI version](https://badge.fury.io/py/csnlp.svg)](https://badge.fury.io/py/csnlp) -->
+[![PyPI version](https://badge.fury.io/py/sym-metanet.svg)](https://badge.fury.io/py/sym-metanet)
 [![Source Code License](https://img.shields.io/badge/license-MIT-blueviolet)](https://github.com/FilippoAiraldi/casadi-nlp/blob/release/LICENSE)
 ![Python 3.8](https://img.shields.io/badge/python->=3.8-green.svg)
 
@@ -78,7 +78,7 @@ Our [examples](examples) folder contains an example on how to get started with t
 
 ## Extensions
 
-This code is symbolic-engine-agnostic, in the sense that it does not rely on a particular implementation of the underlying engine for symbolic computations. In other words, it is relatively easy to create a new engine for modelling networks with a new specific symbolic library (e.g., [SimPy](https://www.sympy.org/en/index.html)) by implementing the abstract class `sym_metanet.engines.core.EngineBase`. An engine implemented in [CasADi](https://pypi.org/project/casadi/) is already shipped but requires the symbolic library to be installed. Additionally, the engine is also implemented in [NumPy](https://pypi.org/project/numpy/) (does not allow symbolic computations though).
+This code is symbolic-engine-agnostic, in the sense that it does not rely on a particular implementation of the underlying engine for symbolic computations. In other words, it is relatively easy to create a new engine for modelling networks with a new specific symbolic library (e.g., [SimPy](https://www.sympy.org/en/index.html)) by implementing the abstract class [`sym_metanet.engines.core.EngineBase`](src\sym_metanet\engines\core.py#EngineBase). An engine implemented in [CasADi](https://pypi.org/project/casadi/) is already shipped but requires the symbolic library to be installed. Additionally, the engine is also implemented in [NumPy](https://pypi.org/project/numpy/) (does not allow symbolic computations though).
 
 ---
 

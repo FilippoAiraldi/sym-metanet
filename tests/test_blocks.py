@@ -1,10 +1,8 @@
 import re
-import sys
 import unittest
 from typing import Iterable
 from unittest.mock import MagicMock
 
-sys.path.insert(1, "src")
 import numpy as np
 
 from sym_metanet import (

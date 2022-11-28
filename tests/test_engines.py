@@ -1,10 +1,8 @@
-import sys
 import unittest
 
 import casadi as cs
 import numpy as np
 
-sys.path.insert(1, "src")
 import sym_metanet as metanet
 from sym_metanet import (
     CongestedDestination,
@@ -147,7 +145,7 @@ class TestCasadiEngine(unittest.TestCase):
 
         for name, x, y in [
             ("rho", rho_next, [16.11111111, 19.30555556, 25.69444444]),
-            ("v", v_next, [100.10991104,  92.63849965,  71.7779459]),
+            ("v", v_next, [100.10991104, 92.63849965, 71.7779459]),
             ("w", w_next, [45.83333333, 30.55555556]),
             ("q", q, [2700, 3200, 3500]),
             ("q_o", q_o, [3500, 800]),
