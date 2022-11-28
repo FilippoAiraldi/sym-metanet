@@ -1,5 +1,15 @@
 from itertools import product
-from typing import TYPE_CHECKING, Any, Dict, Generic, Literal, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generic,
+    List,
+    Literal,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import casadi as cs
 
@@ -265,7 +275,9 @@ class Engine(EngineBase, Generic[csXX]):
                         names_in.append(f"{varname}_{el.name}")
                         args_in.append(var)
         else:
-            states, actions, disturbances = {}, {}, {}
+            states: Dict[str, List[csXX]] = {}
+            actions: Dict[str, List[csXX]] = {}
+            disturbances: Dict[str, List[csXX]] = {}
             for vars_in, group in [(x, states), (u, actions), (d, disturbances)]:
                 for el, vars in vars_in.items():
                     for varname, var in vars.items():
@@ -315,8 +327,8 @@ class Engine(EngineBase, Generic[csXX]):
                     names_out.append(f"{varname}_{el.name}+")
                     args_out.append(var)
         else:
-            next_states = {}
-            for el, vars in x_next.items():
+            next_states: Dict[str, List[csXX]] = {}
+            for vars in x_next.values():
                 for varname, var in vars.items():
                     varname += "+"
                     if varname in next_states:
@@ -334,7 +346,7 @@ class Engine(EngineBase, Generic[csXX]):
                 names_out = ["x+"]
                 args_out = [cs.vertcat(*next_states.values())]
 
-        # add link and origin flows (q_l, q_o) to output
+        # add link and origin flows (q, q_o) to output
         if more_out:
             names_link, flows_link = [], []
             names_origins, flows_origins = [], []

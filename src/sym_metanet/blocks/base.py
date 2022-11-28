@@ -39,7 +39,7 @@ sym_var.__doc__ = (
     "in case of vector quantities."
 )
 
-NO_VARS = None
+NO_VARS: None = None
 
 
 class ElementWithVars(ElementBase, Generic[sym_var], ABC):
@@ -90,7 +90,7 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
         """Initializes the variable dicts (`states`, `actions`, `disturbances`)
         of this element."""
         raise NotImplementedError(
-            "Variable initialization not supported for " + self.__class__.__name__ + "."
+            f"Variable initialization not supported for {self.__class__.__name__}."
         )
 
     @abstractmethod
@@ -102,9 +102,14 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
         -------
         Dict[str, sym_var]
             A dict with the states at the next time step.
+
+        Raises
+        ------
+        RuntimeError
+            Raises if the shapes of the old and new states do not match.
         """
         raise NotImplementedError(
-            "Stepping the dynamics not supported for " + self.__class__.__name__ + "."
+            f"Stepping the dynamics not supported for {self.__class__.__name__}."
         )
 
     def step(self, *args, **kwargs) -> None:
@@ -116,7 +121,12 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
         for name, state in self.states.items():
             next_state = next_states[name]
             self.next_states[name] = next_state
-            assert next_state.shape == state.shape
+            if (
+                hasattr(next_state, "shape")
+                and hasattr(state, "shape")
+                and next_state.shape != state.shape
+            ):
+                raise RuntimeError("Shapes of new and old states do not match.")
 
     def __str__(self) -> str:
         return self.name
