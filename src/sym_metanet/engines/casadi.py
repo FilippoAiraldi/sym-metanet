@@ -374,7 +374,7 @@ class Engine(EngineBase, Generic[csXX]):
             args_out += flows_link + flows_origins
 
         # add parameters
-        if len(parameters) > 0:
+        if parameters:
             if compact <= 0:
                 names_in.extend(parameters.keys())
                 args_in.extend(parameters.values())
