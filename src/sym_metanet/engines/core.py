@@ -485,8 +485,8 @@ def get_available_engines() -> Dict[str, Dict[str, str]]:
         such as module and class name.
     '''
     return {
-        'numpy': {'module': 'sym_metanet.engines.numpy', 'class': 'Engine'},
-        'casadi': {'module': 'sym_metanet.engines.casadi', 'class': 'Engine'}
+        'casadi': {'module': 'sym_metanet.engines.casadi', 'class': 'Engine'},
+        'numpy': {'module': 'sym_metanet.engines.numpy', 'class': 'Engine'}
     }
 
 

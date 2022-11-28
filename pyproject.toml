@@ -8,16 +8,20 @@ version = "0.0.1"
 authors = [
   { name="Filippo Airaldi", email="filippoairaldi@gmail.com" },
 ]
-description = "Highway Traffic Symbolic Modelling with METANET framework"
+description = "Symbolic Modelling of Highway Traffic Networks with METANET"
 readme = "README.md"
 requires-python = ">=3.8"
+license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3.8",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+	"Topic :: Scientific/Engineering :: Mathematics"
 ]
 dependencies = [
-    "networkx >= 2.8.7",
+    "networkx >= 2.8.4",
 ]
 
 [project.optional-dependencies]
@@ -29,3 +33,11 @@ all = [
 [project.urls]
 "Homepage" = "https://github.com/FilippoAiraldi/sym-metanet"
 "Bug Tracker" = "https://github.com/FilippoAiraldi/sym-metanet/issues"
+
+[tool.setuptools]
+license-files = [
+	"LICENSE",
+]
+
+[tool.isort]
+profile = "black"
