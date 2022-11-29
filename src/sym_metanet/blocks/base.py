@@ -6,6 +6,7 @@ from typing import Dict, Generic, Optional, Set, TypeVar
 class ElementBase:
     """Base class for any element for a highway modelled in METANET."""
 
+    __slots__ = "name"
     __ids: Dict[type, count] = {}
 
     def __init__(self, name: str = None) -> None:
@@ -45,6 +46,7 @@ NO_VARS: None = None
 class ElementWithVars(ElementBase, Generic[sym_var], ABC):
     """Base class for any element with states, actions or disturbances."""
 
+    __slots__ = ("states", "next_states", "actions", "disturbances")
     _states: Set[str] = set()
     _actions: Set[str] = set()
     _disturbances: Set[str] = set()

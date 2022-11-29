@@ -21,6 +21,7 @@ class Link(ElementWithVars[sym_var]):
         control measures", Netherlands TRAIL Research School.
     """
 
+    __slots__ = ('N', 'lam', 'L', 'rho_max', 'rho_crit', 'v_free', 'a', 'turnrate')
     _states = {"rho", "v"}
 
     def __init__(

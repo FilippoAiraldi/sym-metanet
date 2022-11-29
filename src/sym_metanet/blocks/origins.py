@@ -77,6 +77,7 @@ class MeteredOnRamp(Origin[sym_var]):
         control measures", Netherlands TRAIL Research School.
     """
 
+    __slots__ = ("C", "flow_eq_type")
     _states = {"w"}
     _actions = {"r"}
     _disturbances = {"d"}
