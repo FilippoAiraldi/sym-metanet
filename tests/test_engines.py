@@ -19,7 +19,8 @@ from sym_metanet.errors import EngineNotFoundError
 from sym_metanet.util.funcs import first
 
 
-def get_net():
+def get_net(link_with_ramp: int = 2):
+    assert link_with_ramp in {1, 2}
     L = 1
     lanes = 2
     C = (3500, 2000)
@@ -35,19 +36,75 @@ def get_net():
     N1 = Node(name="N1")
     N2 = Node(name="N2")
     N3 = Node(name="N3")
-    L1 = Link(2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L1")
+    N4 = Node(name="N3")
+    L1 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L1")
     L2 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2")
+    L3 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L3")
     O1 = MeteredOnRamp(C[0], name="O1")
     O2 = SimpleMeteredOnRamp(C[1], name="O2")
     D1 = CongestedDestination(name="D1")
     net = (
         Network(name="A1")
-        .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
-        .add_origin(O2, N2)
+        .add_path(origin=O1, path=(N1, L1, N2, L2, N3, L3, N4), destination=D1)
+        .add_origin(O2, N2 if link_with_ramp == 1 else N3)
     )
     sym_pars = {"rho_crit": rho_crit_sym, "a": a_sym, "v_free": v_free_sym}
-    others = {"T": T, "tau": tau, "eta": eta, "kappa": kappa, "delta": delta}
+    others = {
+        "L": L,
+        "lanes": lanes,
+        "C": C,
+        "rho_max": rho_max,
+        "T": T,
+        "tau": tau,
+        "eta": eta,
+        "kappa": kappa,
+        "delta": delta,
+    }
     return net, sym_pars, others
+
+
+def get_hardcoded_dynamics(
+    L, lanes, C, tau, kappa, eta, rho_max, delta, T, link_with_ramp: int = 2, **kwargs
+) -> cs.Function:
+    assert link_with_ramp in {1, 2}
+    rho = cs.SX.sym("rho", 3, 1)
+    v = cs.SX.sym("v", 3, 1)
+    w = cs.SX.sym("w", 2, 1)
+    r = cs.SX.sym("r")
+    q_O2 = cs.SX.sym("q_O2")
+    d = cs.SX.sym("d", 3, 1)
+    rho_crit = cs.SX.sym("rho_crit")
+    a = cs.SX.sym("a")
+    v_free = cs.SX.sym("v_free")
+
+    q_O1 = r * cs.fmin(
+        d[0] + w[0] / T, C[0] * cs.fmin(1, (rho_max - rho[0]) / (rho_max - rho_crit))
+    )
+    q_o = cs.vertcat(q_O1, q_O2)
+    w_next = w + T * (d[:2] - q_o)
+
+    q = lanes * rho * v
+    q_up = cs.vertcat(q_O1, q[0], q[1])
+    q_up[link_with_ramp] += q_O2
+    v_up = cs.vertcat(v[0], v[0], v[1])
+    rho_down = cs.vertcat(rho[1], rho[2], cs.fmax(cs.fmin(rho[2], rho_crit), d[2]))
+    Veq = v_free * cs.exp((-1 / a) * ((rho / rho_crit)) ** a)
+    rho_next = rho + (T / (L * lanes)) * (q_up - q)
+    v_next = (
+        v
+        + T / tau * (Veq - v)
+        + T / L * v * (v_up - v)
+        - eta * T / tau / L * (rho_down - rho) / (rho + kappa)
+    )
+    v_next[link_with_ramp] = v_next[link_with_ramp] - delta * T / L / lanes * q_O2 * v[
+        link_with_ramp
+    ] / (rho[link_with_ramp] + kappa)
+    v_next = cs.fmax(0, v_next)
+
+    pars = cs.vertcat(rho_crit, a, v_free)
+    return cs.Function(
+        "F", [rho, v, w, r, q_O2, d, pars], [rho_next, v_next, w_next, q, q_o]
+    )
 
 
 class TestEngines(unittest.TestCase):
@@ -102,59 +159,47 @@ class TestCasadiEngine(unittest.TestCase):
             )
 
     def test_to_function__numerically_works(self):
-        L = 1
-        lanes = 2
-        C = (3500, 2000)
-        tau = 18 / 3600
-        kappa = 40
-        eta = 60
-        rho_max = 180
-        delta = 0.0122
-        T = 10 / 3600
-        a = cs.SX.sym("a")
-        v_free = cs.SX.sym("v_free")
-        rho_crit = cs.SX.sym("rho_crit_sym")
-        N1 = Node(name="N1")
-        N2 = Node(name="N2")
-        N3 = Node(name="N3")
-        L1 = Link(2, lanes, L, rho_max, rho_crit, v_free, a, name="L1")
-        L2 = Link(1, lanes, L, rho_max, rho_crit, v_free, a, name="L2")
-        O1 = MeteredOnRamp(C[0], name="O1")
-        O2 = SimpleMeteredOnRamp(C[1], name="O2")
-        D1 = CongestedDestination(name="D1")
-        net = (
-            Network()
-            .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
-            .add_origin(O2, N2)
-        )
-        net.is_valid(raises=True)
-        net.step(T=T, tau=tau, eta=eta, kappa=kappa, delta=delta)
-        args = {
-            "net": net,
-            "more_out": True,
-            "T": T,
-            "parameters": {"rho_crit": rho_crit, "a": a, "v_free": v_free},
-        }
-        F = metanet.engine.to_function(**args, compact=1)
+        for i in (1, 2):
+            net, sym_pars, other_pars = get_net(link_with_ramp=i)
+            net.is_valid(raises=True)
+            net.step(**other_pars)
+            args = {
+                "net": net,
+                "more_out": True,
+                **other_pars,
+                "parameters": sym_pars,
+            }
+            F1: cs.Function = metanet.engine.to_function(**args, compact=1)
+            F2 = get_hardcoded_dynamics(**other_pars, link_with_ramp=i)
 
-        p = [33, 1.8, 130]
-        rho = [15, 20, 25]
-        v = [90, 80, 70]
-        w = [50, 30]
-        d = [2e3, 1e3, 50]
-        q = 800
-        rho_next, v_next, w_next, q, q_o = F(rho, v, w, 1, q, d, p)
+            names = F1.name_out()
+            for _ in range(1_000):
+                rho = np.random.randn(3) * 5 + 30
+                v = np.random.randn(3) * 10 + 100
+                w = np.random.randn(2) * 30 + 100
+                r = np.random.rand()
+                q = np.random.randn() * 100 + 800
+                d = np.hstack(
+                    (np.random.randn(2) * 200 + 1000, np.random.randn() * 20 + 50)
+                )
+                rho_crit = np.random.rand() * 10 + 30
+                a = np.random.rand() + 1
+                v_free = np.random.rand() * 40 + 80
+                args = [
+                    np.maximum(0, arg)
+                    for arg in [rho, v, w, r, q, d, [rho_crit, a, v_free]]
+                ]
+                out1 = F1(*args)
+                out2 = F2(*args)
 
-        for name, x, y in [
-            ("rho", rho_next, [16.11111111, 19.30555556, 25.69444444]),
-            ("v", v_next, [100.10991104, 92.63849965, 71.7779459]),
-            ("w", w_next, [45.83333333, 30.55555556]),
-            ("q", q, [2700, 3200, 3500]),
-            ("q_o", q_o, [3500, 800]),
-        ]:
-            np.testing.assert_allclose(
-                x.full().flatten(), y, atol=1e-6, rtol=1e-6, err_msg=name
-            )
+                for name, x, y in zip(names, out1, out2):
+                    np.testing.assert_allclose(
+                        x.full().flatten(),
+                        y.full().flatten(),
+                        atol=1e-6,
+                        rtol=1e-6,
+                        err_msg=name,
+                    )
 
 
 class TestCasadiVsNumpyEngine(unittest.TestCase):
