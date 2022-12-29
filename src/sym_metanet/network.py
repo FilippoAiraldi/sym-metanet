@@ -1,6 +1,6 @@
 from functools import cached_property
 from itertools import chain, product
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
 
@@ -11,7 +11,7 @@ from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.origins import MeteredOnRamp, Origin
 from sym_metanet.engines.core import EngineBase
 from sym_metanet.errors import InvalidNetworkError
-from sym_metanet.util.funcs import cache_clearer
+from sym_metanet.util.funcs import invalidate_cache
 from sym_metanet.views import (
     DESTINATIONENTRY,
     LINKENTRY,
@@ -24,7 +24,7 @@ from sym_metanet.views import (
 class Network(ElementBase):
     """Highway network."""
 
-    def __init__(self, name: str = None):
+    def __init__(self, name: Optional[str] = None):
         """Instantiates an highway network.
 
         Parameters
@@ -32,7 +32,7 @@ class Network(ElementBase):
         name : str, optional
             Name of the network, by default `None`.
         """
-        super().__init__(name=name)
+        super().__init__(name)
         self._graph = nx.DiGraph(name=name)
 
     @property
@@ -108,7 +108,7 @@ class Network(ElementBase):
         }
 
     @cached_property
-    def destinations_by_name(self) -> Dict[str, Origin]:
+    def destinations_by_name(self) -> Dict[str, Destination]:
         return {destination.name: destination for destination in self.destinations}
 
     @cached_property
@@ -142,7 +142,7 @@ class Network(ElementBase):
         """Gets the disturbances of the network's elements."""
         return {el: el.disturbances for el in self.elements if el.has_disturbances}
 
-    @cache_clearer(nodes_by_name)
+    @invalidate_cache(nodes_by_name)
     def add_node(self, node: Node) -> "Network":
         """Adds a node to the highway network.
 
@@ -159,7 +159,7 @@ class Network(ElementBase):
         self._graph.add_node(node)
         return self
 
-    @cache_clearer(nodes_by_name)
+    @invalidate_cache(nodes_by_name)
     def add_nodes(self, nodes: Iterable[Node]) -> "Network":
         """Adds multiple nodes. See `Network.add_node`.
 
@@ -176,7 +176,7 @@ class Network(ElementBase):
         self._graph.add_nodes_from(nodes)
         return self
 
-    @cache_clearer(links_by_name, nodes_by_link)
+    @invalidate_cache(links_by_name, nodes_by_link)
     def add_link(self, node_up: Node, link: Link, node_down: Node) -> "Network":
         """Adds a link to the highway network, between two nodes.
 
@@ -197,7 +197,7 @@ class Network(ElementBase):
         self._graph.add_edge(node_up, node_down, **{LINKENTRY: link})
         return self
 
-    @cache_clearer(links_by_name, nodes_by_link)
+    @invalidate_cache(links_by_name, nodes_by_link)
     def add_links(self, links: Iterable[Tuple[Node, Link, Node]]) -> "Network":
         """Adds multiple links. See `Network.add_link`.
 
@@ -219,7 +219,7 @@ class Network(ElementBase):
         self._graph.add_edges_from(get_edge(link) for link in links)
         return self
 
-    @cache_clearer(origins, origins_by_node, origins_by_name)
+    @invalidate_cache(origins, origins_by_node, origins_by_name)
     def add_origin(self, origin: Origin, node: Node) -> "Network":
         """Adds the given traffic origin to the node.
 
@@ -241,7 +241,7 @@ class Network(ElementBase):
             self.nodes[node][ORIGINENTRY] = origin
         return self
 
-    @cache_clearer(destinations, destinations_by_node, destinations_by_name)
+    @invalidate_cache(destinations, destinations_by_node, destinations_by_name)
     def add_destination(self, destination: Destination, node: Node) -> "Network":
         """Adds the given traffic destination to the node.
 
@@ -267,15 +267,15 @@ class Network(ElementBase):
     def add_path(
         self,
         path: Iterable[Union[Node, Link]],
-        origin: Origin = None,
-        destination: Destination = None,
+        origin: Optional[Origin] = None,
+        destination: Optional[Destination] = None,
     ) -> "Network":
         """Adds a path of nodes and links between the origin and the
         destination.
 
         Parameters
         ----------
-        path : Iterable[Union[Node, Link]]
+        path : iterable of either Nodes and Links
             A path consists of an alternating sequence of nodes and links,
             starting from the first node and ending at the last. For example, a
             valid path is: `node1, link1, node2, link2, node3, ..., nodeN`.
@@ -471,8 +471,10 @@ class Network(ElementBase):
 
     def step(
         self,
-        init_conditions: Dict[ElementWithVars[sym_var], Dict[str, sym_var]] = None,
-        engine: EngineBase = None,
+        init_conditions: Optional[
+            Dict[ElementWithVars[sym_var], Dict[str, sym_var]]
+        ] = None,
+        engine: Optional[EngineBase] = None,
         **other_parameters: sym_var,
     ) -> None:
         """Steps the dynamics of the network's elements.

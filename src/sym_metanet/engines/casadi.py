@@ -6,6 +6,7 @@ from typing import (
     Generic,
     List,
     Literal,
+    Optional,
     Type,
     TypeVar,
     Union,
@@ -103,9 +104,7 @@ class LinksEngine(LinksEngineBase, Generic[csXX]):
 
 
 class OriginsEngine(OriginsEngineBase, Generic[csXX]):
-    """
-    CasADi implementation of `sym_metanet.engines.core.OriginsEngineBase`.
-    """
+    """CasADi implementation of `sym_metanet.engines.core.OriginsEngineBase`."""
 
     @staticmethod
     def step_queue(w: csXX, d: csXX, q: csXX, T: csXX) -> csXX:
@@ -131,9 +130,7 @@ class OriginsEngine(OriginsEngineBase, Generic[csXX]):
 
 
 class DestinationsEngine(DestinationsEngineBase, Generic[csXX]):
-    """
-    CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`.
-    """
+    """CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`."""
 
     @staticmethod
     def get_congested_downstream_density(
@@ -151,10 +148,9 @@ class Engine(EngineBase, Generic[csXX]):
         Parameters
         ----------
         sym_type : {'SX', 'MX'}, optional
-            A string that tells the engine with type of symbolic variables to
-            use. Must be either `'SX'` or `'MX'`, at which point the engine
-            employes `casadi.SX` or `casadi.MX` variables, respectively. By
-            default, `'SX'` is used.
+            A string that tells the engine with type of symbolic variables to use. Must
+            be either `'SX'` or `'MX'`, at which point the engine employes `casadi.SX`
+            or `casadi.MX` variables, respectively. By default, `'SX'` is used.
 
         Raises
         ------
@@ -197,7 +193,7 @@ class Engine(EngineBase, Generic[csXX]):
         compact: int = 0,
         more_out: bool = False,
         force_positive_speed: bool = True,
-        parameters: Dict[str, csXX] = None,
+        parameters: Optional[Dict[str, csXX]] = None,
         **other_parameters,
     ) -> cs.Function:
         """Converts the network's dynamics to a CasADi Function.
@@ -209,28 +205,25 @@ class Engine(EngineBase, Generic[csXX]):
         compact : int, optional
             The compactness of input and output arguments. The levels are
 
-            - <= 0: no aggregation of arguments, i.e., the function keeps
-            states, action or disturbances for each element separate.
+            - <= 0: no aggregation of arguments, i.e., the function keeps states, action
+            or disturbances for each element separate.
 
-            - == 1: some aggregation, i.e., same types of variables are clumped
-            together.
+            - == 1: some aggregation, i.e., same variable types are clumped together.
 
             -  > 1: most aggregation, i.e., states, action and disturbances are
             aggregated in a single vector each.
 
         more_out : bool, optional
-            Includes flows of links and origins in the output. By default
-            `False`.
+            Includes flows of links and origins in the output. By default `False`.
         force_positive_speed : bool, optional
-            If `True`, the links speeds at the next time step are forced to be
-            positive as `v+ = max(0, v+)`. METANET is in fact known to sometime
-            yield negative speeds, which are infeasible.
+            If `True`, the links speeds at the next time step are forced to be positive
+            as `v+ = max(0, v+)`. METANET is in fact known to sometime yield negative
+            speeds, which are infeasible.
         parameters : dict[str, casadi.SX or MX], optional
-            Symbolic network parameters to be included in the function, by
-            default None.
+            Symbolic network parameters to be included in the function, by default None.
         **other_parameters
-            Other parameters (numerical or symbolical) required during the
-            computations, e.g., sampling time T is usually required.
+            Other parameters (numerical or symbolical) required during the computations,
+            e.g., sampling time T is usually required.
 
         Returns
         -------
@@ -240,9 +233,8 @@ class Engine(EngineBase, Generic[csXX]):
         Raises
         ------
         RuntimeError
-            Raises if variables have not yet been initialized; or if the
-            dynamics have not been stepped yet, so no state at the next time
-            instant is found.
+            Raises if variables have not yet been initialized; or if the dynamics have
+            not been stepped yet, so no state at the next time instant is found.
         """
         for el, group in product(
             net.elements, ["_states", "_actions", "_disturbances"]

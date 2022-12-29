@@ -5,6 +5,7 @@ from typing import (
     Dict,
     Generator,
     Iterable,
+    Optional,
     Tuple,
     Union,
 )
@@ -35,9 +36,9 @@ class OutLinkViewWrapper(nx.classes.reportviews.OutEdgeView):
 
     def __call__(
         self,
-        nbunch: Union["Node", Iterable["Node"]] = None,
+        nbunch: Union[None, "Node", Iterable["Node"]] = None,
         data: Union[bool, str] = LINKENTRY,
-        default: Dict[str, Any] = None,
+        default: Optional[Dict[str, Any]] = None,
     ) -> Collection[Tuple["Node", "Node", "Link"]]:
         return super().__call__(nbunch, data, default)
 
@@ -56,8 +57,8 @@ class InLinkViewWrapper(nx.classes.reportviews.InEdgeView):
 
     def __call__(
         self,
-        nbunch: Union["Node", Iterable["Node"]] = None,
+        nbunch: Union[None, "Node", Iterable["Node"]] = None,
         data: Union[bool, str] = LINKENTRY,
-        default: Dict[str, Any] = None,
+        default: Optional[Dict[str, Any]] = None,
     ) -> Collection[Tuple["Node", "Node", "Link"]]:
         return super().__call__(nbunch, data, default)

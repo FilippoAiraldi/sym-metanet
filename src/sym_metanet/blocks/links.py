@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 from sym_metanet.blocks.base import ElementWithVars, sym_var
 from sym_metanet.blocks.origins import MeteredOnRamp
@@ -10,15 +10,14 @@ if TYPE_CHECKING:
 
 
 class Link(ElementWithVars[sym_var]):
-    """
-    Highway link between two nodes [1, Section 3.2.1]. Links represent stretch
-    of highway with similar traffic characteristics and no road changes (e.g.,
-    same number of lanes and maximum speed).
+    """Highway link between two nodes [1, Section 3.2.1]. Links represent stretch of
+    highway with similar traffic characteristics and no road changes (e.g., same number
+    of lanes and maximum speed).
 
     References
     ----------
-    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic
-        control measures", Netherlands TRAIL Research School.
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+        measures", Netherlands TRAIL Research School.
     """
 
     __slots__ = ("N", "lam", "L", "rho_max", "rho_crit", "v_free", "a", "turnrate")
@@ -34,7 +33,7 @@ class Link(ElementWithVars[sym_var]):
         free_flow_velocity: sym_var,
         a: sym_var,
         turnrate: sym_var = 1.0,
-        name: str = None,
+        name: Optional[str] = None,
     ) -> None:
         """Creates an instance of a METANET link.
 
@@ -49,26 +48,24 @@ class Link(ElementWithVars[sym_var]):
         maximum density : float or symbolic
             Maximum density that the link can withstand, i.e., `rho_max`.
         critical_densities : float or symbolic
-            Critical density at which the traffic flow is maximal, i.e.,
-            `rho_crit`.
+            Critical density at which the traffic flow is maximal, i.e., `rho_crit`.
         free_flow_velocities : float or symbolic
-            Average speed of cars when traffic is freely flowing, i.e.,
-            `v_free`.
+            Average speed of cars when traffic is freely flowing, i.e., `v_free`.
         a : float or symbolic
-            Model parameter in the computations of the equivalent speed
-            [1, Equation 3.4].
+            Model parameter in the computations of the equivalent speed [1, Equation
+            3.4].
         turnrate : float or symbolic, optional
-            Fraction of the total flow that enters this link via the upstream
-            node. Only relevant if multiple exiting links are attached to the
-            same node, in order to split the flow according to these rates.
-            Needs not be normalized. By default, all links have equal rates.
+            Fraction of the total flow that enters this link via the upstream node. Only
+            relevant if multiple exiting links are attached to the same node, in order
+            to split the flow according to these rates. Needs not be normalized. By
+            default, all links have equal rates.
         name : str, optional
             Name of this link, by default `None`.
 
         References
         ----------
-        [1] Hegyi, A., 2004, "Model predictive control for integrating traffic
-            control measures", Netherlands TRAIL Research School.
+        [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+            measures", Netherlands TRAIL Research School.
         """
         super().__init__(name)
         self.N = nb_segments
@@ -81,19 +78,21 @@ class Link(ElementWithVars[sym_var]):
         self.turnrate = turnrate
 
     def init_vars(
-        self, init_conditions: Dict[str, sym_var] = None, engine: EngineBase = None
+        self,
+        init_conditions: Optional[Dict[str, sym_var]] = None,
+        engine: Optional[EngineBase] = None,
     ) -> None:
         """For each segment in the link, initializes
-        -  `rho`: densities (state)
-        -  `v`: speeds (state).
+         - `rho`: densities (state)
+         - `v`: speeds (state).
 
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and
-            disturbances with specific values. These values must be compatible
-            with the symbolic engine in type and shape. If not provided,
-            variables are initialized automatically.
+            Provides name-variable tuples to initialize states, actions and disturbances
+            with specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are initialized
+            automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
         """
@@ -101,7 +100,7 @@ class Link(ElementWithVars[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.states = {
+        self.states: Dict[str, sym_var] = {
             name: (
                 init_conditions[name]
                 if name in init_conditions
@@ -110,7 +109,7 @@ class Link(ElementWithVars[sym_var]):
             for name in ("rho", "v")
         }
 
-    def get_flow(self, engine: EngineBase = None, **kwargs) -> sym_var:
+    def get_flow(self, engine: Optional[EngineBase] = None, **kwargs) -> sym_var:
         """Gets the flow in this link's segments.
 
         Parameters
@@ -136,9 +135,9 @@ class Link(ElementWithVars[sym_var]):
         eta: sym_var,
         kappa: sym_var,
         T: sym_var,
-        delta: sym_var = None,
-        phi: sym_var = None,
-        engine: EngineBase = None,
+        delta: Optional[sym_var] = None,
+        phi: Optional[sym_var] = None,
+        engine: Optional[EngineBase] = None,
         **kwargs,
     ) -> Dict[str, sym_var]:
         """Steps the dynamics of this link.
@@ -158,16 +157,15 @@ class Link(ElementWithVars[sym_var]):
         delta : sym_var, optional
             Model parameter for merging phenomenum. By default, not considered.
         phi : sym_var, optional
-            Model parameter for lane drop phenomenum. By defaul, not
-            considered.
+            Model parameter for lane drop phenomenum. By defaul, not considered.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
 
         Returns
         -------
         Dict[str, sym_var]
-            A dict with the states of the link (speeds and densities) at the
-            next time step.
+            A dict with the states of the link (speeds and densities) at the next time
+            step.
         """
         if engine is None:
             engine = get_current_engine()

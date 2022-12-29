@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from sym_metanet.blocks.base import ElementBase, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
@@ -10,20 +10,19 @@ if TYPE_CHECKING:
 
 
 class Node(ElementBase):
-    """
-    Node of the highway [1, Section 3.2.2] representing, e.g., the connection
-    between two links. Nodes do not correspond to actual physical components of
-    the highway, but are used to separate links in case there is a major change
-    in the link parameters or a junction or bifurcation.
+    """Node of the highway [1, Section 3.2.2] representing, e.g., the connection between
+    two links. Nodes do not correspond to actual physical components of the highway, but
+    are used to separate links in case there is a major change in the link parameters or
+    a junction or bifurcation.
 
     References
     ----------
-    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic
-        control measures", Netherlands TRAIL Research School.
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+        measures", Netherlands TRAIL Research School.
     """
 
     def get_downstream_density(
-        self, net: "Network", engine: EngineBase = None, **kwargs
+        self, net: "Network", engine: Optional[EngineBase] = None, **kwargs
     ) -> sym_var:
         """Computes the (virtual) downstream density of the node.
 
@@ -59,18 +58,22 @@ class Node(ElementBase):
         return engine.nodes.get_downstream_density(rho_firsts)
 
     def get_upstream_speed_and_flow(
-        self, net: "Network", link: "Link", engine: EngineBase = None, **kwargs
+        self,
+        net: "Network",
+        link: "Link",
+        engine: Optional[EngineBase] = None,
+        **kwargs
     ) -> Tuple[sym_var, sym_var]:
-        """Computes the (virtual) upstream speed and flow of the node for this
-        the current link.
+        """Computes the (virtual) upstream speed and flow of the node for this the
+        current link.
 
         Parameters
         ----------
         net : Network
             The network which node and link belongs to.
         link : Link
-            The current link (which departs from this node) querying this
-            information from the node.
+            The current link (which departs from this node) querying this information
+            from the node.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
 

@@ -1,4 +1,4 @@
-from typing import Callable, Literal, Type, Union
+from typing import Callable, Literal, Optional, Type, Union
 
 import numpy as np
 
@@ -19,7 +19,7 @@ class NodesEngine(NodesEngineBase):
         q_lasts: np.ndarray,
         beta: np.ndarray,
         betas: np.ndarray,
-        q_orig: np.ndarray = None,
+        q_orig: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         Q = np.sum(q_lasts, axis=0)
         if q_orig is not None:
@@ -66,11 +66,11 @@ class LinksEngine(LinksEngineBase):
         eta: float,
         kappa: float,
         T: float,
-        q_ramp: np.ndarray = None,
-        delta: float = None,
-        lanes_drop: int = None,
-        phi: float = None,
-        rho_crit: float = None,
+        q_ramp: Optional[np.ndarray] = None,
+        delta: Optional[float] = None,
+        lanes_drop: Optional[int] = None,
+        phi: Optional[float] = None,
+        rho_crit: Optional[float] = None,
     ) -> np.ndarray:
         relaxation = (T / tau) * (Veq - v)
         convection = T * v / L * (v_up - v)
@@ -143,9 +143,13 @@ class Engine(EngineBase):
         ----------
         var_type : str or array_like, optional
             How numerical values inside each variable should be initialized
-                - 'empty': variable vectors are initialized as empty
-                - 'rand': variable vectors are initialized randomly (uniform)
-                - 'randn': variable vectors are initialized randomly (natural)
+
+             - 'empty': variable vectors are initialized as empty
+
+             - 'rand': variable vectors are initialized randomly (uniform)
+
+             - 'randn': variable vectors are initialized randomly (natural)
+
             or initialized with the given array value. By default, 'empty' is
             selected.
 
@@ -170,9 +174,13 @@ class Engine(EngineBase):
         ----------
         var_type : str or array_like, optional
             How numerical values inside each variable should be initialized
-                - 'empty': variable vectors are initialized as empty
-                - 'rand': variable vectors are initialized randomly (uniform)
-                - 'randn': variable vectors are initialized randomly (natural)
+
+             - 'empty': variable vectors are initialized as empty
+
+             - 'rand': variable vectors are initialized randomly (uniform)
+
+             - 'randn': variable vectors are initialized randomly (natural)
+
             or initialized with the given array value.
 
         Raises

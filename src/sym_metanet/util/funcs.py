@@ -1,5 +1,5 @@
 from functools import _lru_cache_wrapper, cached_property, wraps
-from typing import Callable, Iterable, List, TypeVar, Union
+from typing import Callable, Iterable, List, TypeVar
 
 T = TypeVar("T")
 
@@ -20,14 +20,16 @@ def first(o: Iterable[T]) -> T:
     return next(iter(o))
 
 
-def cache_clearer(*callables: Union[cached_property, _lru_cache_wrapper]) -> Callable:
-    """Decorator that allows to enhance a method with the ability, when
-    called, to clear the cached of some target methods/properties. This is
-    especially useful to reset the cache of a given cached method/property when
-    another method makes changes to the underlying data, thus compromising the
-    cached results.
+def invalidate_cache(*callables: Callable) -> Callable:
+    """Decorator that allows to enhance a function or method with the ability, when
+    called, to invalidate and clear the cached of some other target methods/properties.
+    This is especially useful to reset the cache of a given cached method/property when
+    another method makes changes to the underlying data, thus compromising the cached
+    results.
 
-    Thanks to https://github.com/FilippoAiraldi/casadi-nlp/blob/dev/src/csnlp/util/funcs.py
+    Note: the wrapper can invalidate other cached properties, but for doing so it
+    assumes the instance of the object (which the property to invalidate belongs to) is
+    the first argument of the wrapped method. For lru caches the issue does not subsist.
 
     Parameters
     ----------
@@ -36,40 +38,75 @@ def cache_clearer(*callables: Union[cached_property, _lru_cache_wrapper]) -> Cal
 
     Returns
     -------
-    decorated_func : Callable[[Any], Any]
+    decorating_function : Callable
         Returns the function wrapped with this decorator.
 
     Raises
     ------
+    ValueError
+        Raises if no callable is passed to the function.
     TypeError
-        Raises if the given inputs are not instances of
-        `functools.cached_property` or `functools._lru_cache_wrapper`.
+        Raises if the given inputs are not instances of `functools.cached_property` or
+        `functools._lru_cache_wrapper`.
     """
-    cps: List[cached_property] = []
-    lrus: List[_lru_cache_wrapper] = []
+    if not callables:
+        raise ValueError("No callables were passed for cache invalidation.")
+    cached_properties: List[cached_property] = []
+    lru_caches: List[_lru_cache_wrapper] = []
     for p in callables:
         if isinstance(p, cached_property):
-            cps.append(p)
-        elif isinstance(p, _lru_cache_wrapper):
-            lrus.append(p)
+            cached_properties.append(p)
+        elif hasattr(p, "cache_clear"):
+            lru_caches.append(p)  # type: ignore
         else:
             raise TypeError(
                 "Expected cached properties or lru wrappers; got "
                 f"{p.__class__.__name__} instead."
             )
 
-    def actual_decorator(func):
+    Ncp = len(cached_properties)
+    if Ncp == 0:
+        invalidate_cached_properties = None
+    elif Ncp == 1:
+        prop = cached_properties[0]
+
+        def invalidate_cached_properties(self):
+            propname = prop.attrname
+            if propname in self.__dict__:
+                del self.__dict__[propname]
+
+    else:
+
+        def invalidate_cached_properties(self):
+            for prop in cached_properties:
+                propname = prop.attrname
+                if propname in self.__dict__:
+                    del self.__dict__[propname]
+
+    Nlru = len(lru_caches)
+    if Nlru == 0:
+        invalidate_lru_caches = None
+    elif Nlru == 1:
+        lru_cache = lru_caches[0]
+
+        def invalidate_lru_caches():
+            lru_cache.cache_clear()
+
+    else:
+
+        def invalidate_lru_caches():
+            for lru_cache in lru_caches:
+                lru_cache.cache_clear()
+
+    def decorating_function(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            self = args[0]
-            for prop in cps:
-                n = prop.attrname
-                if n is not None and n in self.__dict__:
-                    del self.__dict__[n]
-            for lru in lrus:
-                lru.cache_clear()
+            if invalidate_cached_properties is not None and args:
+                invalidate_cached_properties(args[0])
+            if invalidate_lru_caches is not None:
+                invalidate_lru_caches()
             return func(*args, **kwargs)
 
         return wrapper
 
-    return actual_decorator
+    return decorating_function

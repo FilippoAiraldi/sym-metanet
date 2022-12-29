@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Literal
+from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from sym_metanet.blocks.base import ElementWithVars, sym_var
 from sym_metanet.engines.core import EngineBase, get_current_engine
@@ -10,18 +10,15 @@ if TYPE_CHECKING:
 
 
 class Origin(ElementWithVars[sym_var]):
-    """
-    Ideal, state-less highway origin that conveys to the attached link as much
-    flow as the flow in such link.
-    """
+    """Ideal, state-less highway origin that conveys to the attached link as much flow
+    as the flow in such link."""
 
     def init_vars(self, *args, **kwargs) -> None:
         """Initializes no variable in the ideal origin."""
-        pass
 
-    def step_dynamics(self, *args, **kwargs) -> None:
+    def step_dynamics(self, *args, **kwargs) -> Dict[str, sym_var]:
         """No dynamics to steps in the ideal origin."""
-        pass
+        return {}
 
     def get_speed(self, net: "Network", **kwargs) -> sym_var:
         """Computes the (upstream) speed induced by the ideal origin.
@@ -38,7 +35,9 @@ class Origin(ElementWithVars[sym_var]):
         """
         return self._get_exiting_link(net=net).states["v"][0]
 
-    def get_flow(self, net: "Network", engine: EngineBase = None, **kwargs) -> sym_var:
+    def get_flow(
+        self, net: "Network", engine: Optional[EngineBase] = None, **kwargs
+    ) -> sym_var:
         """Computes the (upstream) flow induced by the ideal origin.
 
         Parameters
@@ -56,8 +55,8 @@ class Origin(ElementWithVars[sym_var]):
         return self._get_exiting_link(net=net).get_flow(engine=engine)[0]
 
     def _get_exiting_link(self, net: "Network") -> "Link":
-        """Internal utility to fetch the link leaving this destination (can
-        only be one)."""
+        """Internal utility to fetch the link leaving this destination (can only be
+        one)."""
         links_down = net.out_links(net.origins[self])
         assert (
             len(links_down) == 1
@@ -66,15 +65,13 @@ class Origin(ElementWithVars[sym_var]):
 
 
 class MeteredOnRamp(Origin[sym_var]):
-    """
-    On-ramp where cars can queue up before being given access to the attached
-    link. For reference, look at [1], in particular, Section 3.2.1 and
-    Equations 3.5 and 3.6.
+    """On-ramp where cars can queue up before being given access to the attached link.
+    For reference, look at [1], in particular, Section 3.2.1 and Equations 3.5 and 3.6.
 
     References
     ----------
-    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic
-        control measures", Netherlands TRAIL Research School.
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+        measures", Netherlands TRAIL Research School.
     """
 
     __slots__ = ("C", "flow_eq_type")
@@ -86,7 +83,7 @@ class MeteredOnRamp(Origin[sym_var]):
         self,
         capacity: sym_var,
         flow_eq_type: Literal["in", "out"] = "out",
-        name: str = None,
+        name: Optional[str] = None,
     ) -> None:
         """Instantiates an on-ramp with the given capacity.
 
@@ -106,21 +103,21 @@ class MeteredOnRamp(Origin[sym_var]):
 
     def init_vars(
         self,
-        init_conditions: Dict[str, sym_var] = None,
-        engine: EngineBase = None,
+        init_conditions: Optional[Dict[str, sym_var]] = None,
+        engine: Optional[EngineBase] = None,
     ) -> None:
         """Initializes
-        - `w`: queue length (state)
-        - `r`: ramp metering rate (control action)
-        - `d`: demand (disturbance).
+         - `w`: queue length (state)
+         - `r`: ramp metering rate (control action)
+         - `d`: demand (disturbance).
 
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and
-            disturbances with specific values. These values must be compatible
-            with the symbolic engine in type and shape. If not provided,
-            variables are initialized automatically.
+            Provides name-variable tuples to initialize states, actions and disturbances
+            with specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are initialized
+            automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
         """
@@ -128,24 +125,24 @@ class MeteredOnRamp(Origin[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.states = {
+        self.states: Dict[str, sym_var] = {
             "w": init_conditions["w"]
             if "w" in init_conditions
             else engine.var(f"w_{self.name}")
         }
-        self.actions = {
+        self.actions: Dict[str, sym_var] = {
             "r": init_conditions["r"]
             if "r" in init_conditions
             else engine.var(f"r_{self.name}")
         }
-        self.disturbances = {
+        self.disturbances: Dict[str, sym_var] = {
             "d": init_conditions["d"]
             if "d" in init_conditions
             else engine.var(f"d_{self.name}")
         }
 
     def step_dynamics(
-        self, net: "Network", T: sym_var, engine: EngineBase = None, **kwargs
+        self, net: "Network", T: sym_var, engine: Optional[EngineBase] = None, **kwargs
     ) -> Dict[str, sym_var]:
         """Steps the dynamics of this origin.
 
@@ -172,7 +169,7 @@ class MeteredOnRamp(Origin[sym_var]):
         return {"w": w_next}
 
     def get_flow(
-        self, net: "Network", T: sym_var, engine: EngineBase = None, **kwargs
+        self, net: "Network", T: sym_var, engine: Optional[EngineBase] = None, **kwargs
     ) -> sym_var:
         """Computes the (upstream) flow induced by the metered ramp.
 
@@ -217,25 +214,27 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
 
     _actions = {"q"}
 
-    def __init__(self, capacity: sym_var, name: str = None) -> None:
+    def __init__(self, capacity: sym_var, name: Optional[str] = None) -> None:
         super().__init__(capacity=capacity, name=name)
         del self.flow_eq_type
 
     def init_vars(
-        self, init_conditions: Dict[str, sym_var] = None, engine: EngineBase = None
+        self,
+        init_conditions: Optional[Dict[str, sym_var]] = None,
+        engine: Optional[EngineBase] = None,
     ) -> None:
         """Initializes
-        - `w`: queue length (state)
-        - `q`: ramp flow (control action)
-        - `d`: demand (disturbance).
+         - `w`: queue length (state)
+         - `q`: ramp flow (control action)
+         - `d`: demand (disturbance).
 
         Parameters
         ----------
         init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and
-            disturbances with specific values. These values must be compatible
-            with the symbolic engine in type and shape. If not provided,
-            variables are initialized automatically.
+            Provides name-variable tuples to initialize states, actions and disturbances
+            with specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are initialized
+            automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
         """
@@ -243,25 +242,24 @@ class SimpleMeteredOnRamp(MeteredOnRamp[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.states = {
+        self.states: Dict[str, sym_var] = {
             "w": init_conditions["w"]
             if "w" in init_conditions
             else engine.var(f"w_{self.name}")
         }
-        self.actions = {
+        self.actions: Dict[str, sym_var] = {
             "q": init_conditions["q"]
             if "q" in init_conditions
             else engine.var(f"q_{self.name}")
         }
-        self.disturbances = {
+        self.disturbances: Dict[str, sym_var] = {
             "d": init_conditions["d"]
             if "d" in init_conditions
             else engine.var(f"d_{self.name}")
         }
 
     def get_flow(self, *args, **kwargs) -> sym_var:
-        """Computes the (upstream) flow induced by the simple-metered
-        ramp.
+        """Computes the (upstream) flow induced by the simple-metered ramp.
 
         Returns
         -------

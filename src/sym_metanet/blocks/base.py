@@ -9,7 +9,7 @@ class ElementBase:
     __slots__ = "name"
     __ids: Dict[type, count] = {}
 
-    def __init__(self, name: str = None) -> None:
+    def __init__(self, name: Optional[str] = None) -> None:
         """Instantiates the element with the given `name` attribute.
 
         Parameters
@@ -51,7 +51,7 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
     _actions: Set[str] = set()
     _disturbances: Set[str] = set()
 
-    def __init__(self, name: str = None) -> None:
+    def __init__(self, name: Optional[str] = None) -> None:
         """Instantiates the element with the given `name` attribute.
 
         Parameters
