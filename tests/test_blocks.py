@@ -11,7 +11,6 @@ from sym_metanet import (
     SimpleMeteredOnRamp,
     engines,
 )
-from sym_metanet.blocks.base import NO_VARS
 
 engine = engines.use("numpy", var_type="randn")
 
@@ -21,9 +20,9 @@ class TestLinks(unittest.TestCase):
         nb_seg = 4
         L = Link[np.ndarray](nb_seg, 3, 1, 180, 30, 100, 1.8)
         L.init_vars()
-        self.assertIsNot(L.states, NO_VARS)
-        self.assertIs(L.actions, NO_VARS)
-        self.assertIs(L.disturbances, NO_VARS)
+        self.assertIsNot(L.states, None)
+        self.assertIs(L.actions, None)
+        self.assertIs(L.disturbances, None)
         for n in ["rho", "v"]:
             self.assertIn(n, L.states)
             self.assertEqual(L.states[n].shape, (nb_seg,))
@@ -33,9 +32,9 @@ class TestLinks(unittest.TestCase):
         L = Link[np.ndarray](nb_seg, 3, 1, 180, 30, 100, 1.8)
         init_conds = {"rho": np.random.rand(nb_seg), "v": np.random.rand(nb_seg)}
         L.init_vars(init_conds)
-        self.assertIsNot(L.states, NO_VARS)
-        self.assertIs(L.actions, NO_VARS)
-        self.assertIs(L.disturbances, NO_VARS)
+        self.assertIsNot(L.states, None)
+        self.assertIs(L.actions, None)
+        self.assertIs(L.disturbances, None)
         for n in ["rho", "v"]:
             self.assertIn(n, L.states)
             self.assertEqual(L.states[n].shape, (nb_seg,))
@@ -46,18 +45,19 @@ class TestDestinations(unittest.TestCase):
     def test_init_vars__no_value_is_initialized(self):
         D = Destination()
         D.init_vars()
-        self.assertIs(D.states, NO_VARS)
-        self.assertIs(D.actions, NO_VARS)
-        self.assertIs(D.disturbances, NO_VARS)
+        self.assertIs(D.states, None)
+        self.assertIs(D.actions, None)
+        self.assertIs(D.disturbances, None)
 
 
 class TestCongestedDestinations(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
+        # sourcery skip: class-extract-method
         D = CongestedDestination[np.ndarray]()
         D.init_vars()
-        self.assertIs(D.states, NO_VARS)
-        self.assertIs(D.actions, NO_VARS)
-        self.assertIsNot(D.disturbances, NO_VARS)
+        self.assertIs(D.states, None)
+        self.assertIs(D.actions, None)
+        self.assertIsNot(D.disturbances, None)
         self.assertIn("d", D.disturbances)
         self.assertIn(D.disturbances["d"].shape, {(1,), ()})
 
@@ -65,9 +65,9 @@ class TestCongestedDestinations(unittest.TestCase):
         D = CongestedDestination[np.ndarray]()
         init_conds = {"d": np.random.rand(1)}
         D.init_vars(init_conds)
-        self.assertIs(D.states, NO_VARS)
-        self.assertIs(D.actions, NO_VARS)
-        self.assertIsNot(D.disturbances, NO_VARS)
+        self.assertIs(D.states, None)
+        self.assertIs(D.actions, None)
+        self.assertIsNot(D.disturbances, None)
         self.assertIn("d", D.disturbances)
         self.assertIn(D.disturbances["d"].shape, {(1,), ()})
         np.testing.assert_equal(init_conds["d"], D.disturbances["d"])
@@ -75,20 +75,20 @@ class TestCongestedDestinations(unittest.TestCase):
 
 class TestOrigins(unittest.TestCase):
     def test_init_vars__no_value_is_initialized(self):
-        O = Origin()
-        O.init_vars()
-        self.assertIs(O.states, NO_VARS)
-        self.assertIs(O.actions, NO_VARS)
-        self.assertIs(O.disturbances, NO_VARS)
+        origin = Origin()
+        origin.init_vars()
+        self.assertIs(origin.states, None)
+        self.assertIs(origin.actions, None)
+        self.assertIs(origin.disturbances, None)
 
 
 class TestMeteredOnRamp(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
         R = MeteredOnRamp[np.ndarray](1e5)
         R.init_vars()
-        self.assertIsNot(R.states, NO_VARS)
-        self.assertIsNot(R.actions, NO_VARS)
-        self.assertIsNot(R.disturbances, NO_VARS)
+        self.assertIsNot(R.states, None)
+        self.assertIsNot(R.actions, None)
+        self.assertIsNot(R.disturbances, None)
         for n, d in [("w", R.states), ("r", R.actions), ("d", R.disturbances)]:
             self.assertIn(n, d)
             self.assertIn(d[n].shape, {(1,), ()})
@@ -101,9 +101,9 @@ class TestMeteredOnRamp(unittest.TestCase):
             "d": np.random.rand(1),
         }
         R.init_vars(init_conds)
-        self.assertIsNot(R.states, NO_VARS)
-        self.assertIsNot(R.actions, NO_VARS)
-        self.assertIsNot(R.disturbances, NO_VARS)
+        self.assertIsNot(R.states, None)
+        self.assertIsNot(R.actions, None)
+        self.assertIsNot(R.disturbances, None)
         for n, d in [("w", R.states), ("r", R.actions), ("d", R.disturbances)]:
             self.assertIn(n, d)
             self.assertIn(d[n].shape, {(1,), ()})
@@ -114,9 +114,9 @@ class TestSimpleMeteredOnRamp(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
         R = SimpleMeteredOnRamp[np.ndarray](1e5)
         R.init_vars()
-        self.assertIsNot(R.states, NO_VARS)
-        self.assertIsNot(R.actions, NO_VARS)
-        self.assertIsNot(R.disturbances, NO_VARS)
+        self.assertIsNot(R.states, None)
+        self.assertIsNot(R.actions, None)
+        self.assertIsNot(R.disturbances, None)
         for n, d in [("w", R.states), ("q", R.actions), ("d", R.disturbances)]:
             self.assertIn(n, d)
             self.assertIn(d[n].shape, {(1,), ()})
@@ -129,9 +129,9 @@ class TestSimpleMeteredOnRamp(unittest.TestCase):
             "d": np.random.rand(1),
         }
         R.init_vars(init_conds)
-        self.assertIsNot(R.states, NO_VARS)
-        self.assertIsNot(R.actions, NO_VARS)
-        self.assertIsNot(R.disturbances, NO_VARS)
+        self.assertIsNot(R.states, None)
+        self.assertIsNot(R.actions, None)
+        self.assertIsNot(R.disturbances, None)
         for n, d in [("w", R.states), ("q", R.actions), ("d", R.disturbances)]:
             self.assertIn(n, d)
             self.assertIn(d[n].shape, {(1,), ()})

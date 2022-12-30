@@ -26,66 +26,65 @@ if TYPE_CHECKING:
     from sym_metanet.network import Network
 
 
-csTYPES: Dict[str, Type] = {
-    "SX": cs.SX,
-    "MX": cs.MX,
-}
-csXX = TypeVar("csXX", cs.SX, cs.MX)
+SymType = TypeVar("SymType", cs.SX, cs.MX)
 
 
-class NodesEngine(NodesEngineBase, Generic[csXX]):
+class NodesEngine(NodesEngineBase, Generic[SymType]):
     """CasADi implementation of `sym_metanet.engines.core.NodesEngineBase`."""
 
     @staticmethod
     def get_upstream_flow(
-        q_lasts: csXX, beta: csXX, betas: csXX, q_orig: csXX = None
-    ) -> csXX:
+        q_lasts: SymType,
+        beta: SymType,
+        betas: SymType,
+        q_orig: Optional[SymType] = None,
+    ) -> SymType:
         Q = cs.sum1(q_lasts)
         if q_orig is not None:
             Q += q_orig
         return (beta / cs.sum1(betas)) * Q
 
     @staticmethod
-    def get_upstream_speed(q_lasts: csXX, v_lasts: csXX) -> csXX:
+    def get_upstream_speed(q_lasts: SymType, v_lasts: SymType) -> SymType:
         return cs.sum1(v_lasts * q_lasts) / cs.sum1(q_lasts)
 
     @staticmethod
-    def get_downstream_density(rho_firsts: csXX) -> csXX:
+    def get_downstream_density(rho_firsts: SymType) -> SymType:
         return cs.sum1(rho_firsts**2) / cs.sum1(rho_firsts)
 
 
-class LinksEngine(LinksEngineBase, Generic[csXX]):
+class LinksEngine(LinksEngineBase, Generic[SymType]):
     """CasADi implementation of `sym_metanet.engines.core.LinksEngineBase`."""
 
     @staticmethod
-    def get_flow(rho: csXX, v: csXX, lanes: csXX) -> csXX:
+    def get_flow(rho: SymType, v: SymType, lanes: SymType) -> SymType:
         return rho * v * lanes
 
     @staticmethod
     def step_density(
-        rho: csXX, q: csXX, q_up: csXX, lanes: csXX, L: csXX, T: csXX
-    ) -> csXX:
+        rho: SymType, q: SymType, q_up: SymType, lanes: SymType, L: SymType, T: SymType
+    ) -> SymType:
         return rho + (T / lanes / L) * (q_up - q)
 
     @staticmethod
     def step_speed(
-        v: csXX,
-        v_up: csXX,
-        rho: csXX,
-        rho_down: csXX,
-        Veq: csXX,
-        lanes: csXX,
-        L: csXX,
-        tau: csXX,
-        eta: csXX,
-        kappa: csXX,
-        T: csXX,
-        q_ramp: csXX = None,
-        delta: csXX = None,
-        lanes_drop: csXX = None,
-        phi: csXX = None,
-        rho_crit: csXX = None,
-    ) -> csXX:
+        v: SymType,
+        v_up: SymType,
+        rho: SymType,
+        rho_down: SymType,
+        Veq: SymType,
+        lanes: SymType,
+        L: SymType,
+        tau: SymType,
+        eta: SymType,
+        kappa: SymType,
+        T: SymType,
+        q_ramp: Optional[SymType] = None,
+        delta: Optional[SymType] = None,
+        lanes_drop: Optional[SymType] = None,
+        phi: Optional[SymType] = None,
+        rho_crit: Optional[SymType] = None,
+    ) -> SymType:
         relaxation = (T / tau) * (Veq - v)
         convection = T * v / L * (v_up - v)
         anticipation = (eta * T / tau) * (rho_down - rho) / (L * (rho + kappa))
@@ -99,29 +98,29 @@ class LinksEngine(LinksEngineBase, Generic[csXX]):
         return v_next
 
     @staticmethod
-    def Veq(rho: csXX, v_free: csXX, rho_crit: csXX, a: csXX) -> csXX:
+    def Veq(rho: SymType, v_free: SymType, rho_crit: SymType, a: SymType) -> SymType:
         return v_free * cs.exp((-1 / a) * cs.power(rho / rho_crit, a))
 
 
-class OriginsEngine(OriginsEngineBase, Generic[csXX]):
+class OriginsEngine(OriginsEngineBase, Generic[SymType]):
     """CasADi implementation of `sym_metanet.engines.core.OriginsEngineBase`."""
 
     @staticmethod
-    def step_queue(w: csXX, d: csXX, q: csXX, T: csXX) -> csXX:
+    def step_queue(w: SymType, d: SymType, q: SymType, T: SymType) -> SymType:
         return w + T * (d - q)
 
     @staticmethod
     def get_ramp_flow(
-        d: csXX,
-        w: csXX,
-        C: csXX,
-        r: csXX,
-        rho_max: csXX,
-        rho_first: csXX,
-        rho_crit: csXX,
-        T: csXX,
+        d: SymType,
+        w: SymType,
+        C: SymType,
+        r: SymType,
+        rho_max: SymType,
+        rho_first: SymType,
+        rho_crit: SymType,
+        T: SymType,
         type: Literal["in", "out"] = "out",
-    ) -> csXX:
+    ) -> SymType:
         term1 = d + w / T
         term3 = (rho_max - rho_first) / (rho_max - rho_crit)
         if type == "in":
@@ -129,17 +128,17 @@ class OriginsEngine(OriginsEngineBase, Generic[csXX]):
         return r * cs.fmin(term1, C * cs.fmin(1, term3))
 
 
-class DestinationsEngine(DestinationsEngineBase, Generic[csXX]):
+class DestinationsEngine(DestinationsEngineBase, Generic[SymType]):
     """CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`."""
 
     @staticmethod
     def get_congested_downstream_density(
-        rho_last: csXX, rho_destination: csXX, rho_crit: csXX
-    ) -> csXX:
+        rho_last: SymType, rho_destination: SymType, rho_crit: SymType
+    ) -> SymType:
         return cs.fmax(cs.fmin(rho_last, rho_crit), rho_destination)
 
 
-class Engine(EngineBase, Generic[csXX]):
+class Engine(EngineBase, Generic[SymType]):
     """Symbolic engine implemented with the CasADi framework"""
 
     def __init__(self, sym_type: Literal["SX", "MX"] = "SX") -> None:
@@ -154,35 +153,30 @@ class Engine(EngineBase, Generic[csXX]):
 
         Raises
         ------
-        ValueError
-            Raises if the provided string `type` is not valid.
+        AttributeError
+            Raises if `sym_type` is not valid.
         """
         super().__init__()
-        if sym_type not in csTYPES:
-            raise ValueError(
-                f'CasADi symbolic type must be in {{{", ".join(csTYPES)}}}; '
-                f"got {sym_type} instead."
-            )
-        self._csXX: Union[Type[cs.SX], Type[cs.MX]] = csTYPES[sym_type]
+        self.sym_type: Union[Type[cs.SX], Type[cs.MX]] = getattr(cs, sym_type)
 
     @property
-    def nodes(self) -> Type[NodesEngine[csXX]]:
-        return NodesEngine[csXX]
+    def nodes(self) -> Type[NodesEngine[SymType]]:
+        return NodesEngine[SymType]
 
     @property
-    def links(self) -> Type[LinksEngine[csXX]]:
-        return LinksEngine[csXX]
+    def links(self) -> Type[LinksEngine[SymType]]:
+        return LinksEngine[SymType]
 
     @property
-    def origins(self) -> Type[OriginsEngine[csXX]]:
-        return OriginsEngine[csXX]
+    def origins(self) -> Type[OriginsEngine[SymType]]:
+        return OriginsEngine[SymType]
 
     @property
-    def destinations(self) -> Type[DestinationsEngine[csXX]]:
-        return DestinationsEngine[csXX]
+    def destinations(self) -> Type[DestinationsEngine[SymType]]:
+        return DestinationsEngine[SymType]
 
-    def var(self, name: str, n: int = 1, *args, **kwargs) -> csXX:
-        return self._csXX.sym(name, n, 1)
+    def var(self, name: str, n: int = 1, *args, **kwargs) -> SymType:
+        return self.sym_type.sym(name, n, 1)
 
     def vcat(self, *arrays):
         return cs.vertcat(*arrays)
@@ -193,7 +187,7 @@ class Engine(EngineBase, Generic[csXX]):
         compact: int = 0,
         more_out: bool = False,
         force_positive_speed: bool = True,
-        parameters: Optional[Dict[str, csXX]] = None,
+        parameters: Optional[Dict[str, SymType]] = None,
         **other_parameters,
     ) -> cs.Function:
         """Converts the network's dynamics to a CasADi Function.
@@ -267,9 +261,9 @@ class Engine(EngineBase, Generic[csXX]):
                         names_in.append(f"{varname}_{el.name}")
                         args_in.append(var)
         else:
-            states: Dict[str, List[csXX]] = {}
-            actions: Dict[str, List[csXX]] = {}
-            disturbances: Dict[str, List[csXX]] = {}
+            states: Dict[str, List[SymType]] = {}
+            actions: Dict[str, List[SymType]] = {}
+            disturbances: Dict[str, List[SymType]] = {}
             for vars_in, group in [(x, states), (u, actions), (d, disturbances)]:
                 for el, vars in vars_in.items():
                     for varname, var in vars.items():
@@ -319,7 +313,7 @@ class Engine(EngineBase, Generic[csXX]):
                     names_out.append(f"{varname}_{el.name}+")
                     args_out.append(var)
         else:
-            next_states: Dict[str, List[csXX]] = {}
+            next_states: Dict[str, List[SymType]] = {}
             for vars in x_next.values():
                 for varname, var in vars.items():
                     varname += "+"
@@ -380,16 +374,18 @@ class Engine(EngineBase, Generic[csXX]):
         return f"{self.__class__.__name__}(casadi)"
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(casadi, type={self._csXX.__name__})"
+        return f"{self.__class__.__name__}(casadi, type={self.sym_type.__name__})"
 
 
 def _filter_vars(
-    vars: Dict[str, Union[csXX, Any]], symbolic: bool = True, independent: bool = True
-) -> Dict[str, csXX]:
+    vars: Dict[str, Union[SymType, Any]],
+    symbolic: bool = True,
+    independent: bool = True,
+) -> Dict[str, SymType]:
     """Internal utility to filter out symbols that are either only symbolic
     and/or independent (and thus can be inputs to  `casadi.Function`)."""
 
-    def is_ok(var: Union[csXX, Any]) -> bool:
+    def is_ok(var: Union[SymType, Any]) -> bool:
         if not symbolic:
             return True
         if not isinstance(var, (cs.SX, cs.MX)):
