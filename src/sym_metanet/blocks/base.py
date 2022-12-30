@@ -15,8 +15,8 @@ class ElementBase:
         Parameters
         ----------
         name : str, optional
-            Name of the element. If `None`, one is automatically created from a
-            counter of the class' instancies.
+            Name of the element. If `None`, one is automatically created from a counter
+            of the class' instancies.
         """
         cls = self.__class__
         if cls in self.__ids:
@@ -57,8 +57,8 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
         Parameters
         ----------
         name : str, optional
-            Name of the element. If `None`, one is automatically created from a
-            counter of the class' instancies.
+            Name of the element. If `None`, one is automatically created from a counter
+            of the class' instancies.
         """
         super().__init__(name=name)
         self.states: Optional[Dict[str, sym_var]] = NO_VARS
@@ -73,8 +73,8 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
 
     @property
     def has_next_states(self) -> bool:
-        """Gets whether this element has state variables (computed by stepping
-        the dynamics)."""
+        """Gets whether this element has state variables (computed by stepping the
+        dynamics)."""
         return self.next_states is not NO_VARS
 
     @property
@@ -89,16 +89,15 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
 
     @abstractmethod
     def init_vars(self, *args, **kwargs) -> None:
-        """Initializes the variable dicts (`states`, `actions`, `disturbances`)
-        of this element."""
+        """Initializes the variable dicts (`states`, `actions`, `disturbances`) of this
+        element."""
         raise NotImplementedError(
             f"Variable initialization not supported for {self.__class__.__name__}."
         )
 
     @abstractmethod
     def step_dynamics(self, *args, **kwargs) -> Dict[str, sym_var]:
-        """Internal method for stepping the element's dynamics by one time
-        step.
+        """Internal method for stepping the element's dynamics by one time step.
 
         Returns
         -------
