@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from itertools import count
-from typing import Dict, Generic, Optional, Set, TypeVar, ClassVar
+from typing import ClassVar, Dict, Generic, Optional, Set
+
+from sym_metanet.util.types import VarType
 
 
 class ElementBase:
@@ -33,15 +35,7 @@ class ElementBase:
         return f"<{self.name}: {self.__class__.__name__}>"
 
 
-sym_var = TypeVar("sym_var")
-sym_var.__doc__ = (
-    "Variable that can also be numerical or symbolic, "
-    "depending on the engine. Should be indexable as an array "
-    "in case of vector quantities."
-)
-
-
-class ElementWithVars(ElementBase, Generic[sym_var], ABC):
+class ElementWithVars(ElementBase, Generic[VarType], ABC):
     """Base class for any element with states, actions or disturbances."""
 
     __slots__ = ("states", "next_states", "actions", "disturbances")
@@ -59,10 +53,10 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
             of the class' instancies.
         """
         super().__init__(name=name)
-        self.states: Optional[Dict[str, sym_var]] = None
-        self.next_states: Optional[Dict[str, sym_var]] = None
-        self.actions: Optional[Dict[str, sym_var]] = None
-        self.disturbances: Optional[Dict[str, sym_var]] = None
+        self.states: Optional[Dict[str, VarType]] = None
+        self.next_states: Optional[Dict[str, VarType]] = None
+        self.actions: Optional[Dict[str, VarType]] = None
+        self.disturbances: Optional[Dict[str, VarType]] = None
 
     @property
     def has_states(self) -> bool:
@@ -94,12 +88,12 @@ class ElementWithVars(ElementBase, Generic[sym_var], ABC):
         )
 
     @abstractmethod
-    def step_dynamics(self, *args, **kwargs) -> Dict[str, sym_var]:
+    def step_dynamics(self, *args, **kwargs) -> Dict[str, VarType]:
         """Internal method for stepping the element's dynamics by one time step.
 
         Returns
         -------
-        Dict[str, sym_var]
+        Dict[str, VarType]
             A dict with the states at the next time step.
 
         Raises

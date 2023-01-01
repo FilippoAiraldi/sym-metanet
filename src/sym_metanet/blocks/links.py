@@ -1,15 +1,17 @@
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Collection, Dict, Optional, Tuple, Union
 
-from sym_metanet.blocks.base import ElementWithVars, sym_var
+from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.blocks.origins import MeteredOnRamp
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
+from sym_metanet.util.types import VarType
 
 if TYPE_CHECKING:
+    from sym_metanet.blocks.nodes import Node
     from sym_metanet.network import Network
 
 
-class Link(ElementWithVars[sym_var]):
+class Link(ElementWithVars[VarType]):
     """Highway link between two nodes [1, Section 3.2.1]. Links represent stretch of
     highway with similar traffic characteristics and no road changes (e.g., same number
     of lanes and maximum speed).
@@ -26,13 +28,13 @@ class Link(ElementWithVars[sym_var]):
     def __init__(
         self,
         nb_segments: int,
-        lanes: sym_var,
-        length: sym_var,
-        maximum_density: sym_var,
-        critical_density: sym_var,
-        free_flow_velocity: sym_var,
-        a: sym_var,
-        turnrate: sym_var = 1.0,
+        lanes: Union[VarType, int],
+        length: Union[VarType, float],
+        maximum_density: Union[VarType, float],
+        critical_density: Union[VarType, float],
+        free_flow_velocity: Union[VarType, float],
+        a: Union[VarType, float],
+        turnrate: Union[VarType, float] = 1.0,
         name: Optional[str] = None,
     ) -> None:
         """Creates an instance of a METANET link.
@@ -41,20 +43,20 @@ class Link(ElementWithVars[sym_var]):
         ----------
         nb_segments : int
             Number of segments in this highway link, i.e., `N`.
-        lanes : int or symbolic
+        lanes : int or variable
             Number of lanes in each segment, i.e., `lam`.
-        lengths : float or symbolic
+        lengths : float or variable
             Length of each segment in the link, i.e., `L`.
-        maximum density : float or symbolic
+        maximum density : float or variable
             Maximum density that the link can withstand, i.e., `rho_max`.
-        critical_densities : float or symbolic
+        critical_densities : float or variable
             Critical density at which the traffic flow is maximal, i.e., `rho_crit`.
-        free_flow_velocities : float or symbolic
+        free_flow_velocities : float or variable
             Average speed of cars when traffic is freely flowing, i.e., `v_free`.
-        a : float or symbolic
+        a : float or variable
             Model parameter in the computations of the equivalent speed [1, Equation
             3.4].
-        turnrate : float or symbolic, optional
+        turnrate : float or variable, optional
             Fraction of the total flow that enters this link via the upstream node. Only
             relevant if multiple exiting links are attached to the same node, in order
             to split the flow according to these rates. Needs not be normalized. By
@@ -79,7 +81,7 @@ class Link(ElementWithVars[sym_var]):
 
     def init_vars(
         self,
-        init_conditions: Optional[Dict[str, sym_var]] = None,
+        init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
     ) -> None:
         """For each segment in the link, initializes
@@ -100,7 +102,7 @@ class Link(ElementWithVars[sym_var]):
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.states: Dict[str, sym_var] = {
+        self.states: Dict[str, VarType] = {
             name: (
                 init_conditions[name]
                 if name in init_conditions
@@ -109,7 +111,7 @@ class Link(ElementWithVars[sym_var]):
             for name in ("rho", "v")
         }
 
-    def get_flow(self, engine: Optional[EngineBase] = None, **kwargs) -> sym_var:
+    def get_flow(self, engine: Optional[EngineBase] = None, **kwargs) -> VarType:
         """Gets the flow in this link's segments.
 
         Parameters
@@ -119,7 +121,7 @@ class Link(ElementWithVars[sym_var]):
 
         Returns
         -------
-        sym_var
+        variable
             The flow in this link.
         """
         if engine is None:
@@ -131,46 +133,46 @@ class Link(ElementWithVars[sym_var]):
     def step_dynamics(
         self,
         net: "Network",
-        tau: sym_var,
-        eta: sym_var,
-        kappa: sym_var,
-        T: sym_var,
-        delta: Optional[sym_var] = None,
-        phi: Optional[sym_var] = None,
+        tau: Union[VarType, float],
+        eta: Union[VarType, float],
+        kappa: Union[VarType, float],
+        T: Union[VarType, float],
+        delta: Union[None, VarType, float] = None,
+        phi: Union[None, VarType, float] = None,
         engine: Optional[EngineBase] = None,
         **kwargs,
-    ) -> Dict[str, sym_var]:
+    ) -> Dict[str, VarType]:
         """Steps the dynamics of this link.
 
         Parameters
         ----------
         net : Network
             The network the link belongs to.
-        tau : sym_var
+        tau : float or variable
             Model parameter for the speed relaxation term.
-        eta : sym_var
+        eta : float or variable
             Model parameter for the speed anticipation term.
-        kappa : sym_var
+        kappa : float or variable
             Model parameter for the speed anticipation term.
-        T : sym_var
+        T : float or variable
             Sampling time.
-        delta : sym_var, optional
+        delta : float or variable, optional
             Model parameter for merging phenomenum. By default, not considered.
-        phi : sym_var, optional
+        phi : float or variable, optional
             Model parameter for lane drop phenomenum. By defaul, not considered.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
 
         Returns
         -------
-        Dict[str, sym_var]
+        Dict[str, variable]
             A dict with the states of the link (speeds and densities) at the next time
             step.
         """
         if engine is None:
             engine = get_current_engine()
 
-        node_up, node_down = net.nodes_by_link[self]
+        node_up, node_down = net.nodes_by_link[self]  # type: ignore[index]
         rho = self.states["rho"]
         v = self.states["v"]
         q = self.get_flow(engine=engine)
@@ -204,10 +206,12 @@ class Link(ElementWithVars[sym_var]):
         # check for lane drops in the next link (only if one link downstream)
         lanes_drop = None
         if phi is not None:
-            links_down = net.out_links(node_down)
+            links_down: Collection[
+                Tuple["Node", "Node", "Link[VarType]"]
+            ] = net.out_links(node_down)
             if len(links_down) == 1:
                 link_down = first(links_down)[-1]
-                lanes_drop = self.lam - link_down.lam
+                lanes_drop = self.lam - link_down.lam  # type: ignore[operator]
             if lanes_drop == 0:
                 lanes_drop = None
 

@@ -29,11 +29,15 @@ rho_crit_sym = cs.SX.sym("rho_crit_sym")
 N1 = metanet.Node(name="N1")
 N2 = metanet.Node(name="N2")
 N3 = metanet.Node(name="N3")
-L1 = metanet.Link(2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L1")
-L2 = metanet.Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2")
-O1 = metanet.MeteredOnRamp(C[0], name="O1")
-O2 = metanet.SimpleMeteredOnRamp(C[1], name="O2")
-D3 = metanet.CongestedDestination(name="D3")
+L1 = metanet.Link[cs.SX](
+    2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L1"
+)
+L2 = metanet.Link[cs.SX](
+    1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2"
+)
+O1 = metanet.MeteredOnRamp[cs.SX](C[0], name="O1")
+O2 = metanet.SimpleMeteredOnRamp[cs.SX](C[1], name="O2")
+D3 = metanet.CongestedDestination[cs.SX](name="D3")
 
 
 # build and validate network

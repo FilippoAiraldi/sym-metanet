@@ -4,7 +4,7 @@ from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
 
-from sym_metanet.blocks.base import ElementBase, ElementWithVars, sym_var
+from sym_metanet.blocks.base import ElementBase, ElementWithVars
 from sym_metanet.blocks.destinations import Destination
 from sym_metanet.blocks.links import Link
 from sym_metanet.blocks.nodes import Node
@@ -12,6 +12,7 @@ from sym_metanet.blocks.origins import MeteredOnRamp, Origin
 from sym_metanet.engines.core import EngineBase
 from sym_metanet.errors import InvalidNetworkError
 from sym_metanet.util.funcs import invalidate_cache
+from sym_metanet.util.types import VarType
 from sym_metanet.views import (
     DESTINATIONENTRY,
     LINKENTRY,
@@ -75,15 +76,19 @@ class Network(ElementBase):
         return InLinkViewWrapper(self._graph)
 
     @cached_property
-    def links_by_name(self) -> Dict[str, Link]:
-        return {link.name: link for _, _, link in self.links}
+    def links_by_name(self) -> Dict[str, Link[VarType]]:
+        return {  # type: ignore[var-annotated]
+            link.name: link for _, _, link in self.links
+        }
 
     @cached_property
-    def nodes_by_link(self) -> Dict[Link, Tuple[Node, Node]]:
-        return {link: (unode, dnode) for unode, dnode, link in self.links}
+    def nodes_by_link(self) -> Dict[Link[VarType], Tuple[Node, Node]]:
+        return {  # type: ignore[var-annotated]
+            link: (unode, dnode) for unode, dnode, link in self.links
+        }
 
     @cached_property
-    def origins(self) -> Dict[Origin, Node]:
+    def origins(self) -> Dict[Origin[VarType], Node]:
         return {
             data[ORIGINENTRY]: node
             for node, data in self._graph.nodes.data()
@@ -91,16 +96,16 @@ class Network(ElementBase):
         }
 
     @cached_property
-    def origins_by_name(self) -> Dict[str, Origin]:
-        return {origin.name: origin for origin in self.origins}
+    def origins_by_name(self) -> Dict[str, Origin[VarType]]:
+        return {origin.name: origin for origin in self.origins}  # type: ignore[misc]
 
     @cached_property
-    def origins_by_node(self) -> Dict[Node, Origin]:
+    def origins_by_node(self) -> Dict[Node, Origin[VarType]]:
         d = self.origins
-        return dict(zip(d.values(), d.keys()))
+        return dict(zip(d.values(), d.keys()))  # type: ignore[arg-type]
 
     @cached_property
-    def destinations(self) -> Dict[Destination, Node]:
+    def destinations(self) -> Dict[Destination[VarType], Node]:
         return {
             data[DESTINATIONENTRY]: node
             for node, data in self._graph.nodes.data()
@@ -108,8 +113,11 @@ class Network(ElementBase):
         }
 
     @cached_property
-    def destinations_by_name(self) -> Dict[str, Destination]:
-        return {destination.name: destination for destination in self.destinations}
+    def destinations_by_name(self) -> Dict[str, Destination[VarType]]:
+        return {
+            destination.name: destination  # type: ignore[misc]
+            for destination in self.destinations
+        }
 
     @cached_property
     def destinations_by_node(self) -> Dict[Node, Destination]:
@@ -117,30 +125,52 @@ class Network(ElementBase):
         return dict(zip(d.values(), d.keys()))
 
     @property
-    def elements(self) -> Iterable[ElementWithVars[sym_var]]:
+    def elements(self) -> Iterable[ElementWithVars[VarType]]:
         """Gets an iterator to all the elements of the network."""
-        return chain((link[-1] for link in self.links), self.origins, self.destinations)
+        return chain(
+            (link[-1] for link in self.links),  # type: ignore[var-annotated]
+            self.origins,  # type: ignore[arg-type]
+            self.destinations,  # type: ignore[arg-type]
+        )
 
     @property
-    def states(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+    def states(self) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
         """Gets the states of the network's elements."""
-        return {el: el.states for el in self.elements if el.has_states}
+        return {
+            el: el.states for el in self.elements if el.has_states  # type: ignore[misc]
+        }
 
     @property
-    def next_states(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+    def next_states(
+        self,
+    ) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
         """Gets the states of the network's elements after stepping the
         dynamics for one time step."""
-        return {el: el.next_states for el in self.elements if el.has_next_states}
+        return {
+            el: el.next_states  # type: ignore[misc]
+            for el in self.elements
+            if el.has_next_states
+        }
 
     @property
-    def actions(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+    def actions(self) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
         """Gets the control action of the network's elements."""
-        return {el: el.actions for el in self.elements if el.has_actions}
+        return {
+            el: el.actions  # type: ignore[misc]
+            for el in self.elements
+            if el.has_actions
+        }
 
     @property
-    def disturbances(self) -> Dict[ElementWithVars[sym_var], sym_var]:
+    def disturbances(
+        self,
+    ) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
         """Gets the disturbances of the network's elements."""
-        return {el: el.disturbances for el in self.elements if el.has_disturbances}
+        return {
+            el: el.disturbances  # type: ignore[misc]
+            for el in self.elements
+            if el.has_disturbances
+        }
 
     @invalidate_cache(nodes_by_name)
     def add_node(self, node: Node) -> "Network":
@@ -177,7 +207,9 @@ class Network(ElementBase):
         return self
 
     @invalidate_cache(links_by_name, nodes_by_link)
-    def add_link(self, node_up: Node, link: Link, node_down: Node) -> "Network":
+    def add_link(
+        self, node_up: Node, link: Link[VarType], node_down: Node
+    ) -> "Network":
         """Adds a link to the highway network, between two nodes.
 
         Parameters
@@ -198,7 +230,7 @@ class Network(ElementBase):
         return self
 
     @invalidate_cache(links_by_name, nodes_by_link)
-    def add_links(self, links: Iterable[Tuple[Node, Link, Node]]) -> "Network":
+    def add_links(self, links: Iterable[Tuple[Node, Link[VarType], Node]]) -> "Network":
         """Adds multiple links. See `Network.add_link`.
 
         Parameters
@@ -212,7 +244,7 @@ class Network(ElementBase):
             A reference to itself.
         """
 
-        def get_edge(linkdata: Tuple[Node, Link, Node]):
+        def get_edge(linkdata: Tuple[Node, Link[VarType], Node]):
             node_up, link, node_down = linkdata
             return (node_up, node_down, {LINKENTRY: link})
 
@@ -220,7 +252,7 @@ class Network(ElementBase):
         return self
 
     @invalidate_cache(origins, origins_by_node, origins_by_name)
-    def add_origin(self, origin: Origin, node: Node) -> "Network":
+    def add_origin(self, origin: Origin[VarType], node: Node) -> "Network":
         """Adds the given traffic origin to the node.
 
         Parameters
@@ -242,7 +274,9 @@ class Network(ElementBase):
         return self
 
     @invalidate_cache(destinations, destinations_by_node, destinations_by_name)
-    def add_destination(self, destination: Destination, node: Node) -> "Network":
+    def add_destination(
+        self, destination: Destination[VarType], node: Node
+    ) -> "Network":
         """Adds the given traffic destination to the node.
 
         Parameters
@@ -261,14 +295,16 @@ class Network(ElementBase):
             self._graph.add_node(node, **{DESTINATIONENTRY: destination})
         else:
             self.nodes[node][DESTINATIONENTRY] = destination
-        self.destinations_by_name[destination.name] = destination
+        self.destinations_by_name[
+            destination.name
+        ] = destination  # type: ignore[assignment]
         return self
 
     def add_path(
         self,
-        path: Iterable[Union[Node, Link]],
-        origin: Optional[Origin] = None,
-        destination: Optional[Destination] = None,
+        path: Iterable[Union[Node, Link[VarType]]],
+        origin: Optional[Origin[VarType]] = None,
+        destination: Optional[Destination[VarType]] = None,
     ) -> "Network":
         """Adds a path of nodes and links between the origin and the
         destination.
@@ -309,7 +345,7 @@ class Network(ElementBase):
         self.add_node(first_node)
         if origin is not None:
             self.add_origin(origin, first_node)
-        current_link: List[Union[Node, Link]] = [first_node]
+        current_link: List[Union[Node, Link[VarType]]] = [first_node]
 
         longer_than_one = False
         for i, point in enumerate(path):
@@ -394,7 +430,7 @@ class Network(ElementBase):
                     yield data[entry]
 
         # (1)
-        count: Dict[ElementWithVars[sym_var], int] = {}
+        count: Dict[object, int] = {}
         for o in chain(
             (link[2] for link in self.links), iter(origin_destination_yielder())
         ):
@@ -472,10 +508,10 @@ class Network(ElementBase):
     def step(
         self,
         init_conditions: Optional[
-            Dict[ElementWithVars[sym_var], Dict[str, sym_var]]
+            Dict[ElementWithVars[VarType], Dict[str, VarType]]
         ] = None,
         engine: Optional[EngineBase] = None,
-        **other_parameters: sym_var,
+        **other_parameters: VarType,
     ) -> None:
         """Steps the dynamics of the network's elements.
 
@@ -498,10 +534,13 @@ class Network(ElementBase):
         if init_conditions is None:
             init_conditions = {}
         for el in self.elements:
-            el.init_vars(init_conditions=init_conditions.get(el), engine=engine)
+            el.init_vars(
+                init_conditions=init_conditions.get(el),  # type: ignore[arg-type]
+                engine=engine,
+            )
 
         # dynamics
         for origin in self.origins:
             origin.step(net=self, engine=engine, **other_parameters)
-        for _, _, link in self.links:
+        for _, _, link in self.links:  # type: ignore[var-annotated]
             link.step(net=self, engine=engine, **other_parameters)

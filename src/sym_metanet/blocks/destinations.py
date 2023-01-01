@@ -1,26 +1,28 @@
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Collection, Dict, Optional, Tuple
 
-from sym_metanet.blocks.base import ElementWithVars, sym_var
+from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
+from sym_metanet.util.types import VarType
 
 if TYPE_CHECKING:
     from sym_metanet.blocks.links import Link
+    from sym_metanet.blocks.nodes import Node
     from sym_metanet.network import Network
 
 
-class Destination(ElementWithVars[sym_var]):
+class Destination(ElementWithVars[VarType]):
     """Ideal congestion-free destination, representing a sink where cars can leave the
     highway with no congestion (i.e., no slowing down due to downstream density)."""
 
     def init_vars(self, *args, **kwargs) -> None:
         """Initializes no variable in the ideal destination."""
 
-    def step_dynamics(self, *args, **kwargs) -> Dict[str, sym_var]:
+    def step_dynamics(self, *args, **kwargs) -> Dict[str, VarType]:
         """No dynamics to steps in the ideal destination."""
         return {}
 
-    def get_density(self, net: "Network", **kwargs) -> sym_var:
+    def get_density(self, net: "Network", **kwargs) -> VarType:
         """Computes the (downstream) density induced by the ideal destination.
 
         Parameters
@@ -30,22 +32,24 @@ class Destination(ElementWithVars[sym_var]):
 
         Returns
         -------
-        sym_var
+        symbolic variable
             The destination's downstream density.
         """
         return self._get_entering_link(net=net).states["rho"][-1]
 
-    def _get_entering_link(self, net: "Network") -> "Link":
+    def _get_entering_link(self, net: "Network") -> "Link[VarType]":
         """Internal utility to fetch the link entering this destination (can only be
         one)."""
-        links_up = net.in_links(net.destinations[self])
+        links_up: Collection[Tuple["Node", "Node", "Link[VarType]"]] = net.in_links(
+            net.destinations[self]  # type: ignore[index]
+        )
         assert (
             len(links_up) == 1
         ), "Internal error. Only one link can enter a destination."
         return first(links_up)[-1]
 
 
-class CongestedDestination(Destination[sym_var]):
+class CongestedDestination(Destination[VarType]):
     """Destination with a downstream density scenario to emulate congestions, that is,
     cars cannot exit freely the highway but must slow down and, possibly, create a
     congestion."""
@@ -54,7 +58,7 @@ class CongestedDestination(Destination[sym_var]):
 
     def init_vars(
         self,
-        init_conditions: Optional[Dict[str, sym_var]] = None,
+        init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
     ) -> None:
         """Initializes
@@ -74,7 +78,7 @@ class CongestedDestination(Destination[sym_var]):
         """
         if engine is None:
             engine = get_current_engine()
-        self.disturbances: Dict[str, sym_var] = {
+        self.disturbances: Dict[str, VarType] = {
             "d": engine.var(f"d_{self.name}")
             if init_conditions is None or "d" not in init_conditions
             else init_conditions["d"]
@@ -82,7 +86,7 @@ class CongestedDestination(Destination[sym_var]):
 
     def get_density(
         self, net: "Network", engine: Optional[EngineBase] = None, **kwargs
-    ) -> sym_var:
+    ) -> VarType:
         """Computes the (downstream) density induced by the congested destination.
 
         Parameters
@@ -94,7 +98,7 @@ class CongestedDestination(Destination[sym_var]):
 
         Returns
         -------
-        sym_var
+        variable
             The destination's downstream density.
         """
         if engine is None:

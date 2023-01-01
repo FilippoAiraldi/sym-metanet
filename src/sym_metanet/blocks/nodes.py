@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Collection, Optional, Tuple
 
-from sym_metanet.blocks.base import ElementBase, sym_var
+from sym_metanet.blocks.base import ElementBase
 from sym_metanet.engines.core import EngineBase, get_current_engine
 from sym_metanet.util.funcs import first
+from sym_metanet.util.types import Variable, VarType
 
 if TYPE_CHECKING:
     from sym_metanet.blocks.links import Link
@@ -23,7 +24,7 @@ class Node(ElementBase):
 
     def get_downstream_density(
         self, net: "Network", engine: Optional[EngineBase] = None, **kwargs
-    ) -> sym_var:
+    ) -> Variable:
         """Computes the (virtual) downstream density of the node.
 
         Parameters
@@ -35,7 +36,7 @@ class Node(ElementBase):
 
         Returns
         -------
-        sym_var
+        symbolic variable
             Returns the (virtual) downstream density.
         """
         if engine is None:
@@ -49,7 +50,9 @@ class Node(ElementBase):
             )
 
         # if no destination, then there must be 1 or more exiting links
-        links_down = net.out_links(self)
+        links_down: Collection[Tuple["Node", "Node", "Link[Variable]"]] = net.out_links(
+            self
+        )
         if len(links_down) == 1:
             return first(links_down)[-1].states["rho"][0]
         rho_firsts = engine.vcat(
@@ -60,10 +63,10 @@ class Node(ElementBase):
     def get_upstream_speed_and_flow(
         self,
         net: "Network",
-        link: "Link",
+        link: "Link[VarType]",
         engine: Optional[EngineBase] = None,
         **kwargs
-    ) -> Tuple[sym_var, sym_var]:
+    ) -> Tuple[VarType, VarType]:
         """Computes the (virtual) upstream speed and flow of the node for this the
         current link.
 
@@ -79,7 +82,7 @@ class Node(ElementBase):
 
         Returns
         -------
-        tuple[sym_var, sym_var]
+        tuple[symbolic variable, symbolic variable]
             Returns the (virtual) upstream speed and flow.
         """
         if engine is None:
@@ -89,7 +92,9 @@ class Node(ElementBase):
         # Speed is dictated by the entering links, if any; otherwise by the
         # origin (same as first segment). Flow is dictated both by entering
         # links and origin.
-        links_up = net.in_links(self)
+        links_up: Collection[Tuple["Node", "Node", "Link[VarType]"]] = net.in_links(
+            self
+        )
         n_up = len(links_up)
         if self in net.origins_by_node:
             origin = net.origins_by_node[self]
@@ -107,7 +112,7 @@ class Node(ElementBase):
             v = link_up.states["v"][-1]
             q = link_up.get_flow(engine=engine)[-1]
             if q_o is not None:
-                q += q_o
+                q += q_o  # type: ignore[assignment,operator]
         else:
             v_last = []
             q_last = []
@@ -116,12 +121,13 @@ class Node(ElementBase):
                 q_last.append(link_up.get_flow(engine=engine)[-1])
             v_last = engine.vcat(*v_last)
             q_last = engine.vcat(*q_last)
-            betas = engine.vcat(
-                *(dlink.turnrate for _, _, dlink in net.out_links(self))
-            )
+            links_down: Collection[
+                Tuple["Node", "Node", "Link[VarType]"]
+            ] = net.out_links(self)
+            betas = engine.vcat(*(dlink.turnrate for _, _, dlink in links_down))
 
             v = engine.nodes.get_upstream_speed(q_lasts=q_last, v_lasts=v_last)
             q = engine.nodes.get_upstream_flow(
                 q_lasts=q_last, beta=link.turnrate, betas=betas, q_orig=q_o
             )
-        return v, q
+        return v, q  # type: ignore[return-value]
