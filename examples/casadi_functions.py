@@ -36,7 +36,7 @@ L2 = metanet.Link[cs.SX](
     1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2"
 )
 O1 = metanet.MeteredOnRamp[cs.SX](C[0], name="O1")
-O2 = metanet.SimpleMeteredOnRamp[cs.SX](C[1], name="O2")
+O2 = metanet.SimplifiedMeteredOnRamp[cs.SX](C[1], name="O2")
 D3 = metanet.CongestedDestination[cs.SX](name="D3")
 
 

@@ -10,7 +10,7 @@ from sym_metanet import (
     MeteredOnRamp,
     Network,
     Node,
-    SimpleMeteredOnRamp,
+    SimplifiedMeteredOnRamp,
     engines,
 )
 from sym_metanet.engines.casadi import Engine as CasadiEngine
@@ -41,7 +41,7 @@ def get_net(link_with_ramp: int = 2):
     L2 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2")
     L3 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L3")
     O1 = MeteredOnRamp(C[0], name="O1")
-    O2 = SimpleMeteredOnRamp(C[1], name="O2")
+    O2 = SimplifiedMeteredOnRamp(C[1], name="O2")
     D1 = CongestedDestination(name="D1")
     net = (
         Network(name="A1")
@@ -66,6 +66,7 @@ def get_net(link_with_ramp: int = 2):
 def get_hardcoded_dynamics(
     L, lanes, C, tau, kappa, eta, rho_max, delta, T, link_with_ramp: int = 2, **kwargs
 ) -> cs.Function:
+    # sourcery skip: use-contextlib-suppress
     assert link_with_ramp in {1, 2}
     rho = cs.SX.sym("rho", 3, 1)
     v = cs.SX.sym("v", 3, 1)

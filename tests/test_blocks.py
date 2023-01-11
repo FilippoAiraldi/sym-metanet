@@ -8,7 +8,7 @@ from sym_metanet import (
     Link,
     MeteredOnRamp,
     Origin,
-    SimpleMeteredOnRamp,
+    SimplifiedMeteredOnRamp,
     engines,
 )
 
@@ -112,7 +112,7 @@ class TestMeteredOnRamp(unittest.TestCase):
 
 class TestSimpleMeteredOnRamp(unittest.TestCase):
     def test_init_vars__without_inital_condition__creates_vars(self):
-        R = SimpleMeteredOnRamp[np.ndarray](1e5)
+        R = SimplifiedMeteredOnRamp[np.ndarray](1e5)
         R.init_vars()
         self.assertIsNot(R.states, None)
         self.assertIsNot(R.actions, None)
@@ -122,7 +122,7 @@ class TestSimpleMeteredOnRamp(unittest.TestCase):
             self.assertIn(d[n].shape, {(1,), ()})
 
     def test_init_vars__with_inital_condition__copies_vars(self):
-        R = SimpleMeteredOnRamp[np.ndarray](1e5)
+        R = SimplifiedMeteredOnRamp[np.ndarray](1e5)
         init_conds = {
             "w": np.random.rand(1),
             "q": np.random.rand(1),
