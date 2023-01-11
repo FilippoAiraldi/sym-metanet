@@ -289,10 +289,10 @@ class OriginsEngineBase(ABC):
             Capacity of the ramp.
         r
             Metering rate (control action) of the ramp.
-        rho_first
-            Density of the first segment of the link the ramp is attached to.
         rho_max
             Maximum density of the link the ramp is attached to.
+        rho_first
+            Density of the first segment of the link the ramp is attached to.
         rho_crit
             Critical density of the link the ramp is attached to.
         T
