@@ -276,25 +276,25 @@ class OriginsEngineBase(ABC):
     def get_ramp_flow(
         d, w, C, r, rho_max, rho_first, rho_crit, T, type: Literal["in", "out"] = "out"
     ):
-        """Computes the flows of the origin according to [1, Equation 3.5] if
+        """Computes the flows of the ramp origin according to [1, Equation 3.5] if
         `type='in'`, or [1, Equation 3.6] if `type='out'`.
 
         Parameters
         ----------
         d
-            Demand at the origin.
+            Demand at the ramp.
         w
-            Queue of the origin.
+            Queue of the ramp.
         C
-            Capacity of the origin.
+            Capacity of the ramp.
         r
-            Metering rate (control action) of the origin.
+            Metering rate (control action) of the ramp.
         rho_first
-            Density of the first segment of the link the origin is attached to.
+            Density of the first segment of the link the ramp is attached to.
         rho_max
-            Maximum density of the link the origin is attached to.
+            Maximum density of the link the ramp is attached to.
         rho_crit
-            Critical density of the link the origin is attached to.
+            Critical density of the link the ramp is attached to.
         T
             Sampling time.
         type : 'in' or 'out', optional
@@ -304,6 +304,7 @@ class OriginsEngineBase(ABC):
         Returns
         -------
         flow
+            The flow of the ramp.
             The flow of the origin.
         """
 

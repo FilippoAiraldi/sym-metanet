@@ -216,13 +216,11 @@ class MeteredOnRamp(Origin[VarType]):
 
 
 class SimpleMeteredOnRamp(MeteredOnRamp[VarType]):
-    """
-    A simplified version of the vanilla on-ramp, where the flow of vehicles on
-    the ramp is the direct control action (instead of controlling the metering
-    rate that in turns dictates the car flow on the ramp).
+    """A simplified version of the vanilla on-ramp, where the flow of vehicles on the
+    ramp is the direct control action (instead of controlling the metering rate that in
+    turns dictates the car flow on the ramp).
 
-    See `MeteredOnRamp` for the original version.
-    """
+    See `MeteredOnRamp` for the original version."""
 
     _actions = {"q"}
 
