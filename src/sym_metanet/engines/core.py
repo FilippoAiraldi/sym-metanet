@@ -305,7 +305,48 @@ class OriginsEngineBase(ABC):
         -------
         flow
             The flow of the ramp.
-            The flow of the origin.
+        """
+
+    @staticmethod
+    @abstractmethod
+    def get_simplifiedramp_flow(
+        qdes,
+        d,
+        w,
+        C,
+        rho_max,
+        rho_first,
+        rho_crit,
+        T,
+    ):
+        """Computes the flows of a simplified ramp origin.
+
+        Parameters
+        ----------
+        qdes
+            Desired flow at the ramp.
+        d
+            Demand at the ramp.
+        w
+            Queue of the ramp.
+        C
+            Capacity of the ramp.
+        rho_first
+            Density of the first segment of the link the ramp is attached to. To be
+            provided only if `type=limited`.
+        rho_max
+            Maximum density of the link the ramp is attached to. To be provided only if
+            `type=limited`.
+        rho_crit
+            Critical density of the link the ramp is attached to. To be provided only if
+            `type=limited`.
+        T
+            Sampling time.
+
+        Returns
+        -------
+        flow
+            The flow of the ramp.
         """
 
 

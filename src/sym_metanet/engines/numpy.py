@@ -120,6 +120,21 @@ class OriginsEngine(OriginsEngineBase):
             return np.minimum(term1, C * np.minimum(r, term3))
         return r * np.minimum(term1, C * np.minimum(1, term3))
 
+    @staticmethod
+    def get_simplifiedramp_flow(
+        qdes: np.ndarray,
+        d: np.ndarray,
+        w: np.ndarray,
+        C: np.ndarray,
+        rho_max: np.ndarray,
+        rho_first: np.ndarray,
+        rho_crit: np.ndarray,
+        T: np.ndarray,
+    ) -> np.ndarray:
+        term2 = d + w / T
+        term3 = C * np.minimum(1, (rho_max - rho_first) / (rho_max - rho_crit))
+        return np.minimum(qdes, np.minimum(term2, term3))
+
 
 class DestinationsEngine(DestinationsEngineBase):
     """

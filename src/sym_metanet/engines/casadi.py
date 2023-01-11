@@ -128,6 +128,21 @@ class OriginsEngine(OriginsEngineBase, Generic[VarType]):
             return cs.fmin(term1, C * cs.fmin(r, term3))
         return r * cs.fmin(term1, C * cs.fmin(1, term3))
 
+    @staticmethod
+    def get_simplifiedramp_flow(
+        qdes: VarType,
+        d: VarType,
+        w: VarType,
+        C: VarType,
+        rho_max: VarType,
+        rho_first: VarType,
+        rho_crit: VarType,
+        T: VarType,
+    ) -> VarType:
+        term2 = d + w / T
+        term3 = C * cs.fmin(1, (rho_max - rho_first) / (rho_max - rho_crit))
+        return cs.fmin(qdes, cs.fmin(term2, term3))
+
 
 class DestinationsEngine(DestinationsEngineBase, Generic[VarType]):
     """CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`."""

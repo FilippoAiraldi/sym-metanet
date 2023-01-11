@@ -227,6 +227,15 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
     def __init__(
         self, capacity: Union[VarType, float], name: Optional[str] = None
     ) -> None:
+        """Instantiates a simplified on-ramp with the given capacity.
+
+        Parameters
+        ----------
+        capacity : float or variable
+            Capacity of the on-ramp, i.e., `C`.
+        name : str, optional
+            Name of the on-ramp, by default None.
+        """
         super().__init__(capacity=capacity, name=name)
         del self.flow_eq_type
 
@@ -270,7 +279,14 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
             else engine.var(f"d_{self.name}")
         }
 
-    def get_flow(self, *args, **kwargs) -> VarType:
+    def get_flow(  # type: ignore[override]
+        self,
+        net: "Network",
+        T: Union[VarType, float],
+        engine: Optional[EngineBase] = None,
+        *args,
+        **kwargs,
+    ) -> VarType:
         """Computes the (upstream) flow induced by the simple-metered ramp.
 
         Returns
@@ -278,4 +294,16 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
         variable
             The origin's upstream flow.
         """
-        return self.actions["q"]
+        if engine is None:
+            engine = get_current_engine()
+        link_down = self._get_exiting_link(net=net)
+        return engine.origins.get_simplifiedramp_flow(
+            qdes=self.actions["q"],
+            d=self.disturbances["d"],
+            w=self.states["w"],
+            C=self.C,
+            rho_max=link_down.rho_max,
+            rho_crit=link_down.rho_crit,
+            rho_first=link_down.states["rho"][0],
+            T=T,
+        )
