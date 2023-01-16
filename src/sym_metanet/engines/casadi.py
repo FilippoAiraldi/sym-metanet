@@ -401,15 +401,20 @@ def _filter_vars(
     independent: bool = True,
 ) -> Dict[str, VarType]:
     """Internal utility to filter out symbols that are either only symbolic
-    and/or independent (and thus can be inputs to  `casadi.Function`)."""
+    and/or independent (and thus can be inputs to `casadi.Function`)."""
 
     def is_ok(var: Union[VarType, Any]) -> bool:
+        # sourcery skip: assign-if-exp, reintroduce-else
         if not symbolic:
             return True
-        if not isinstance(var, (cs.SX, cs.MX)):
-            return False
-        if independent:
-            return all(var[i].n_dep() == 0 for i in range(var.shape[0]))
-        return True
+        if isinstance(var, cs.SX):
+            if independent:
+                return all(var[i].n_dep() == 0 for i in range(var.shape[0]))
+            return True
+        if isinstance(var, cs.MX):
+            if independent:
+                return var.n_dep() == 0
+            return True
+        return False
 
     return {name: var for name, var in vars.items() if is_ok(var)}
