@@ -123,16 +123,21 @@ class OriginsEngine(OriginsEngineBase):
     @staticmethod
     def get_simplifiedramp_flow(
         qdes: np.ndarray,
-        d: np.ndarray,
-        w: np.ndarray,
-        C: np.ndarray,
-        rho_max: np.ndarray,
-        rho_first: np.ndarray,
-        rho_crit: np.ndarray,
-        T: np.ndarray,
+        d: Optional[np.ndarray] = None,
+        w: Optional[np.ndarray] = None,
+        C: Optional[np.ndarray] = None,
+        rho_max: Optional[np.ndarray] = None,
+        rho_first: Optional[np.ndarray] = None,
+        rho_crit: Optional[np.ndarray] = None,
+        T: Optional[np.ndarray] = None,
+        type: Literal["limited", "unlimited"] = "limited",
     ) -> np.ndarray:
-        term2 = d + w / T
-        term3 = C * np.minimum(1, (rho_max - rho_first) / (rho_max - rho_crit))
+        if type == "unlimited":
+            return qdes
+        term2 = d + w / T  # type: ignore[operator]
+        term3 = C * np.minimum(
+            1, (rho_max - rho_first) / (rho_max - rho_crit)  # type: ignore[operator]
+        )
         return np.minimum(qdes, np.minimum(term2, term3))
 
 

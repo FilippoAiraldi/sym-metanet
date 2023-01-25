@@ -225,7 +225,10 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
     _actions = {"q"}
 
     def __init__(
-        self, capacity: Union[VarType, float], name: Optional[str] = None
+        self,
+        capacity: Union[VarType, float],
+        flow_eq_type: Literal["limited", "unlimited"] = "limited",
+        name: Optional[str] = None,
     ) -> None:
         """Instantiates a simplified on-ramp with the given capacity.
 
@@ -233,11 +236,17 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
         ----------
         capacity : float or variable
             Capacity of the on-ramp, i.e., `C`.
+        flow_eq_type : 'limited' or 'unlimited', optional
+            Type of flow equation for the ramp. See
+            `engine.origins.get_simplifiedramp_flow` for more details.
         name : str, optional
             Name of the on-ramp, by default None.
         """
-        super().__init__(capacity=capacity, name=name)
-        del self.flow_eq_type
+        super().__init__(
+            capacity=capacity,
+            flow_eq_type=flow_eq_type,  # type: ignore[arg-type]
+            name=name,
+        )
 
     def init_vars(
         self,
@@ -306,4 +315,5 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
             rho_crit=link_down.rho_crit,
             rho_first=link_down.states["rho"][0],
             T=T,
+            type=self.flow_eq_type,  # type: ignore[arg-type]
         )

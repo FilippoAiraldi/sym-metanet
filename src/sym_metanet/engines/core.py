@@ -311,13 +311,14 @@ class OriginsEngineBase(ABC):
     @abstractmethod
     def get_simplifiedramp_flow(
         qdes,
-        d,
-        w,
-        C,
-        rho_max,
-        rho_first,
-        rho_crit,
-        T,
+        d=None,
+        w=None,
+        C=None,
+        rho_max=None,
+        rho_first=None,
+        rho_crit=None,
+        T=None,
+        type: Literal["limited", "unlimited"] = "limited",
     ):
         """Computes the flows of a simplified ramp origin.
 
@@ -325,23 +326,30 @@ class OriginsEngineBase(ABC):
         ----------
         qdes
             Desired flow at the ramp.
-        d
+        d : optional
             Demand at the ramp.
-        w
+        w : optional
             Queue of the ramp.
-        C
+        C : optional
             Capacity of the ramp.
-        rho_first
+        rho_first : optional
             Density of the first segment of the link the ramp is attached to. To be
             provided only if `type=limited`.
-        rho_max
+        rho_max : optional
             Maximum density of the link the ramp is attached to. To be provided only if
             `type=limited`.
-        rho_crit
+        rho_crit : optional
             Critical density of the link the ramp is attached to. To be provided only if
             `type=limited`.
-        T
+        T : optional
             Sampling time.
+        type : "limited" or "unlimited", optional
+            Type of equation to compute the flow for a simplified metered ramp. By
+            default, "limited" is selected, which means that the desired flow is limited
+            according to the capacity, current demands, queues and densities of the ramp
+            and its attached segment. This equation needs that all optional arguments
+            are provided. Otherwise, "unlimited" makes sure that the  desired flow is
+            the actual flow of the ramp, which can cause negative queues though.
 
         Returns
         -------

@@ -131,14 +131,17 @@ class OriginsEngine(OriginsEngineBase, Generic[VarType]):
     @staticmethod
     def get_simplifiedramp_flow(
         qdes: VarType,
-        d: VarType,
-        w: VarType,
-        C: VarType,
-        rho_max: VarType,
-        rho_first: VarType,
-        rho_crit: VarType,
-        T: VarType,
+        d: VarType = None,
+        w: VarType = None,
+        C: VarType = None,
+        rho_max: VarType = None,
+        rho_first: VarType = None,
+        rho_crit: VarType = None,
+        T: VarType = None,
+        type: Literal["limited", "unlimited"] = "limited",
     ) -> VarType:
+        if type == "unlimited":
+            return qdes
         term2 = d + w / T
         term3 = C * cs.fmin(1, (rho_max - rho_first) / (rho_max - rho_crit))
         return cs.fmin(qdes, cs.fmin(term2, term3))
