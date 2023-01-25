@@ -203,6 +203,8 @@ class Engine(EngineBase, Generic[VarType]):
         compact: int = 0,
         more_out: bool = False,
         force_positive_speed: bool = True,
+        force_positive_density: bool = False,
+        force_positive_queue: bool = False,
         parameters: Optional[Dict[str, VarType]] = None,
         **other_parameters,
     ) -> cs.Function:
@@ -229,6 +231,10 @@ class Engine(EngineBase, Generic[VarType]):
             If `True`, the links speeds at the next time step are forced to be positive
             as `v+ = max(0, v+)`. METANET is in fact known to sometime yield negative
             speeds, which are infeasible.
+        force_positive_density : bool, optional
+            Same as `force_positive_speed`, but for densities. By default, `False`.
+        force_positive_queue : bool, optional
+            Same as `force_positive_speed`, but for queues. By default, `False`.
         parameters : dict[str, casadi.SX or MX], optional
             Symbolic network parameters to be included in the function, by default None.
         **other_parameters
@@ -316,10 +322,14 @@ class Engine(EngineBase, Generic[VarType]):
             el: _filter_vars(vars, independent=False)
             for el, vars in net.next_states.items()
         }
-        if force_positive_speed:
+        if force_positive_speed or force_positive_density or force_positive_queue:
             for vars in x_next.values():
-                if "v" in vars:
+                if force_positive_speed and "v" in vars:
                     vars["v"] = cs.fmax(0, vars["v"])
+                if force_positive_density and "rho" in vars:
+                    vars["rho"] = cs.fmax(0, vars["rho"])
+                if force_positive_queue and "w" in vars:
+                    vars["w"] = cs.fmax(0, vars["w"])
 
         # gather outputs
         names_out, args_out = [], []
