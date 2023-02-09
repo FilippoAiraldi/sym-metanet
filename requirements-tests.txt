@@ -1,2 +1,2 @@
-coverage
-parameterized
+coverage==7.0.4
+parameterized==0.8.1
