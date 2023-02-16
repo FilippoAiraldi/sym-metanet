@@ -46,7 +46,7 @@ class Node(ElementBase):
         # destination or have multiple exiting links
         if self in net.destinations_by_node:
             return net.destinations_by_node[self].get_density(
-                net=net, engine=engine, **kwargs
+                net, engine=engine, **kwargs
             )
 
         # if no destination, then there must be 1 or more exiting links
@@ -98,8 +98,8 @@ class Node(ElementBase):
         n_up = len(links_up)
         if self in net.origins_by_node:
             origin = net.origins_by_node[self]
-            v_o = origin.get_speed(net=net, engine=engine, **kwargs)
-            q_o = origin.get_flow(net=net, engine=engine, **kwargs)
+            v_o = origin.get_speed(net, engine=engine, **kwargs)
+            q_o = origin.get_flow(net, engine=engine, **kwargs)
         else:
             v_o = None
             q_o = None
@@ -110,7 +110,7 @@ class Node(ElementBase):
         elif n_up == 1:
             link_up = next(iter(links_up))[-1]
             v = link_up.states["v"][-1]
-            q = link_up.get_flow(engine=engine)[-1]
+            q = link_up.get_flow(engine)[-1]
             if q_o is not None:
                 q += q_o  # type: ignore[assignment,operator]
         else:
@@ -118,7 +118,7 @@ class Node(ElementBase):
             q_last = []
             for _, _, link_up in links_up:
                 v_last.append(link_up.states["v"][-1])
-                q_last.append(link_up.get_flow(engine=engine)[-1])
+                q_last.append(link_up.get_flow(engine)[-1])
             v_last = engine.vcat(*v_last)
             q_last = engine.vcat(*q_last)
             links_down: Collection[
@@ -126,8 +126,6 @@ class Node(ElementBase):
             ] = net.out_links(self)
             betas = engine.vcat(*(dlink.turnrate for _, _, dlink in links_down))
 
-            v = engine.nodes.get_upstream_speed(q_lasts=q_last, v_lasts=v_last)
-            q = engine.nodes.get_upstream_flow(
-                q_lasts=q_last, beta=link.turnrate, betas=betas, q_orig=q_o
-            )
+            v = engine.nodes.get_upstream_speed(q_last, v_last)
+            q = engine.nodes.get_upstream_flow(q_last, link.turnrate, betas, q_o)
         return v, q  # type: ignore[return-value]

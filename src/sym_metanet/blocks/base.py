@@ -52,7 +52,7 @@ class ElementWithVars(ElementBase, Generic[VarType], ABC):
             Name of the element. If `None`, one is automatically created from a counter
             of the class' instancies.
         """
-        super().__init__(name=name)
+        super().__init__(name)
         self.states: Optional[Dict[str, VarType]] = None
         self.next_states: Optional[Dict[str, VarType]] = None
         self.actions: Optional[Dict[str, VarType]] = None

@@ -35,7 +35,7 @@ class Origin(ElementWithVars[VarType]):
         variable
             The origin's upstream speed.
         """
-        return self._get_exiting_link(net=net).states["v"][0]
+        return self._get_exiting_link(net).states["v"][0]
 
     def get_flow(
         self, net: "Network", engine: Optional[EngineBase] = None, **kwargs
@@ -54,7 +54,7 @@ class Origin(ElementWithVars[VarType]):
         symbolic variable
             The origin's upstream flow.
         """
-        return self._get_exiting_link(net=net).get_flow(engine=engine)[0]
+        return self._get_exiting_link(net).get_flow(engine)[0]
 
     def _get_exiting_link(self, net: "Network") -> "Link[VarType]":
         """Internal utility to fetch the link leaving this destination (can only be
@@ -101,7 +101,7 @@ class MeteredOnRamp(Origin[VarType]):
         name : str, optional
             Name of the on-ramp, by default None.
         """
-        super().__init__(name=name)
+        super().__init__(name)
         self.C = capacity
         self.flow_eq_type = flow_eq_type
 
@@ -170,9 +170,9 @@ class MeteredOnRamp(Origin[VarType]):
         """
         if engine is None:
             engine = get_current_engine()
-        q = self.get_flow(net=net, T=T, engine=engine, **kwargs)
+        q = self.get_flow(net, T, engine, **kwargs)
         w_next = engine.origins.step_queue(
-            w=self.states["w"], d=self.disturbances["d"], q=q, T=T
+            self.states["w"], self.disturbances["d"], q, T
         )
         return {"w": w_next}
 
@@ -201,17 +201,17 @@ class MeteredOnRamp(Origin[VarType]):
         """
         if engine is None:
             engine = get_current_engine()
-        link_down = self._get_exiting_link(net=net)
+        link_down = self._get_exiting_link(net)
         return engine.origins.get_ramp_flow(
-            d=self.disturbances["d"],
-            w=self.states["w"],
-            C=self.C,
-            r=self.actions["r"],
-            rho_max=link_down.rho_max,
-            rho_crit=link_down.rho_crit,
-            rho_first=link_down.states["rho"][0],
-            T=T,
-            type=self.flow_eq_type,
+            self.disturbances["d"],
+            self.states["w"],
+            self.C,
+            self.actions["r"],
+            link_down.rho_max,
+            link_down.states["rho"][0],
+            link_down.rho_crit,
+            T,
+            self.flow_eq_type,
         )
 
 
@@ -242,11 +242,7 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
         name : str, optional
             Name of the on-ramp, by default None.
         """
-        super().__init__(
-            capacity=capacity,
-            flow_eq_type=flow_eq_type,  # type: ignore[arg-type]
-            name=name,
-        )
+        super().__init__(capacity, flow_eq_type, name)  # type: ignore[arg-type]
 
     def init_vars(
         self,
@@ -305,15 +301,15 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
         """
         if engine is None:
             engine = get_current_engine()
-        link_down = self._get_exiting_link(net=net)
+        link_down = self._get_exiting_link(net)
         return engine.origins.get_simplifiedramp_flow(
-            qdes=self.actions["q"],
-            d=self.disturbances["d"],
-            w=self.states["w"],
-            C=self.C,
-            rho_max=link_down.rho_max,
-            rho_crit=link_down.rho_crit,
-            rho_first=link_down.states["rho"][0],
-            T=T,
-            type=self.flow_eq_type,  # type: ignore[arg-type]
+            self.actions["q"],
+            self.disturbances["d"],
+            self.states["w"],
+            self.C,
+            link_down.rho_max,
+            link_down.states["rho"][0],
+            link_down.rho_crit,
+            T,
+            self.flow_eq_type,  # type: ignore[arg-type]
         )

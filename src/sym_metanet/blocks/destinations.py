@@ -35,7 +35,7 @@ class Destination(ElementWithVars[VarType]):
         symbolic variable
             The destination's downstream density.
         """
-        return self._get_entering_link(net=net).states["rho"][-1]
+        return self._get_entering_link(net).states["rho"][-1]
 
     def _get_entering_link(self, net: "Network") -> "Link[VarType]":
         """Internal utility to fetch the link entering this destination (can only be
@@ -103,9 +103,7 @@ class CongestedDestination(Destination[VarType]):
         """
         if engine is None:
             engine = get_current_engine()
-        link_up = self._get_entering_link(net=net)
+        link_up = self._get_entering_link(net)
         return engine.destinations.get_congested_downstream_density(
-            rho_last=link_up.states["rho"][-1],
-            rho_crit=link_up.rho_crit,
-            rho_destination=self.disturbances["d"],
+            link_up.states["rho"][-1], self.disturbances["d"], link_up.rho_crit
         )

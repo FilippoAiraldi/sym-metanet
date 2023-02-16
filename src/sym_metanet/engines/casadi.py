@@ -369,13 +369,11 @@ class Engine(EngineBase, Generic[VarType]):
             link: "Link[VarType]"
             for _, _, link in net.links:
                 names_link.append(f"q_{link.name}")
-                flows_link.append(link.get_flow(engine=self))
+                flows_link.append(link.get_flow(self))
             for origin in net.origins:
                 names_origins.append(f"q_o_{origin.name}")
                 flows_origins.append(
-                    origin.get_flow(
-                        net=net, engine=self, **parameters, **other_parameters
-                    )
+                    origin.get_flow(net, engine=self, **parameters, **other_parameters)
                 )
 
             if compact > 0:

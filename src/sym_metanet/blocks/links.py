@@ -126,9 +126,7 @@ class Link(ElementWithVars[VarType]):
         """
         if engine is None:
             engine = get_current_engine()
-        return engine.links.get_flow(
-            rho=self.states["rho"], v=self.states["v"], lanes=self.lam
-        )
+        return engine.links.get_flow(self.states["rho"], self.states["v"], self.lam)
 
     def step_dynamics(
         self,
@@ -175,13 +173,11 @@ class Link(ElementWithVars[VarType]):
         node_up, node_down = net.nodes_by_link[self]  # type: ignore[index]
         rho = self.states["rho"]
         v = self.states["v"]
-        q = self.get_flow(engine=engine)
+        q = self.get_flow(engine)
 
         # get upstream flow and speed, and downstream density
-        v0, q0 = node_up.get_upstream_speed_and_flow(
-            net=net, link=self, T=T, engine=engine
-        )
-        rhoN_1 = node_down.get_downstream_density(net=net, engine=engine)
+        v0, q0 = node_up.get_upstream_speed_and_flow(net, self, engine, T=T)
+        rhoN_1 = node_down.get_downstream_density(net, engine)
         if self.N > 1:
             q_up = engine.vcat(q0, q[:-1])
             v_up = engine.vcat(v0, v[:-1])
@@ -201,7 +197,7 @@ class Link(ElementWithVars[VarType]):
         ):
             origin = net.origins_by_node[node_up]
             if isinstance(origin, MeteredOnRamp):
-                q_ramp = origin.get_flow(net=net, T=T, engine=engine)
+                q_ramp = origin.get_flow(net, T, engine)
 
         # check for lane drops in the next link (only if one link downstream)
         lanes_drop = None
@@ -216,30 +212,26 @@ class Link(ElementWithVars[VarType]):
                 lanes_drop = None
 
         # step densities
-        rho_next = engine.links.step_density(
-            rho=rho, q=q, q_up=q_up, lanes=self.lam, L=self.L, T=T
-        )
+        rho_next = engine.links.step_density(rho, q, q_up, self.lam, self.L, T)
 
         # step speeds
-        Veq = engine.links.Veq(
-            rho=rho, v_free=self.v_free, rho_crit=self.rho_crit, a=self.a
-        )
+        Veq = engine.links.Veq(rho, self.v_free, self.rho_crit, self.a)
         v_next = engine.links.step_speed(
-            v=v,
-            v_up=v_up,
-            rho=rho,
-            rho_down=rho_down,
-            Veq=Veq,
-            lanes=self.lam,
-            L=self.L,
-            tau=tau,
-            eta=eta,
-            kappa=kappa,
-            T=T,
-            q_ramp=q_ramp,
-            delta=delta,
-            lanes_drop=lanes_drop,
-            phi=phi,
-            rho_crit=self.rho_crit,
+            v,
+            v_up,
+            rho,
+            rho_down,
+            Veq,
+            self.lam,
+            self.L,
+            tau,
+            eta,
+            kappa,
+            T,
+            q_ramp,
+            delta,
+            lanes_drop,
+            phi,
+            self.rho_crit,
         )
         return {"rho": rho_next, "v": v_next}

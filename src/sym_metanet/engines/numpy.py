@@ -21,18 +21,18 @@ class NodesEngine(NodesEngineBase):
         betas: np.ndarray,
         q_orig: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        Q = np.sum(q_lasts, axis=0)
+        Q = np.sum(q_lasts, 0)
         if q_orig is not None:
             Q += q_orig
-        return (beta / np.sum(betas, axis=0)) * Q
+        return (beta / np.sum(betas, 0)) * Q
 
     @staticmethod
     def get_upstream_speed(q_lasts: np.ndarray, v_lasts: np.ndarray) -> np.ndarray:
-        return np.sum(v_lasts * q_lasts, axis=0) / np.sum(q_lasts, axis=0)
+        return np.sum(v_lasts * q_lasts, 0) / np.sum(q_lasts, 0)
 
     @staticmethod
     def get_downstream_density(rho_firsts: np.ndarray) -> np.ndarray:
-        return np.sum(np.square(rho_firsts), axis=0) / np.sum(rho_firsts, axis=0)
+        return np.sum(np.square(rho_firsts), 0) / np.sum(rho_firsts, 0)
 
 
 class LinksEngine(LinksEngineBase):
@@ -212,7 +212,7 @@ class Engine(EngineBase):
             if val == "empty":
 
                 def gen(n):
-                    return np.empty((n,), dtype=float)
+                    return np.empty((n,), float)
 
             elif val == "rand":
 
