@@ -511,6 +511,9 @@ class Network(ElementBase):
             Dict[ElementWithVars[VarType], Dict[str, VarType]]
         ] = None,
         engine: Optional[EngineBase] = None,
+        positive_init_speed: bool = False,
+        positive_init_density: bool = False,
+        positive_init_queue: bool = False,
         positive_next_speed: bool = False,
         positive_next_density: bool = False,
         positive_next_queue: bool = False,
@@ -529,6 +532,10 @@ class Network(ElementBase):
         engine : EngineBase, optional
             The engine to be used for stepping the dynamics. If `None`, the
             current engine is used.
+        positive_init_speed, positive_init_density, positive_init_queue: bool, optional
+            If `True`, forces the initial speeds/densities/queues to be positive, e.g.,
+            as `v = max(0, v)`. METANET is in fact known to sometime yield negative
+            quantities, which are infeasible in reality.
         positive_next_speed, positive_next_density, positive_next_queue: bool, optional
             Similarly to previous, but for the next values of the variables, i.e., at
             the next time step.
@@ -543,6 +550,9 @@ class Network(ElementBase):
             el.init_vars(
                 init_conditions=init_conditions.get(el),  # type: ignore[arg-type]
                 engine=engine,
+                positive_init_queue=positive_init_queue,
+                positive_init_density=positive_init_density,
+                positive_init_speed=positive_init_speed,
             )
 
         # dynamics

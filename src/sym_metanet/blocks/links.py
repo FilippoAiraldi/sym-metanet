@@ -83,6 +83,8 @@ class Link(ElementWithVars[VarType]):
         self,
         init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
+        positive_init_speed: bool = False,
+        positive_init_density: bool = False,
         **_,
     ) -> None:
         """For each segment in the link, initializes
@@ -98,11 +100,16 @@ class Link(ElementWithVars[VarType]):
             automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
+        positive_init_speed, positive_init_density : bool, optional
+            If `True`, forces the initial speed/density to be positive, e.g., as
+            `v = max(0, v)`. METANET is in fact known to sometime yield negative
+            quantities, which are infeasible in reality.
         """
         if init_conditions is None:
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
+
         self.states: Dict[str, VarType] = {
             name: (
                 init_conditions[name]
@@ -111,6 +118,11 @@ class Link(ElementWithVars[VarType]):
             )
             for name in ("rho", "v")
         }
+
+        if positive_init_density:
+            self.states["rho"] = engine.max(0, self.states["rho"])
+        if positive_init_speed:
+            self.states["v"] = engine.max(0, self.states["v"])
 
     def get_flow(self, engine: Optional[EngineBase] = None, **kwargs) -> VarType:
         """Gets the flow in this link's segments.

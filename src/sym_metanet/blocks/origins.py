@@ -109,6 +109,7 @@ class MeteredOnRamp(Origin[VarType]):
         self,
         init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
+        positive_init_queue: bool = False,
         **_,
     ) -> None:
         """Initializes
@@ -125,11 +126,16 @@ class MeteredOnRamp(Origin[VarType]):
             automatically.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
+        positive_init_queue : bool, optional
+            If `True`, forces the initial queue to be positive, e.g., as
+            `w = max(0, w)`. METANET is in fact known to sometime yield negative
+            quantities, which are infeasible in reality.
         """
         if init_conditions is None:
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
+
         self.states: Dict[str, VarType] = {
             "w": init_conditions["w"]
             if "w" in init_conditions
@@ -145,6 +151,9 @@ class MeteredOnRamp(Origin[VarType]):
             if "d" in init_conditions
             else engine.var(f"d_{self.name}")
         }
+
+        if positive_init_queue:
+            self.states["w"] = engine.max(0, self.states["w"])
 
     def step_dynamics(
         self,
