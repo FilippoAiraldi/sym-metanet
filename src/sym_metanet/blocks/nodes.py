@@ -97,7 +97,7 @@ class Node(ElementBase):
         )
         n_up = len(links_up)
         if self in net.origins_by_node:
-            origin = net.origins_by_node[self]
+            origin = net.origins_by_node[self]  # type: ignore[index]
             v_o = origin.get_speed(net, engine=engine, **kwargs)
             q_o = origin.get_flow(net, engine=engine, **kwargs)
         else:

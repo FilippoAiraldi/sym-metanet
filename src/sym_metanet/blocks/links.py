@@ -195,7 +195,7 @@ class Link(ElementWithVars[VarType]):
             and node_up in net.origins_by_node
             and any(net.in_links(node_up))
         ):
-            origin = net.origins_by_node[node_up]
+            origin = net.origins_by_node[node_up]  # type: ignore[index]
             if isinstance(origin, MeteredOnRamp):
                 q_ramp = origin.get_flow(net, T, engine)
 
