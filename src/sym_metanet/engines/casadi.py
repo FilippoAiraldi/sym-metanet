@@ -210,9 +210,6 @@ class Engine(EngineBase, Generic[VarType]):
         net: "Network",
         compact: int = 0,
         more_out: bool = False,
-        force_positive_speed: bool = True,
-        force_positive_density: bool = False,
-        force_positive_queue: bool = False,
         parameters: Optional[Dict[str, VarType]] = None,
         **other_parameters: Any,
     ) -> cs.Function:
@@ -235,14 +232,6 @@ class Engine(EngineBase, Generic[VarType]):
 
         more_out : bool, optional
             Includes flows of links and origins in the output. By default `False`.
-        force_positive_speed : bool, optional
-            If `True`, the links speeds at the next time step are forced to be positive
-            as `v+ = max(0, v+)`. METANET is in fact known to sometime yield negative
-            speeds, which are infeasible.
-        force_positive_density : bool, optional
-            Same as `force_positive_speed`, but for densities. By default, `False`.
-        force_positive_queue : bool, optional
-            Same as `force_positive_speed`, but for queues. By default, `False`.
         parameters : dict[str, casadi.SX or MX], optional
             Symbolic network parameters to be included in the function, by default None.
         **other_parameters
@@ -277,36 +266,26 @@ class Engine(EngineBase, Generic[VarType]):
         if parameters is None:
             parameters = {}
 
-        # process inputs
+        # gather inputs
         x = {el: _filter_vars(vars) for el, vars in net.states.items()}
         u = {el: _filter_vars(vars) for el, vars in net.actions.items()}
         d = {el: _filter_vars(vars) for el, vars in net.disturbances.items()}
+        names_in, args_in = _gather_inputs(x, u, d, compact)
+        if parameters:
+            _add_parameters_to_inputs(names_in, args_in, parameters, compact)
 
-        # process outputs
+        # gather outputs
         x_next = {
             el: _filter_vars(vars, independent=False)
             for el, vars in net.next_states.items()
         }
-        if force_positive_speed or force_positive_density or force_positive_queue:
-            for vars in x_next.values():
-                if force_positive_speed and "v" in vars:
-                    vars["v"] = cs.fmax(0, vars["v"])
-                if force_positive_density and "rho" in vars:
-                    vars["rho"] = cs.fmax(0, vars["rho"])
-                if force_positive_queue and "w" in vars:
-                    vars["w"] = cs.fmax(0, vars["w"])
-
-        # gather inputs/outputs
-        names_in, args_in = _gather_inputs(x, u, d, compact)
         names_out, args_out = _gather_outputs(x_next, compact)
-        if parameters:
-            _add_parameters_to_inputs(names_in, args_in, parameters, compact)
         if more_out:
             _add_flows_to_outputs(
                 names_out, args_out, self, net, parameters, other_parameters, compact
             )
 
-        # finally create function
+        # create dynamics function
         return cs.Function("F", args_in, args_out, names_in, names_out)
 
     def __str__(self) -> str:
