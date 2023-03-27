@@ -455,6 +455,21 @@ class EngineBase(ABC):
         """
 
     @abstractmethod
+    def max(self, array1, array2):
+        """Returns the maximum value of the given elements/variables.
+
+        Parameters
+        ----------
+        array1, array2
+            Values to be compared.
+
+        Returns
+        -------
+        sym variable
+            The maximum value.
+        """
+
+    @abstractmethod
     def to_function(self, net: "Network", *args, **kwargs) -> Callable:
         """Returns the network's dynamics as a callable function, with different nature
         depending on the engine implementation.

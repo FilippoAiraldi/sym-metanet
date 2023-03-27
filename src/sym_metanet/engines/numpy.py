@@ -253,8 +253,11 @@ class Engine(EngineBase):
     def var(self, name: str, n: int = 1, *args, **kwargs) -> np.ndarray:
         return self._var_gen(n)
 
-    def vcat(self, *arrays: np.ndarray):
+    def vcat(self, *arrays: np.ndarray) -> np.ndarray:
         return np.hstack(arrays)
+
+    def max(self, array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
+        return np.maximum(array1, array2)
 
     def to_function(self, *args, **kwargs) -> Callable:
         raise NotImplementedError("`to_function` not available for NumPy engine.")

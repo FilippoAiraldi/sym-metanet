@@ -199,8 +199,11 @@ class Engine(EngineBase, Generic[VarType]):
     def var(self, name: str, n: int = 1, *args, **kwargs) -> VarType:
         return self.sym_type.sym(name, n, 1)
 
-    def vcat(self, *arrays):
-        return cs.vertcat(*arrays)
+    def vcat(self, *arrays: VarType) -> VarType:
+        return cs.vcat(arrays)
+
+    def max(self, array1: VarType, array2: VarType) -> VarType:
+        return cs.fmax(array1, array2)
 
     def to_function(  # type: ignore[override]
         self,
