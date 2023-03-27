@@ -83,6 +83,7 @@ class Link(ElementWithVars[VarType]):
         self,
         init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
+        **_,
     ) -> None:
         """For each segment in the link, initializes
          - `rho`: densities (state)

@@ -60,6 +60,7 @@ class CongestedDestination(Destination[VarType]):
         self,
         init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
+        **_,
     ) -> None:
         """Initializes
         - `d`: downstream density scenario (disturbance).

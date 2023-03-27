@@ -109,6 +109,7 @@ class MeteredOnRamp(Origin[VarType]):
         self,
         init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
+        **_,
     ) -> None:
         """Initializes
          - `w`: queue length (state)
