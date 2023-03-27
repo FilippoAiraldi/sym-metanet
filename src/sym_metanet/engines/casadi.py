@@ -1,4 +1,4 @@
-from itertools import product
+from itertools import chain, product
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -7,6 +7,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -14,6 +15,7 @@ from typing import (
 
 import casadi as cs
 
+from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.engines.core import (
     DestinationsEngineBase,
     EngineBase,
@@ -209,7 +211,7 @@ class Engine(EngineBase, Generic[VarType]):
         force_positive_density: bool = False,
         force_positive_queue: bool = False,
         parameters: Optional[Dict[str, VarType]] = None,
-        **other_parameters,
+        **other_parameters: Any,
     ) -> cs.Function:
         """Converts the network's dynamics to a CasADi Function.
 
@@ -277,49 +279,6 @@ class Engine(EngineBase, Generic[VarType]):
         u = {el: _filter_vars(vars) for el, vars in net.actions.items()}
         d = {el: _filter_vars(vars) for el, vars in net.disturbances.items()}
 
-        # gather inputs
-        names_in, args_in = [], []
-        if compact <= 0:
-            for vars_in in (x, u, d):
-                for el, vars in vars_in.items():  # type: ignore[attr-defined]
-                    for varname, var in vars.items():
-                        names_in.append(f"{varname}_{el.name}")
-                        args_in.append(var)
-        else:
-            states: Dict[str, List[VarType]] = {}
-            actions: Dict[str, List[VarType]] = {}
-            disturbances: Dict[str, List[VarType]] = {}
-            for vars_in, group in [(x, states), (u, actions), (d, disturbances)]:
-                for el, vars in vars_in.items():  # type: ignore[attr-defined]
-                    for varname, var in vars.items():
-                        if varname in group:
-                            group[varname].append(var)
-                        else:
-                            group[varname] = [var]
-
-            for group in (states, actions, disturbances):
-                for varname, vars in group.items():
-                    group[varname] = cs.vertcat(*vars)
-
-            if compact == 1:
-                names_in = (
-                    list(states.keys())
-                    + list(actions.keys())
-                    + list(disturbances.keys())
-                )
-                args_in = (
-                    list(states.values())
-                    + list(actions.values())
-                    + list(disturbances.values())
-                )
-            else:
-                names_in = ["x", "u", "d"]
-                args_in = [
-                    cs.vertcat(*states.values()),
-                    cs.vertcat(*actions.values()),
-                    cs.vertcat(*disturbances.values()),
-                ]
-
         # process outputs
         x_next = {
             el: _filter_vars(vars, independent=False)
@@ -334,69 +293,17 @@ class Engine(EngineBase, Generic[VarType]):
                 if force_positive_queue and "w" in vars:
                     vars["w"] = cs.fmax(0, vars["w"])
 
-        # gather outputs
-        names_out, args_out = [], []
-        if compact <= 0:
-            for el, vars in x_next.items():
-                for varname, var in vars.items():
-                    names_out.append(f"{varname}_{el.name}+")
-                    args_out.append(var)
-        else:
-            next_states: Dict = {}
-            for vars in x_next.values():
-                for varname, var in vars.items():
-                    varname += "+"
-                    if varname in next_states:
-                        next_states[varname].append(var)
-                    else:
-                        next_states[varname] = [var]
-
-            for varname, vars in next_states.items():
-                next_states[varname] = cs.vertcat(*vars)
-
-            if compact == 1:
-                names_out = list(next_states.keys())
-                args_out = list(next_states.values())
-            else:
-                names_out = ["x+"]
-                args_out = [cs.vertcat(*next_states.values())]
-
-        # add link and origin flows (q, q_o) to output
-        if more_out:
-            names_link: List[str] = []
-            flows_link: List[VarType] = []
-            names_origins, flows_origins = [], []
-            link: "Link[VarType]"
-            for _, _, link in net.links:
-                names_link.append(f"q_{link.name}")
-                flows_link.append(link.get_flow(self))
-            for origin in net.origins:
-                names_origins.append(f"q_o_{origin.name}")
-                flows_origins.append(
-                    origin.get_flow(net, engine=self, **parameters, **other_parameters)
-                )
-
-            if compact > 0:
-                names_link = ["q"]
-                flows_link = [cs.vertcat(*flows_link)]
-                names_origins = ["q_o"]
-                flows_origins = [cs.vertcat(*flows_origins)]
-            if compact > 1:
-                names_link = ["q"]
-                flows_link = [cs.vertcat(flows_link[0], flows_origins[0])]
-                names_origins, flows_origins = [], []
-            names_out += names_link + names_origins
-            args_out += flows_link + flows_origins
-
-        # add parameters
+        # gather inputs/outputs
+        names_in, args_in = _gather_inputs(x, u, d, compact)
+        names_out, args_out = _gather_outputs(x_next, compact)
         if parameters:
-            if compact <= 0:
-                names_in.extend(parameters.keys())
-                args_in.extend(parameters.values())
-            else:
-                names_in.append("p")
-                args_in.append(cs.vertcat(*parameters.values()))
+            _add_parameters_to_inputs(names_in, args_in, parameters, compact)
+        if more_out:
+            _add_flows_to_outputs(
+                names_out, args_out, self, net, parameters, other_parameters, compact
+            )
 
+        # finally create function
         return cs.Function("F", args_in, args_out, names_in, names_out)
 
     def __str__(self) -> str:
@@ -429,3 +336,145 @@ def _filter_vars(
         return False
 
     return {name: var for name, var in vars.items() if is_ok(var)}
+
+
+def _gather_inputs(
+    x: Dict[ElementWithVars, Dict[str, VarType]],
+    u: Dict[ElementWithVars, Dict[str, VarType]],
+    d: Dict[ElementWithVars, Dict[str, VarType]],
+    compact: int,
+) -> Tuple[List[str], List[VarType]]:
+    """Internal utility to gather inputs for `casadi.Function`."""
+
+    if compact <= 0:
+        # no aggregation
+        names_in, args_in = [], []
+        for vars_in in (x, u, d):
+            for el, vars in vars_in.items():  # type: ignore[attr-defined]
+                for varname, var in vars.items():
+                    names_in.append(f"{varname}_{el.name}")
+                    args_in.append(var)
+        return names_in, args_in
+
+    # group variables as (name, list of vars)
+    states: Dict[str, List[VarType]] = {}
+    actions: Dict[str, List[VarType]] = {}
+    disturbances: Dict[str, List[VarType]] = {}
+    for vars_in, group in [(x, states), (u, actions), (d, disturbances)]:
+        for el, vars in vars_in.items():  # type: ignore[attr-defined]
+            for varname, var in vars.items():
+                if varname in group:
+                    group[varname].append(var)
+                else:
+                    group[varname] = [var]
+
+    # group variables as (name, symbol)
+    for group in (states, actions, disturbances):
+        for varname, list_of_vars in group.items():
+            group[varname] = cs.vcat(list_of_vars)
+
+    # add to names and args
+    if compact == 1:
+        names_in = list(chain(states.keys(), actions.keys(), disturbances.keys()))
+        args_in = list(chain(states.values(), actions.values(), disturbances.values()))
+    else:
+        names_in = ["x", "u", "d"]
+        args_in = [
+            cs.vcat(states.values()),
+            cs.vcat(actions.values()),
+            cs.vcat(disturbances.values()),
+        ]
+    return names_in, args_in
+
+
+def _gather_outputs(
+    x_next: Dict[ElementWithVars, Dict[str, VarType]],
+    compact: int,
+) -> Tuple[List[str], List[VarType]]:
+    """Internal utility to gather outputs for `casadi.Function`."""
+
+    if compact <= 0:
+        # no aggregation
+        names_out, args_out = [], []
+        for el, vars in x_next.items():
+            for varname, var in vars.items():
+                names_out.append(f"{varname}_{el.name}+")
+                args_out.append(var)
+        return names_out, args_out
+
+    # group variables as (name, list of vars)
+    next_states: Dict[str, List[VarType]] = {}
+    for vars in x_next.values():
+        for varname, var in vars.items():
+            varname += "+"
+            if varname in next_states:
+                next_states[varname].append(var)
+            else:
+                next_states[varname] = [var]
+
+    # group variables as (name, symbol)
+    for varname, list_of_vars in next_states.items():
+        next_states[varname] = cs.vcat(list_of_vars)
+
+    # add to names and args
+    if compact == 1:
+        names_out = list(next_states.keys())
+        args_out = list(next_states.values())
+    else:
+        names_out = ["x+"]
+        args_out = [cs.vcat(next_states.values())]
+    return names_out, args_out
+
+
+def _add_parameters_to_inputs(
+    names_in: List[str],
+    args_in: List[VarType],
+    parameters: Dict[str, VarType],
+    compact: int,
+) -> None:
+    """Internal utility to add parameters to inputs for `casadi.Function`."""
+    if compact <= 0:
+        names_in.extend(parameters.keys())
+        args_in.extend(parameters.values())
+    else:
+        names_in.append("p")
+        args_in.append(cs.vcat(parameters.values()))
+
+
+def _add_flows_to_outputs(
+    names_out: List[str],
+    args_out: List[VarType],
+    engine: Engine,
+    net: "Network",
+    parameters: Dict[str, VarType],
+    other_parameters: Dict[str, Any],
+    compact: int,
+) -> None:
+    """Internal utility to add even more outputs for `casadi.Function`."""
+
+    # add link and origin flows (q, q_o) to output
+    names_link: List[str] = []
+    flows_link: List[VarType] = []
+    names_origins, flows_origins = [], []
+    link: "Link[VarType]"
+    for _, _, link in net.links:
+        names_link.append(f"q_{link.name}")
+        flows_link.append(link.get_flow(engine))
+    for origin in net.origins:
+        names_origins.append(f"q_o_{origin.name}")
+        flows_origins.append(
+            origin.get_flow(net, engine=engine, **parameters, **other_parameters)
+        )
+
+    if compact > 0:
+        names_link = ["q"]
+        flows_link = [cs.vcat(flows_link)]
+        names_origins = ["q_o"]
+        flows_origins = [cs.vcat(flows_origins)]
+    if compact > 1:
+        names_link = ["q"]
+        flows_link = [cs.vertcat(flows_link[0], flows_origins[0])]
+        names_origins, flows_origins = [], []
+
+    names_out.extend(names_link + names_origins)
+    args_out.extend(flows_link + flows_origins)
