@@ -1,8 +1,9 @@
 import unittest
+from typing import Literal, Type, Union
 
 import casadi as cs
 import numpy as np
-from parameterized import parameterized
+from parameterized import parameterized, parameterized_class
 
 import sym_metanet as metanet
 from sym_metanet import (
@@ -20,8 +21,9 @@ from sym_metanet.errors import EngineNotFoundError
 from sym_metanet.util.funcs import first
 
 
-def get_net(link_with_ramp: int = 2):
+def get_net(sym_type: Literal["MX", "SX"], link_with_ramp: int = 2):
     assert link_with_ramp in {1, 2}
+    XX: Union[Type[cs.SX], Type[cs.MX]] = getattr(cs, sym_type)
     L = 1
     lanes = 2
     C = (3500, 2000)
@@ -31,9 +33,9 @@ def get_net(link_with_ramp: int = 2):
     rho_max = 180
     delta = 0.0122
     T = 10 / 3600
-    a_sym = cs.SX.sym("a")
-    v_free_sym = cs.SX.sym("v_free")
-    rho_crit_sym = cs.SX.sym("rho_crit_sym")
+    a_sym = XX.sym("a")
+    v_free_sym = XX.sym("v_free")
+    rho_crit_sym = XX.sym("rho_crit_sym")
     N1 = Node(name="N1")
     N2 = Node(name="N2")
     N3 = Node(name="N3")
@@ -142,11 +144,13 @@ class TestEngines(unittest.TestCase):
             engines.use(invalid_engine)
 
 
+@parameterized_class("sym_type", [("MX",), ("SX",)])
 class TestCasadiEngine(unittest.TestCase):
     def test_to_function__fails__with_uninit_vars(self):
-        net, sym_pars, other_pars = get_net()
+        print("sym_type", self.sym_type)
+        net, sym_pars, other_pars = get_net(self.sym_type)
         self.assertTrue(net.is_valid(raises=False)[0])
-        engine = engines.use("casadi", sym_type="SX")
+        engine = engines.use("casadi", sym_type=self.sym_type)
 
         with self.assertRaises(RuntimeError):
             engine.to_function(
@@ -158,9 +162,9 @@ class TestCasadiEngine(unittest.TestCase):
             )
 
     def test_to_function__fails__with_unstepped_dynamics(self):
-        net, sym_pars, other_pars = get_net()
+        net, sym_pars, other_pars = get_net(self.sym_type)
         self.assertTrue(net.is_valid(raises=False)[0])
-        engine = engines.use("casadi", sym_type="SX")
+        engine = engines.use("casadi", sym_type=self.sym_type)
         for el in net.elements:
             el.init_vars(engine=engine)
         with self.assertRaises(RuntimeError):
@@ -174,9 +178,10 @@ class TestCasadiEngine(unittest.TestCase):
 
     @parameterized.expand([(1,), (2,)])
     def test_to_function__numerically_works(self, link_with_ramp: int):
-        net, sym_pars, other_pars = get_net(link_with_ramp)
+        net, sym_pars, other_pars = get_net(self.sym_type, link_with_ramp)
+        engine = engines.use("casadi", sym_type=self.sym_type)
         net.is_valid(raises=True)
-        net.step(positive_next_speed=True, **other_pars)
+        net.step(positive_next_speed=True, engine=engine, **other_pars)
         Fact: cs.Function = metanet.engine.to_function(
             net=net,
             **other_pars,
