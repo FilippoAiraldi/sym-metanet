@@ -249,41 +249,24 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
         self,
         init_conditions: Optional[Dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
+        *args,
+        **kwargs,
     ) -> None:
-        """Initializes
-         - `w`: queue length (state)
-         - `q`: ramp flow (control action)
-         - `d`: demand (disturbance).
-
-        Parameters
-        ----------
-        init_conditions : dict[str, variable], optional
-            Provides name-variable tuples to initialize states, actions and disturbances
-            with specific values. These values must be compatible with the symbolic
-            engine in type and shape. If not provided, variables are initialized
-            automatically.
-        engine : EngineBase, optional
-            The engine to be used. If `None`, the current engine is used.
-        """
+        """Initializes as control action the flow `q` on the ramp instead of the
+        metering rate `r`."""
         if init_conditions is None:
             init_conditions = {}
         if engine is None:
             engine = get_current_engine()
-        self.states: Dict[str, VarType] = {
-            "w": init_conditions["w"]
-            if "w" in init_conditions
-            else engine.var(f"w_{self.name}")
-        }
-        self.actions: Dict[str, VarType] = {
-            "q": init_conditions["q"]
+
+        super().init_vars(init_conditions, engine, *args, **kwargs)
+
+        del self.actions["r"]
+        self.actions["q"] = (
+            init_conditions["q"]
             if "q" in init_conditions
             else engine.var(f"q_{self.name}")
-        }
-        self.disturbances: Dict[str, VarType] = {
-            "d": init_conditions["d"]
-            if "d" in init_conditions
-            else engine.var(f"d_{self.name}")
-        }
+        )
 
     def get_flow(  # type: ignore[override]
         self,
