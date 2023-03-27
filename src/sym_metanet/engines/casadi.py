@@ -296,28 +296,34 @@ class Engine(EngineBase, Generic[VarType]):
 
 
 def _filter_vars(
-    vars: Dict[str, Union[VarType, Any]],
-    symbolic: bool = True,
-    independent: bool = True,
+    vars: Dict[str, Union[VarType, Any]], independent: bool = True
 ) -> Dict[str, VarType]:
     """Internal utility to filter out symbols that are either only symbolic
     and/or independent (and thus can be inputs to `casadi.Function`)."""
 
-    def is_ok(var: Union[VarType, Any]) -> bool:
-        # sourcery skip: assign-if-exp, reintroduce-else
-        if not symbolic:
-            return True
+    def filter(var: Union[VarType, Any]) -> Optional[VarType]:
         if isinstance(var, cs.SX):
-            if independent:
-                return all(var[i].n_dep() == 0 for i in range(var.shape[0]))
-            return True
-        if isinstance(var, cs.MX):
-            if independent:
-                return var.n_dep() == 0
-            return True
-        return False
+            if not independent or all(var[i].n_dep() == 0 for i in range(var.size1())):
+                return var
+            varlists = cs.symvar(var)
+            if len(varlists) == var.size1():
+                return cs.vcat(varlists)
 
-    return {name: var for name, var in vars.items() if is_ok(var)}
+        if isinstance(var, cs.MX):
+            if not independent or var.n_dep() == 0:
+                return var
+            varlists = cs.symvar(var)
+            if len(varlists) == 1:
+                return varlists[0]
+
+        return None
+
+    filtered_vars = {}
+    for name, var in vars.items():
+        filtered = filter(var)
+        if filtered is not None:
+            filtered_vars[name] = filtered
+    return filtered_vars
 
 
 def _gather_inputs(
