@@ -39,17 +39,19 @@ def get_net(sym_type: Literal["MX", "SX"], link_with_ramp: int = 2):
     N1 = Node(name="N1")
     N2 = Node(name="N2")
     N3 = Node(name="N3")
-    N4 = Node(name="N3")
-    L1 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L1")
-    L2 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2")
-    L3 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L3")
     O1 = MeteredOnRamp(C[0], name="O1")
     O2 = SimplifiedMeteredOnRamp(C[1], name="O2")
     D1 = CongestedDestination(name="D1")
+    if link_with_ramp == 1:
+        L1 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L1")
+        L2 = Link(2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2")
+    else:
+        L1 = Link(2, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L1")
+        L2 = Link(1, lanes, L, rho_max, rho_crit_sym, v_free_sym, a_sym, name="L2")
     net = (
         Network(name="A1")
-        .add_path(origin=O1, path=(N1, L1, N2, L2, N3, L3, N4), destination=D1)
-        .add_origin(O2, N2 if link_with_ramp == 1 else N3)
+        .add_path(origin=O1, path=(N1, L1, N2, L2, N3), destination=D1)
+        .add_origin(O2, N2)
     )
     sym_pars = {"rho_crit": rho_crit_sym, "a": a_sym, "v_free": v_free_sym}
     others = {
@@ -67,7 +69,7 @@ def get_net(sym_type: Literal["MX", "SX"], link_with_ramp: int = 2):
 
 
 def get_hardcoded_dynamics(
-    L, lanes, C, tau, kappa, eta, rho_max, delta, T, link_with_ramp: int = 2, **kwargs
+    L, lanes, C, tau, kappa, eta, rho_max, delta, T, link_with_ramp: int = 2, **_
 ) -> cs.Function:
     # sourcery skip: use-contextlib-suppress
     assert link_with_ramp in {1, 2}
