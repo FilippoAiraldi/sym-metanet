@@ -176,13 +176,12 @@ class TestCasadiEngine(unittest.TestCase):
     def test_to_function__numerically_works(self, link_with_ramp: int):
         net, sym_pars, other_pars = get_net(link_with_ramp)
         net.is_valid(raises=True)
-        net.step(**other_pars)
+        net.step(positive_next_speed=True, **other_pars)
         Fact: cs.Function = metanet.engine.to_function(
             net=net,
             **other_pars,
             parameters=sym_pars,
             more_out=True,
-            force_positive_speed=True,
             compact=1,
         )
         Fexp = get_hardcoded_dynamics(**other_pars, link_with_ramp=link_with_ramp)

@@ -139,6 +139,8 @@ class Link(ElementWithVars[VarType]):
         delta: Union[None, VarType, float] = None,
         phi: Union[None, VarType, float] = None,
         engine: Optional[EngineBase] = None,
+        positive_next_speed: bool = True,
+        positive_next_density: bool = False,
         **_,
     ) -> Dict[str, VarType]:
         """Steps the dynamics of this link.
@@ -161,6 +163,10 @@ class Link(ElementWithVars[VarType]):
             Model parameter for lane drop phenomenum. By defaul, not considered.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
+        positive_next_speed, positive_next_density : bool, optional
+            If `True`, forces the speed/density at the next time step to be positive,
+            e.g., as `v+ = max(0, v+)`. METANET is in fact known to sometime yield
+            negative quantities, which are infeasible in reality.
 
         Returns
         -------
@@ -235,4 +241,8 @@ class Link(ElementWithVars[VarType]):
             phi,
             self.rho_crit,
         )
+        if positive_next_density:
+            rho_next = engine.max(0, rho_next)
+        if positive_next_speed:
+            v_next = engine.max(0, v_next)
         return {"rho": rho_next, "v": v_next}

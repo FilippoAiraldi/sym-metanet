@@ -151,6 +151,7 @@ class MeteredOnRamp(Origin[VarType]):
         net: "Network",
         T: Union[VarType, float],
         engine: Optional[EngineBase] = None,
+        positive_next_queue: bool = False,
         **kwargs,
     ) -> Dict[str, VarType]:
         """Steps the dynamics of this origin.
@@ -163,6 +164,10 @@ class MeteredOnRamp(Origin[VarType]):
             Sampling time.
         engine : EngineBase, optional
             The engine to be used. If `None`, the current engine is used.
+        positive_next_queue : bool, optional
+            If `True`, forces the queue at the next time step to be positive, e.g., as
+            `w+ = max(0, w+)`. METANET is in fact known to sometime yield negative
+            quantities, which are infeasible in reality.
 
         Returns
         -------
@@ -171,10 +176,14 @@ class MeteredOnRamp(Origin[VarType]):
         """
         if engine is None:
             engine = get_current_engine()
+
         q = self.get_flow(net, T, engine, **kwargs)
         w_next = engine.origins.step_queue(
             self.states["w"], self.disturbances["d"], q, T
         )
+
+        if positive_next_queue:
+            w_next = engine.max(0, w_next)
         return {"w": w_next}
 
     def get_flow(  # type: ignore[override]

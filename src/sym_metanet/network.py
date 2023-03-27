@@ -511,6 +511,9 @@ class Network(ElementBase):
             Dict[ElementWithVars[VarType], Dict[str, VarType]]
         ] = None,
         engine: Optional[EngineBase] = None,
+        positive_next_speed: bool = False,
+        positive_next_density: bool = False,
+        positive_next_queue: bool = False,
         **other_parameters: VarType,
     ) -> None:
         """Steps the dynamics of the network's elements.
@@ -526,6 +529,9 @@ class Network(ElementBase):
         engine : EngineBase, optional
             The engine to be used for stepping the dynamics. If `None`, the
             current engine is used.
+        positive_next_speed, positive_next_density, positive_next_queue: bool, optional
+            Similarly to previous, but for the next values of the variables, i.e., at
+            the next time step.
         other_parameters : variables
             All the other parameters (e.g., sampling time) required during
             the computations.
@@ -541,6 +547,17 @@ class Network(ElementBase):
 
         # dynamics
         for origin in self.origins:
-            origin.step(net=self, engine=engine, **other_parameters)
+            origin.step(
+                net=self,
+                engine=engine,
+                positive_next_queue=positive_next_queue,
+                **other_parameters,
+            )
         for _, _, link in self.links:  # type: ignore[var-annotated]
-            link.step(net=self, engine=engine, **other_parameters)
+            link.step(
+                net=self,
+                engine=engine,
+                positive_next_speed=positive_next_speed,
+                positive_next_density=positive_next_density,
+                **other_parameters,
+            )
