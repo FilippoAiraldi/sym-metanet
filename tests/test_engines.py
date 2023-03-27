@@ -144,10 +144,9 @@ class TestEngines(unittest.TestCase):
             engines.use(invalid_engine)
 
 
-@parameterized_class("sym_type", [("MX",), ("SX",)])
+@parameterized_class("sym_type", [("SX",), ("MX",)])
 class TestCasadiEngine(unittest.TestCase):
     def test_to_function__fails__with_uninit_vars(self):
-        print("sym_type", self.sym_type)
         net, sym_pars, other_pars = get_net(self.sym_type)
         self.assertTrue(net.is_valid(raises=False)[0])
         engine = engines.use("casadi", sym_type=self.sym_type)
@@ -175,6 +174,22 @@ class TestCasadiEngine(unittest.TestCase):
                 compact=1,
                 more_out=True,
             )
+
+    def test_to_function__works__with_positive_init_and_next_quantities(self):
+        net, sym_pars, other_pars = get_net(self.sym_type)
+        engine = engines.use("casadi", sym_type=self.sym_type)
+        net.is_valid(raises=True)
+        net.step(positive_init_density=True, engine=engine, **other_pars)
+        F = metanet.engine.to_function(
+            net=net,
+            **other_pars,
+            parameters=sym_pars,
+            more_out=True,
+            compact=1,
+        )
+        self.assertIn("rho", F.name_in())
+        self.assertFalse(F.get_free())
+        self.assertEqual(len(F(30, 80, 5, 1, 250, 500, 1)), 5)
 
     @parameterized.expand([(1,), (2,)])
     def test_to_function__numerically_works(self, link_with_ramp: int):
