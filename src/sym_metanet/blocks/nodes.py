@@ -65,7 +65,7 @@ class Node(ElementBase):
         net: "Network",
         link: "Link[VarType]",
         engine: Optional[EngineBase] = None,
-        **kwargs
+        **kwargs,
     ) -> Tuple[VarType, VarType]:
         """Computes the (virtual) upstream speed and flow of the node for this the
         current link.
