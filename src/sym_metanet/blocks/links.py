@@ -138,7 +138,7 @@ class Link(ElementWithVars[VarType]):
         delta: Union[None, VarType, float] = None,
         phi: Union[None, VarType, float] = None,
         engine: Optional[EngineBase] = None,
-        **kwargs,
+        **_,
     ) -> Dict[str, VarType]:
         """Steps the dynamics of this link.
 

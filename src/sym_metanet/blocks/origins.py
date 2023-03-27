@@ -15,14 +15,14 @@ class Origin(ElementWithVars[VarType]):
     """Ideal, state-less highway origin that conveys to the attached link as much flow
     as the flow in such link."""
 
-    def init_vars(self, *args, **kwargs) -> None:
+    def init_vars(self, *_, **__) -> None:
         """Initializes no variable in the ideal origin."""
 
-    def step_dynamics(self, *args, **kwargs) -> Dict[str, VarType]:
+    def step_dynamics(self, *_, **__) -> Dict[str, VarType]:
         """No dynamics to steps in the ideal origin."""
         return {}
 
-    def get_speed(self, net: "Network", **kwargs) -> VarType:
+    def get_speed(self, net: "Network", **__) -> VarType:
         """Computes the (upstream) speed induced by the ideal origin.
 
         Parameters
@@ -181,7 +181,7 @@ class MeteredOnRamp(Origin[VarType]):
         net: "Network",
         T: Union[VarType, float],
         engine: Optional[EngineBase] = None,
-        **kwargs,
+        **_,
     ) -> VarType:
         """Computes the (upstream) flow induced by the metered ramp.
 
@@ -289,8 +289,7 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
         net: "Network",
         T: Union[VarType, float],
         engine: Optional[EngineBase] = None,
-        *args,
-        **kwargs,
+        **_,
     ) -> VarType:
         """Computes the (upstream) flow induced by the simple-metered ramp.
 

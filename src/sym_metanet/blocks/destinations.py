@@ -15,14 +15,14 @@ class Destination(ElementWithVars[VarType]):
     """Ideal congestion-free destination, representing a sink where cars can leave the
     highway with no congestion (i.e., no slowing down due to downstream density)."""
 
-    def init_vars(self, *args, **kwargs) -> None:
+    def init_vars(self, *_, **__) -> None:
         """Initializes no variable in the ideal destination."""
 
-    def step_dynamics(self, *args, **kwargs) -> Dict[str, VarType]:
+    def step_dynamics(self, *_, **__) -> Dict[str, VarType]:
         """No dynamics to steps in the ideal destination."""
         return {}
 
-    def get_density(self, net: "Network", **kwargs) -> VarType:
+    def get_density(self, net: "Network", **_) -> VarType:
         """Computes the (downstream) density induced by the ideal destination.
 
         Parameters
