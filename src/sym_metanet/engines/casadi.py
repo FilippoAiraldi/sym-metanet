@@ -286,7 +286,14 @@ class Engine(EngineBase, Generic[VarType]):
             )
 
         # create dynamics function
-        return cs.Function("F", args_in, args_out, names_in, names_out)
+        return cs.Function(
+            "F",
+            args_in,
+            args_out,
+            names_in,
+            names_out,
+            {"allow_duplicate_io_names": True, "cse": True},
+        )
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(casadi)"
