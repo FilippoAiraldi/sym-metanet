@@ -22,7 +22,9 @@ class Destination(ElementWithVars[VarType]):
         """No dynamics to steps in the ideal destination."""
         return {}
 
-    def get_density(self, net: "Network", **_) -> VarType:
+    def get_density(
+        self, net: "Network", engine: Optional[EngineBase] = None, **_
+    ) -> VarType:
         """Computes the (downstream) density induced by the ideal destination.
 
         Parameters
@@ -35,7 +37,12 @@ class Destination(ElementWithVars[VarType]):
         symbolic variable
             The destination's downstream density.
         """
-        return self._get_entering_link(net).states["rho"][-1]
+        if engine is None:
+            engine = get_current_engine()
+        link_up = self._get_entering_link(net)
+        return engine.destinations.get_congestion_free_downstream_density(
+            link_up.states["rho"][-1], link_up.rho_crit
+        )
 
     def _get_entering_link(self, net: "Network") -> "Link[VarType]":
         """Internal utility to fetch the link entering this destination (can only be
@@ -86,7 +93,7 @@ class CongestedDestination(Destination[VarType]):
         }
 
     def get_density(
-        self, net: "Network", engine: Optional[EngineBase] = None, **kwargs
+        self, net: "Network", engine: Optional[EngineBase] = None, **_
     ) -> VarType:
         """Computes the (downstream) density induced by the congested destination.
 

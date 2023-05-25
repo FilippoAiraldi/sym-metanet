@@ -371,6 +371,26 @@ class DestinationsEngineBase(ABC):
 
     @staticmethod
     @abstractmethod
+    def get_congestion_free_downstream_density(rho_last, rho_crit):
+        """For a link with a downstream destination with no congestion, i.e., ideal,
+        returns the downstream density.
+
+        Parameters
+        ----------
+        rho_last
+            Density in the link's last segment.
+        rho_crit
+            Critical density of the link entering the destination.
+
+        Returns
+        -------
+        density
+            The downstream density for a link connected to a congestion-free
+            destination.
+        """
+
+    @staticmethod
+    @abstractmethod
     def get_congested_downstream_density(rho_last, rho_destination, rho_crit):
         """For a link with a downstream congested destination, returns the downstream
         density.

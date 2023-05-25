@@ -153,6 +153,12 @@ class DestinationsEngine(DestinationsEngineBase, Generic[VarType]):
     """CasADi implementation of `sym_metanet.engines.core.DestinationsEngineBase`."""
 
     @staticmethod
+    def get_congestion_free_downstream_density(
+        rho_last: VarType, rho_crit: VarType
+    ) -> VarType:
+        return cs.fmin(rho_last, rho_crit)
+
+    @staticmethod
     def get_congested_downstream_density(
         rho_last: VarType, rho_destination: VarType, rho_crit: VarType
     ) -> VarType:

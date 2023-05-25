@@ -147,6 +147,12 @@ class DestinationsEngine(DestinationsEngineBase):
     """
 
     @staticmethod
+    def get_congestion_free_downstream_density(
+        rho_last: np.ndarray, rho_crit: np.ndarray
+    ) -> np.ndarray:
+        return np.minimum(rho_last, rho_crit)
+
+    @staticmethod
     def get_congested_downstream_density(
         rho_last: np.ndarray, rho_destination: np.ndarray, rho_crit: np.ndarray
     ) -> np.ndarray:
