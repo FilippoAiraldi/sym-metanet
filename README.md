@@ -1,6 +1,8 @@
 # Symbolic Modelling of Highway Traffic Networks with METANET
 
-![network-example](resources\example.jpg)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/FilippoAiraldi/sym-metanet/dev/resources/example.jpg" alt="network-example" height="180">
+</div>
 
 **sym-metanet** is a Python package to model traffic networks with the METANET framework, a collection of tools to mathematically model the macroscopic behaviour of traffic in highway systems (see [[1]](#1) and [[2]](#2) for more details).
 
