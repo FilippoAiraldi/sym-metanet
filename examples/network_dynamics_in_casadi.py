@@ -1,5 +1,5 @@
 """
-Reproduces the results in Figure 6.5 of [1]
+Reproduces the results in Figure 6.5 of [1].
 
 References
 ----------
