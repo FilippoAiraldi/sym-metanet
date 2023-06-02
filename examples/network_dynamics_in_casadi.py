@@ -86,20 +86,26 @@ for d in demands:
     W.append(w)
     Q.append(q)
     Q_o.append(q_o)
+RHO, V, W, Q, Q_o = (np.squeeze(o) for o in (RHO, V, W, Q, Q_o))  # type: ignore
+
+
+# compute TTS metric (Total-Time-Spent)
+tts = T * sum((rho * L * lanes).sum() + w.sum() for rho, w in zip(RHO, W))
+print(f"TTS = {tts:.3f} veh.h")
 
 # plot
 _, axs = plt.subplots(3, 2, constrained_layout=True, sharex=True)
-axs[0, 0].plot(time, np.squeeze(V))
+axs[0, 0].plot(time, V)
 axs[0, 0].set_ylabel("speed")
-axs[0, 1].plot(time, np.squeeze(Q))
+axs[0, 1].plot(time, Q)
 axs[0, 1].set_ylabel("flow")
-axs[1, 0].plot(time, np.squeeze(RHO))
+axs[1, 0].plot(time, RHO)
 axs[1, 0].set_ylabel("density")
 axs[1, 1].plot(time, demands)
 axs[1, 1].set_ylabel("origin demands")
-axs[2, 0].plot(time, np.squeeze(Q_o))
+axs[2, 0].plot(time, Q_o)
 axs[2, 0].set_ylabel("origin flow")
-axs[2, 1].plot(time, np.squeeze(W))
+axs[2, 1].plot(time, W)
 axs[2, 1].set_ylabel("queue")
 axs[0, 0].set_xlim(0, Tfin)
 plt.show()
