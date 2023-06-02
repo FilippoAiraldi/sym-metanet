@@ -86,6 +86,12 @@ for d in demands:
     W.append(w)
     Q.append(q)
     Q_o.append(q_o)
+RHO, V, W, Q, Q_o = (np.squeeze(o) for o in (RHO, V, W, Q, Q_o))  # type: ignore
+
+
+# compute TTS metric (Total-Time-Spent)
+tts = T * sum((rho * L * lanes).sum() + w.sum() for rho, w in zip(RHO, W))
+print(f"TTS = {tts:.3f} veh.h")
 
 # plot
 _, axs = plt.subplots(3, 2, constrained_layout=True, sharex=True)
