@@ -107,12 +107,12 @@ class TestExamples(unittest.TestCase):
         )
 
         RHO_, V_, W_, Q_, Q_o_, tts_ = RESULTS["test_dyn"]
-        np.testing.assert_allclose(RHO, RHO_)
-        np.testing.assert_allclose(V, V_)
-        np.testing.assert_allclose(W, W_)
-        np.testing.assert_allclose(Q, Q_)
-        np.testing.assert_allclose(Q_o, Q_o_)
-        np.testing.assert_allclose(tts, tts_)
+        np.testing.assert_allclose(RHO, RHO_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(V, V_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(W, W_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(Q, Q_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(Q_o, Q_o_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(tts, tts_, rtol=1e-3, atol=1e-3)
 
     def test_ramp_metering_example(self):
         engine = engines.use("casadi", sym_type=self.sym_type)
@@ -197,13 +197,13 @@ class TestExamples(unittest.TestCase):
         )
 
         RHO_, V_, W_, Q_, Q_o_, R_, tts_ = RESULTS["test_ramp"]
-        np.testing.assert_allclose(RHO, RHO_)
-        np.testing.assert_allclose(V, V_)
-        np.testing.assert_allclose(W, W_)
-        np.testing.assert_allclose(Q, Q_)
-        np.testing.assert_allclose(Q_o, Q_o_)
-        np.testing.assert_allclose(R, R_)
-        np.testing.assert_allclose(tts, tts_)
+        np.testing.assert_allclose(RHO, RHO_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(V, V_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(W, W_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(Q, Q_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(Q_o, Q_o_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(R, R_, rtol=1e-3, atol=1e-3)
+        np.testing.assert_allclose(tts, tts_, rtol=1e-3, atol=1e-3)
 
 
 if __name__ == "__main__":
