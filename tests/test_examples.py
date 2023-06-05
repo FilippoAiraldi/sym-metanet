@@ -124,6 +124,7 @@ class TestExamples(unittest.TestCase):
             kappa=pars["kappa"],
             delta=pars["delta"],
             engine=engine,
+            init_conditions={net.origins_by_name["O1"]: {"r": 1}}
         )
         F = engine.to_function(
             net=net,
