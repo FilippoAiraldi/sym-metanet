@@ -59,7 +59,7 @@ net = (
 # make a casadi function out of the network
 engines.use("casadi", sym_type="SX")
 net.is_valid(raises=True)
-net.step(T=T, tau=tau, eta=eta, kappa=kappa)
+net.step(T=T, tau=tau, eta=eta, kappa=kappa, delta=delta)
 F = metanet.engine.to_function(
     net=net,
     more_out=True,
