@@ -5,6 +5,7 @@ __all__ = [
     "engines",
     "Node",
     "Link",
+    "LinkWithVsl",
     "Origin",
     "MeteredOnRamp",
     "SimplifiedMeteredOnRamp",
@@ -35,7 +36,7 @@ if _notfound:
 del _notfound, _engine
 
 from sym_metanet.blocks.destinations import CongestedDestination, Destination
-from sym_metanet.blocks.links import Link
+from sym_metanet.blocks.links import Link, LinkWithVsl
 from sym_metanet.blocks.nodes import Node
 from sym_metanet.blocks.origins import MeteredOnRamp, Origin, SimplifiedMeteredOnRamp
 from sym_metanet.network import Network

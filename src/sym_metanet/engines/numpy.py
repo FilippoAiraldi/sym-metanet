@@ -1,4 +1,4 @@
-from typing import Callable, Literal, Optional, Type, Union
+from typing import Callable, List, Literal, Optional, Type, Union
 
 import numpy as np
 
@@ -89,6 +89,20 @@ class LinksEngine(LinksEngineBase):
         rho: np.ndarray, v_free: np.ndarray, rho_crit: np.ndarray, a: np.ndarray
     ) -> np.ndarray:
         return v_free * np.exp((-1 / a) * np.power(rho / rho_crit, a))
+
+    @staticmethod
+    def controlled_Veq(
+        rho: np.ndarray,
+        v_ctrl: np.ndarray,
+        vsl: List[int],
+        alpha: np.ndarray,
+        v_free: np.ndarray,
+        rho_crit: np.ndarray,
+        a: np.ndarray,
+    ):
+        Veq = LinksEngine.Veq(rho, v_free, rho_crit, a)
+        Veq[vsl] = np.minimum(Veq[vsl], (1 + alpha) * v_ctrl)
+        return Veq
 
 
 class OriginsEngine(OriginsEngineBase):

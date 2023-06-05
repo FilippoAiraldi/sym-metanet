@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Collection, Dict, Optional, Set, Tuple, Union
 
 from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.blocks.origins import MeteredOnRamp
@@ -234,7 +234,7 @@ class Link(ElementWithVars[VarType]):
         rho_next = engine.links.step_density(rho, q, q_up, self.lam, self.L, T)
 
         # step speeds
-        Veq = engine.links.Veq(rho, self.v_free, self.rho_crit, self.a)
+        Veq = self._get_equilibrium_speed(engine, rho)
         v_next = engine.links.step_speed(
             v,
             v_up,
@@ -258,3 +258,95 @@ class Link(ElementWithVars[VarType]):
         if positive_next_speed:
             v_next = engine.max(0, v_next)
         return {"rho": rho_next, "v": v_next}
+
+    def _get_equilibrium_speed(self, engine: EngineBase, rho: VarType) -> VarType:
+        """Internal utility to compute the equilibrium speed for the link's segments."""
+        return engine.links.Veq(rho, self.v_free, self.rho_crit, self.a)
+
+
+class LinkWithVsl(Link[VarType]):
+    """Highway link between two nodes and whose segments are equipped with Variable
+    Speed Limit signs [1, Section 3.3.1].
+
+    References
+    ----------
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+        measures", Netherlands TRAIL Research School.
+    """
+
+    __slots__ = ("vsl", "alpha")
+    _actions = {"v_ctrl"}
+
+    def __init__(
+        self, *args: Any, segments_with_vsl: Set[int], alpha: float, **kwargs: Any
+    ) -> None:
+        """Creates an instance of a METANET link with VSL signs.
+
+        Parameters
+        ----------
+        args, kwargs
+            See base class `Link` for the other parameters.
+            Average speed of cars when traffic is freely flowing, i.e., `v_free`.
+        segments_with_vsl : set of ints
+            The set of segment indices that are equipped with a VSL sign (0-based).
+        alpha : float
+            Non-compliance factor to the indicated speed limit.
+
+        References
+        ----------
+        [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+            measures", Netherlands TRAIL Research School.
+        """
+        super().__init__(*args, **kwargs)
+        self.vsl = sorted(segments_with_vsl)  # has to be a list for indexing vectors
+        self.alpha = alpha
+        for index in self.vsl:
+            if index >= self.N or index < 0:
+                raise ValueError("Invalid segment index for VSL sign.")
+
+    def init_vars(  # type: ignore[override]
+        self,
+        init_conditions: Optional[Dict[str, VarType]] = None,
+        engine: Optional[EngineBase] = None,
+        **kwargs: Any,
+    ) -> None:
+        """For each segment in the link, initializes
+         - `rho`: densities (state)
+         - `v`: speeds (state)
+        and, if the segment is equipped with a VSL sign, initializes also the control
+        speed
+         - `v_ctrl` (action).
+
+        Parameters
+        ----------
+        init_conditions : dict[str, variable], optional
+            Provides name-variable tuples to initialize states, actions and disturbances
+            with specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are initialized
+            automatically.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+        kwargs
+            See method of base class `Link`.
+        """
+        if init_conditions is None:
+            init_conditions = {}
+        if engine is None:
+            engine = get_current_engine()
+        super().init_vars(init_conditions, engine, **kwargs)
+        self.actions: Dict[str, VarType] = {
+            "v_ctrl": init_conditions["v_ctrl"]
+            if "v_ctrl" in init_conditions
+            else engine.var(f"v_ctrl_{self.name}", len(self.vsl))
+        }
+
+    def _get_equilibrium_speed(self, engine: EngineBase, rho: VarType) -> VarType:
+        return engine.links.controlled_Veq(
+            rho,
+            self.actions["v_ctrl"],
+            self.vsl,
+            self.alpha,
+            self.v_free,
+            self.rho_crit,
+            self.a,
+        )

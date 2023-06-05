@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, Literal, Type, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Type, Union
 
 import sym_metanet
 from sym_metanet.errors import EngineNotFoundError
@@ -234,6 +234,35 @@ class LinksEngineBase(ABC):
         -------
         Veq
             The equilibrium speed of the link.
+        """
+
+    @staticmethod
+    @abstractmethod
+    def controlled_Veq(rho, v_ctrl, vsl: List[int], alpha, v_free, rho_crit, a):
+        """Computes the equilibrium speed of the link where some of its segments are
+        controlled with variable speed limits, according to [1, Equation 3.11].
+
+        Parameters
+        ----------
+        rho
+            Densities of the link's segments.
+        v_ctrl
+            Speed limits of the controlled segments.
+        vsl
+            List of indices of the controlled segments.
+        alpha
+            Non-compliance factor to the indicated speeds.
+        v_free
+            Free-flow speed of the link.
+        rho_crit
+            Critical density of the link.
+        a
+            Model parameter in the equilibrium speed exponent.
+
+        Returns
+        -------
+        Veq
+            The controlled equilibrium speed of the link.
         """
 
 

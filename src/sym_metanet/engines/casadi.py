@@ -104,6 +104,20 @@ class LinksEngine(LinksEngineBase, Generic[VarType]):
     def Veq(rho: VarType, v_free: VarType, rho_crit: VarType, a: VarType) -> VarType:
         return v_free * cs.exp((-1 / a) * cs.power(rho / rho_crit, a))
 
+    @staticmethod
+    def controlled_Veq(
+        rho: VarType,
+        v_ctrl: VarType,
+        vsl: List[int],
+        alpha: VarType,
+        v_free: VarType,
+        rho_crit: VarType,
+        a: VarType,
+    ) -> VarType:
+        Veq = LinksEngine.Veq(rho, v_free, rho_crit, a)
+        Veq[vsl] = cs.fmin(Veq[vsl], (1 + alpha) * v_ctrl)
+        return Veq
+
 
 class OriginsEngine(OriginsEngineBase, Generic[VarType]):
     """CasADi implementation of `sym_metanet.engines.core.OriginsEngineBase`."""
