@@ -152,7 +152,7 @@ class TestExamples(unittest.TestCase):
         r_last = mpc.parameter("r_last", (r.size1(), 1))
         mpc.minimize(
             pars["T"] * cs.sum2(cs.sum1(rho * pars["L"] * pars["lanes"]) + cs.sum1(w))
-            + 0.4 * cs.sum2(cs.diff(cs.horzcat(r_last, r)) ** 2)
+            + 0.4 * cs.sumsqr(cs.diff(cs.horzcat(r_last, r)))
         )
         opts = {
             "expand": True,
