@@ -177,4 +177,6 @@ axs[3, 0].step(time, R, where="post")
 axs[3, 0].set_ylabel("metering rate")
 axs[3, 1].set_axis_off()
 axs[0, 0].set_xlim(0, Tfin)
+for ax in axs.flat:
+    ax.set_ylim(0, ax.get_ylim()[1])
 plt.show()

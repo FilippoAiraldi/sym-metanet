@@ -108,4 +108,6 @@ axs[2, 0].set_ylabel("origin flow")
 axs[2, 1].plot(time, W)
 axs[2, 1].set_ylabel("queue")
 axs[0, 0].set_xlim(0, Tfin)
+for ax in axs.flat:
+    ax.set_ylim(0, ax.get_ylim()[1])
 plt.show()
