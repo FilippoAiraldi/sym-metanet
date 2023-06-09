@@ -302,10 +302,43 @@ class OriginsEngineBase(ABC):
 
     @staticmethod
     @abstractmethod
+    def get_mainstream_flow(d, w, v_ctrl, v_first, rho_crit, a, v_free, lanes, T):
+        """Computes the flow of a mainstream origin according to [1, Section 3.3.3].
+
+        Parameters
+        ----------
+        d
+            Demand at the origin.
+        w
+            Queue of the origin.
+        v_ctrl
+            Speed limit of the mainstream origin.
+        v_first
+            Speed of the first segment of the link the origin is attached to.
+        rho_crit
+            Critical density of the link the origin is attached to.
+        a
+            Model parameter (in the equilibrium speed)  of the link the origin is
+            attached to.
+        v_free
+            Free-flow speed of the link the origin is attached to.
+        lanes
+            Number of lanes in the link the origin is attached to.
+        T
+            Sampling time.
+
+        Returns
+        -------
+        flow
+            The flow of the mainstream origin.
+        """
+
+    @staticmethod
+    @abstractmethod
     def get_ramp_flow(
         d, w, C, r, rho_max, rho_first, rho_crit, T, type: Literal["in", "out"] = "out"
     ):
-        """Computes the flows of the ramp origin according to [1, Equation 3.5] if
+        """Computes the flow of the ramp origin according to [1, Equation 3.5] if
         `type='in'`, or [1, Equation 3.6] if `type='out'`.
 
         Parameters
@@ -349,7 +382,7 @@ class OriginsEngineBase(ABC):
         T=None,
         type: Literal["limited", "unlimited"] = "limited",
     ):
-        """Computes the flows of a simplified ramp origin.
+        """Computes the flow of a simplified ramp origin.
 
         Parameters
         ----------

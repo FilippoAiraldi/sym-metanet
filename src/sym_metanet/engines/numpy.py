@@ -117,6 +117,27 @@ class OriginsEngine(OriginsEngineBase):
         return w + T * (d - q)
 
     @staticmethod
+    def get_mainstream_flow(
+        d: np.ndarray,
+        w: np.ndarray,
+        v_ctrl: np.ndarray,
+        v_first: np.ndarray,
+        rho_crit: np.ndarray,
+        a: np.ndarray,
+        v_free: np.ndarray,
+        lanes: np.ndarray,
+        T: np.ndarray,
+    ) -> np.ndarray:
+        V_crit = LinksEngine.Veq(rho_crit, v_free, rho_crit, a)
+        v_lim = np.minimum(v_ctrl, v_first)
+        q_speed = (
+            lanes * v_lim * rho_crit * np.power(-a * np.log(v_lim / v_free), 1 / a)
+        )
+        q_cap = lanes * V_crit * rho_crit
+        q_lim = q_speed if v_lim < V_crit else q_cap
+        return np.minimum(d + w / T, q_lim)
+
+    @staticmethod
     def get_ramp_flow(
         d: np.ndarray,
         w: np.ndarray,

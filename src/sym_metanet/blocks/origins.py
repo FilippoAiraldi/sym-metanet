@@ -68,6 +68,150 @@ class Origin(ElementWithVars[VarType]):
         return first(links_down)[-1]
 
 
+class MainstreamOrigin(Origin[VarType]):
+    """Mainstream origin, i.e., and origin whose queue is an abstraction of the sections
+    upstream of boundaries of the freeway network that we are modeling. This origin is
+    also equipped with a speed limit sign that allows to control the speed of the
+    vehicles entering via it. For reference, see [1, Section 3.3.3].
+
+    References
+    [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+        measures", Netherlands TRAIL Research School.
+    """
+
+    _states = {"w"}
+    _actions = {"r"}
+    _disturbances = {"d"}
+
+    def init_vars(
+        self,
+        init_conditions: Optional[Dict[str, VarType]] = None,
+        engine: Optional[EngineBase] = None,
+        positive_init_queue: bool = False,
+        **_,
+    ) -> None:
+        """Initializes
+         - `w`: queue length (state)
+         - `v_ctrl`: speed limit (control action)
+         - `d`: demand (disturbance).
+
+        Parameters
+        ----------
+        init_conditions : dict[str, variable], optional
+            Provides name-variable tuples to initialize states, actions and disturbances
+            with specific values. These values must be compatible with the symbolic
+            engine in type and shape. If not provided, variables are initialized
+            automatically.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+        positive_init_queue : bool, optional
+            If `True`, forces the initial queue to be positive, e.g., as
+            `w = max(0, w)`. METANET is in fact known to sometime yield negative
+            quantities, which are infeasible in reality.
+        """
+        if init_conditions is None:
+            init_conditions = {}
+        if engine is None:
+            engine = get_current_engine()
+
+        self.states: Dict[str, VarType] = {
+            "w": init_conditions["w"]
+            if "w" in init_conditions
+            else engine.var(f"w_{self.name}")
+        }
+        self.actions: Dict[str, VarType] = {
+            "v_ctrl": init_conditions["v_ctrl"]
+            if "v_ctrl" in init_conditions
+            else engine.var(f"v_ctrl_{self.name}")
+        }
+        self.disturbances: Dict[str, VarType] = {
+            "d": init_conditions["d"]
+            if "d" in init_conditions
+            else engine.var(f"d_{self.name}")
+        }
+
+        if positive_init_queue:
+            self.states["w"] = engine.max(0, self.states["w"])
+
+    def step_dynamics(
+        self,
+        net: "Network",
+        T: Union[VarType, float],
+        engine: Optional[EngineBase] = None,
+        positive_next_queue: bool = False,
+        **kwargs,
+    ) -> Dict[str, VarType]:
+        """Steps the dynamics of this origin.
+
+        Parameters
+        ----------
+        net : Network
+            The network the origin belongs to.
+        T : variable or float
+            Sampling time.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+        positive_next_queue : bool, optional
+            If `True`, forces the queue at the next time step to be positive, e.g., as
+            `w+ = max(0, w+)`. METANET is in fact known to sometime yield negative
+            quantities, which are infeasible in reality.
+
+        Returns
+        -------
+        Dict[str, variable]
+            A dict with the states of the origin (queue) at the next time step.
+        """
+        if engine is None:
+            engine = get_current_engine()
+
+        q = self.get_flow(net, T, engine, **kwargs)
+        w_next = engine.origins.step_queue(
+            self.states["w"], self.disturbances["d"], q, T
+        )
+
+        if positive_next_queue:
+            w_next = engine.max(0, w_next)
+        return {"w": w_next}
+
+    def get_flow(  # type: ignore[override]
+        self,
+        net: "Network",
+        T: Union[VarType, float],
+        engine: Optional[EngineBase] = None,
+        **_,
+    ) -> VarType:
+        """Computes the (upstream) flow induced by the mainstream oriogin.
+
+        Parameters
+        ----------
+        net : Network
+            The network this destination belongs to.
+        T : variable or float
+            Sampling time of the simulation.
+        engine : EngineBase, optional
+            The engine to be used. If `None`, the current engine is used.
+
+        Returns
+        -------
+        variable
+            The origin's upstream flow.
+        """
+        if engine is None:
+            engine = get_current_engine()
+        link_down = self._get_exiting_link(net)
+        return engine.origins.get_mainstream_flow(
+            self.disturbances["d"],
+            self.states["w"],
+            self.actions["v_ctrl"],
+            link_down.states["v"][0],
+            link_down.rho_crit,
+            link_down.a,
+            link_down.v_free,
+            link_down.lam,
+            T,
+        )
+
+
 class MeteredOnRamp(Origin[VarType]):
     """On-ramp where cars can queue up before being given access to the attached link.
     For reference, look at [1], in particular, Section 3.2.1 and Equations 3.5 and 3.6.

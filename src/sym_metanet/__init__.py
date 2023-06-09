@@ -1,17 +1,18 @@
 __all__ = [
-    "InvalidNetworkError",
+    "engines",
+    "CongestedDestination",
+    "Destination",
     "EngineNotFoundWarning",
     "EngineNotFoundError",
-    "engines",
-    "Node",
+    "InvalidNetworkError",
     "Link",
     "LinkWithVsl",
-    "Origin",
+    "MainstreamOrigin",
     "MeteredOnRamp",
-    "SimplifiedMeteredOnRamp",
-    "Destination",
-    "CongestedDestination",
     "Network",
+    "Node",
+    "Origin",
+    "SimplifiedMeteredOnRamp",
 ]
 
 import sym_metanet.engines as engines
@@ -38,5 +39,10 @@ del _notfound, _engine
 from sym_metanet.blocks.destinations import CongestedDestination, Destination
 from sym_metanet.blocks.links import Link, LinkWithVsl
 from sym_metanet.blocks.nodes import Node
-from sym_metanet.blocks.origins import MeteredOnRamp, Origin, SimplifiedMeteredOnRamp
+from sym_metanet.blocks.origins import (
+    MainstreamOrigin,
+    MeteredOnRamp,
+    Origin,
+    SimplifiedMeteredOnRamp,
+)
 from sym_metanet.network import Network
