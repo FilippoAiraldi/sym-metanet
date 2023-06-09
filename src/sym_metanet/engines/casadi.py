@@ -140,9 +140,9 @@ class OriginsEngine(OriginsEngineBase, Generic[VarType]):
     ) -> VarType:
         V_crit = LinksEngine.Veq(rho_crit, v_free, rho_crit, a)
         v_lim = cs.fmin(v_ctrl, v_first)
-        q_speed = (
-            lanes * v_lim * rho_crit * cs.power(-a * cs.log(v_lim / v_free), 1 / a)
-        )
+        ratio = v_lim / v_free
+        ratio = cs.fmax(0.05, cs.fmin(1.0, ratio))  # limit ratio to avoid nans
+        q_speed = lanes * v_lim * rho_crit * cs.power(-a * cs.log(ratio), 1 / a)
         q_cap = lanes * V_crit * rho_crit
         q_lim = cs.if_else(v_lim < V_crit, q_speed, q_cap)
         return cs.fmin(d + w / T, q_lim)
