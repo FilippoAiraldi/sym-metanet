@@ -22,7 +22,15 @@ from csnlp import Nlp
 from csnlp.wrappers import Mpc
 
 import sym_metanet as metanet
-from sym_metanet import Destination, Link, MeteredOnRamp, Network, Node, engines
+from sym_metanet import (
+    Destination,
+    Link,
+    MainstreamOrigin,
+    MeteredOnRamp,
+    Network,
+    Node,
+    engines,
+)
 
 
 def create_demands(time: np.ndarray) -> np.ndarray:
@@ -54,7 +62,7 @@ v_free = 102
 N1 = Node(name="N1")
 N2 = Node(name="N2")
 N3 = Node(name="N3")
-O1 = MeteredOnRamp[cs.SX](C[0], name="O1")
+O1 = MainstreamOrigin[cs.SX](name="O1")
 O2 = MeteredOnRamp[cs.SX](C[1], name="O2")
 D1 = Destination[cs.SX](name="D1")
 L1 = Link[cs.SX](4, lanes, L, rho_max, rho_crit, v_free, a, name="L1")
@@ -69,7 +77,12 @@ net = (
 engines.use("casadi", sym_type="SX")
 net.is_valid(raises=True)
 net.step(
-    T=T, tau=tau, eta=eta, kappa=kappa, delta=delta, init_conditions={O1: {"r": 1}}
+    T=T,
+    tau=tau,
+    eta=eta,
+    kappa=kappa,
+    delta=delta,
+    init_conditions={O1: {"v_ctrl": v_free * 2}},
 )
 F: cs.Function = metanet.engine.to_function(
     net=net,

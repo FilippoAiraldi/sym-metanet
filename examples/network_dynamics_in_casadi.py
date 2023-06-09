@@ -13,7 +13,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import sym_metanet as metanet
-from sym_metanet import Destination, Link, MeteredOnRamp, Network, Node, engines
+from sym_metanet import (
+    Destination,
+    Link,
+    MainstreamOrigin,
+    MeteredOnRamp,
+    Network,
+    Node,
+    engines,
+)
 
 
 def create_demands(time: np.ndarray) -> np.ndarray:
@@ -45,7 +53,7 @@ v_free = 102
 N1 = Node(name="N1")
 N2 = Node(name="N2")
 N3 = Node(name="N3")
-O1 = MeteredOnRamp[cs.SX](C[0], name="O1")
+O1 = MainstreamOrigin[cs.SX](name="O1")
 O2 = MeteredOnRamp[cs.SX](C[1], name="O2")
 D1 = Destination[cs.SX](name="D1")
 L1 = Link[cs.SX](4, lanes, L, rho_max, rho_crit, v_free, a, name="L1")
@@ -66,7 +74,7 @@ F = metanet.engine.to_function(
     compact=1,
     T=T,
 )
-# F: (rho[6], v[6], w[2], r[2], d[2]) -> (rho+[6], v+[6], w+[2], q[6], q_o[2])
+# F: (rho[6], v[6], w[2], v_ctrl, r, d[2]) -> (rho+[6], v+[6], w+[2], q[6], q_o[2])
 
 # create demands
 demands = create_demands(time).T
@@ -77,10 +85,11 @@ v = cs.DM([80, 80, 78, 72.5, 66, 62])
 w = cs.DM([0, 0])
 
 # simulate
-r = cs.DM.ones(2, 1)  # constant ramp metering rates
+v_ctrl = cs.DM.inf(1, 1)  # control speed at O1
+r = cs.DM.ones(1, 1)  # ramp metering rates at O2
 RHO, V, W, Q, Q_o = [], [], [], [], []
 for d in demands:
-    rho, v, w, q, q_o = F(rho, v, w, r, d)
+    rho, v, w, q, q_o = F(rho, v, w, v_ctrl, r, d)
     RHO.append(rho)
     V.append(v)
     W.append(w)

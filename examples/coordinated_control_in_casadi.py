@@ -26,6 +26,7 @@ from sym_metanet import (
     Destination,
     Link,
     LinkWithVsl,
+    MainstreamOrigin,
     MeteredOnRamp,
     Network,
     Node,
@@ -63,7 +64,7 @@ args = (lanes, L, rho_max, rho_crit, v_free, a)
 N1 = Node(name="N1")
 N2 = Node(name="N2")
 N3 = Node(name="N3")
-O1 = MeteredOnRamp[cs.SX](C[0], name="O1")
+O1 = MainstreamOrigin[cs.SX](name="O1")
 O2 = MeteredOnRamp[cs.SX](C[1], name="O2")
 D1 = Destination[cs.SX](name="D1")
 L1 = LinkWithVsl[cs.SX](4, *args, segments_with_vsl={2, 3}, alpha=0.1, name="L1")
@@ -78,7 +79,12 @@ net = (
 engines.use("casadi", sym_type="SX")
 net.is_valid(raises=True)
 net.step(
-    T=T, tau=tau, eta=eta, kappa=kappa, delta=delta, init_conditions={O1: {"r": 1}}
+    T=T,
+    tau=tau,
+    eta=eta,
+    kappa=kappa,
+    delta=delta,
+    init_conditions={O1: {"v_ctrl": v_free * 2}},
 )
 F: cs.Function = metanet.engine.to_function(
     net=net,
@@ -86,7 +92,7 @@ F: cs.Function = metanet.engine.to_function(
     compact=2,
     T=T,
 )
-# F: (x[14], u, d[2]) -> (x+[14], q[8])
+# F: (x[14], u[3], d[2]) -> (x+[14], q[8])
 
 # create demands
 demands = create_demands(time).T
