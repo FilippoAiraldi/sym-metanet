@@ -208,7 +208,7 @@ class TestCasadiEngine(unittest.TestCase):
         )
         Fexp = get_hardcoded_dynamics(**other_pars, link_with_ramp=link_with_ramp)
 
-        np_random = np.random.Generator(np.random.PCG64(69420))
+        np_random = np.random.default_rng(69420)
         names = Fact.name_out()
         for i in range(1_000):
             if i == 0:
