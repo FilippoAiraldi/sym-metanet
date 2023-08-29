@@ -11,7 +11,7 @@
 ![Python 3.8](https://img.shields.io/badge/python->=3.8-green.svg)
 
 [![Tests](https://github.com/FilippoAiraldi/sym-metanet/actions/workflows/ci.yml/badge.svg)](https://github.com/FilippoAiraldi/sym-metanet/actions/workflows/ci.yml)
-[![Downloads](https://pepy.tech/badge/sym-metanet)](https://pepy.tech/project/sym-metanet)
+[![Downloads](https://static.pepy.tech/badge/sym-metanet)](https://www.pepy.tech/projects/sym-metanet)
 [![Maintainability](https://api.codeclimate.com/v1/badges/c2725b1b8012a72db289/maintainability)](https://codeclimate.com/github/FilippoAiraldi/sym-metanet/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/c2725b1b8012a72db289/test_coverage)](https://codeclimate.com/github/FilippoAiraldi/sym-metanet/test_coverage)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
