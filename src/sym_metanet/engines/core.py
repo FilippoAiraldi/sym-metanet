@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Type, Union
+from typing import TYPE_CHECKING, Callable, Literal, Union
 
 import sym_metanet
 from sym_metanet.errors import EngineNotFoundError
@@ -238,7 +238,7 @@ class LinksEngineBase(ABC):
 
     @staticmethod
     @abstractmethod
-    def controlled_Veq(rho, v_ctrl, vsl: List[int], alpha, v_free, rho_crit, a):
+    def controlled_Veq(rho, v_ctrl, vsl: list[int], alpha, v_free, rho_crit, a):
         """Computes the equilibrium speed of the link where some of its segments are
         controlled with variable speed limits, according to [1, Equation 3.11].
 
@@ -486,22 +486,22 @@ class EngineBase(ABC):
 
     @property
     @abstractmethod
-    def nodes(self) -> Type[NodesEngineBase]:
+    def nodes(self) -> type[NodesEngineBase]:
         pass
 
     @property
     @abstractmethod
-    def links(self) -> Type[LinksEngineBase]:
+    def links(self) -> type[LinksEngineBase]:
         pass
 
     @property
     @abstractmethod
-    def origins(self) -> Type[OriginsEngineBase]:
+    def origins(self) -> type[OriginsEngineBase]:
         pass
 
     @property
     @abstractmethod
-    def destinations(self) -> Type[DestinationsEngineBase]:
+    def destinations(self) -> type[DestinationsEngineBase]:
         pass
 
     @abstractmethod
@@ -579,7 +579,7 @@ def get_current_engine() -> EngineBase:
     return sym_metanet.engine
 
 
-def get_available_engines() -> Dict[str, Dict[str, str]]:
+def get_available_engines() -> dict[str, dict[str, str]]:
     """Returns the available symbolic engines for METANET modelling, for which an
     implementation exists.
 

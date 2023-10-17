@@ -1,6 +1,7 @@
+from collections.abc import Iterable
 from functools import cached_property
 from itertools import chain, product
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import networkx as nx
 
@@ -57,7 +58,7 @@ class Network(ElementBase):
         return self._graph.nodes
 
     @cached_property
-    def nodes_by_name(self) -> Dict[str, Node]:
+    def nodes_by_name(self) -> dict[str, Node]:
         return {node.name: node for node in self._graph.nodes}
 
     @cached_property
@@ -76,19 +77,19 @@ class Network(ElementBase):
         return InLinkViewWrapper(self._graph)
 
     @cached_property
-    def links_by_name(self) -> Dict[str, Link[VarType]]:
+    def links_by_name(self) -> dict[str, Link[VarType]]:
         return {  # type: ignore[var-annotated]
             link.name: link for _, _, link in self.links
         }
 
     @cached_property
-    def nodes_by_link(self) -> Dict[Link[VarType], Tuple[Node, Node]]:
+    def nodes_by_link(self) -> dict[Link[VarType], tuple[Node, Node]]:
         return {  # type: ignore[var-annotated]
             link: (unode, dnode) for unode, dnode, link in self.links
         }
 
     @cached_property
-    def origins(self) -> Dict[Origin[VarType], Node]:
+    def origins(self) -> dict[Origin[VarType], Node]:
         return {
             data[ORIGINENTRY]: node
             for node, data in self._graph.nodes.data()
@@ -96,16 +97,16 @@ class Network(ElementBase):
         }
 
     @cached_property
-    def origins_by_name(self) -> Dict[str, Origin[VarType]]:
+    def origins_by_name(self) -> dict[str, Origin[VarType]]:
         return {origin.name: origin for origin in self.origins}  # type: ignore[misc]
 
     @cached_property
-    def origins_by_node(self) -> Dict[Node, Origin[VarType]]:
+    def origins_by_node(self) -> dict[Node, Origin[VarType]]:
         d = self.origins
         return dict(zip(d.values(), d.keys()))  # type: ignore[arg-type]
 
     @cached_property
-    def destinations(self) -> Dict[Destination[VarType], Node]:
+    def destinations(self) -> dict[Destination[VarType], Node]:
         return {
             data[DESTINATIONENTRY]: node
             for node, data in self._graph.nodes.data()
@@ -113,14 +114,14 @@ class Network(ElementBase):
         }
 
     @cached_property
-    def destinations_by_name(self) -> Dict[str, Destination[VarType]]:
+    def destinations_by_name(self) -> dict[str, Destination[VarType]]:
         return {
             destination.name: destination  # type: ignore[misc]
             for destination in self.destinations
         }
 
     @cached_property
-    def destinations_by_node(self) -> Dict[Node, Destination]:
+    def destinations_by_node(self) -> dict[Node, Destination]:
         d = self.destinations
         return dict(zip(d.values(), d.keys()))
 
@@ -134,7 +135,7 @@ class Network(ElementBase):
         )
 
     @property
-    def states(self) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
+    def states(self) -> dict[ElementWithVars[VarType], dict[str, VarType]]:
         """Gets the states of the network's elements."""
         return {
             el: el.states for el in self.elements if el.has_states  # type: ignore[misc]
@@ -143,7 +144,7 @@ class Network(ElementBase):
     @property
     def next_states(
         self,
-    ) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
+    ) -> dict[ElementWithVars[VarType], dict[str, VarType]]:
         """Gets the states of the network's elements after stepping the
         dynamics for one time step."""
         return {
@@ -153,7 +154,7 @@ class Network(ElementBase):
         }
 
     @property
-    def actions(self) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
+    def actions(self) -> dict[ElementWithVars[VarType], dict[str, VarType]]:
         """Gets the control action of the network's elements."""
         return {
             el: el.actions  # type: ignore[misc]
@@ -164,7 +165,7 @@ class Network(ElementBase):
     @property
     def disturbances(
         self,
-    ) -> Dict[ElementWithVars[VarType], Dict[str, VarType]]:
+    ) -> dict[ElementWithVars[VarType], dict[str, VarType]]:
         """Gets the disturbances of the network's elements."""
         return {
             el: el.disturbances  # type: ignore[misc]
@@ -230,7 +231,7 @@ class Network(ElementBase):
         return self
 
     @invalidate_cache(links_by_name, nodes_by_link)
-    def add_links(self, links: Iterable[Tuple[Node, Link[VarType], Node]]) -> "Network":
+    def add_links(self, links: Iterable[tuple[Node, Link[VarType], Node]]) -> "Network":
         """Adds multiple links. See `Network.add_link`.
 
         Parameters
@@ -244,7 +245,7 @@ class Network(ElementBase):
             A reference to itself.
         """
 
-        def get_edge(linkdata: Tuple[Node, Link[VarType], Node]):
+        def get_edge(linkdata: tuple[Node, Link[VarType], Node]):
             node_up, link, node_down = linkdata
             return (node_up, node_down, {LINKENTRY: link})
 
@@ -345,7 +346,7 @@ class Network(ElementBase):
         self.add_node(first_node)
         if origin is not None:
             self.add_origin(origin, first_node)
-        current_link: List[Union[Node, Link[VarType]]] = [first_node]
+        current_link: list[Union[Node, Link[VarType]]] = [first_node]
 
         longer_than_one = False
         for i, point in enumerate(path):
@@ -380,7 +381,7 @@ class Network(ElementBase):
             self.add_destination(destination, last_node)
         return self
 
-    def is_valid(self, raises: bool = False) -> Tuple[bool, List[str]]:
+    def is_valid(self, raises: bool = False) -> tuple[bool, list[str]]:
         """Checks whether the network is consistent.
 
         Parameters
@@ -430,7 +431,7 @@ class Network(ElementBase):
                     yield data[entry]
 
         # (1)
-        count: Dict[object, int] = {}
+        count: dict[object, int] = {}
         for o in chain(
             (link[2] for link in self.links), iter(origin_destination_yielder())
         ):
@@ -508,7 +509,7 @@ class Network(ElementBase):
     def step(
         self,
         init_conditions: Optional[
-            Dict[ElementWithVars[VarType], Dict[str, VarType]]
+            dict[ElementWithVars[VarType], dict[str, VarType]]
         ] = None,
         engine: Optional[EngineBase] = None,
         positive_init_speed: bool = False,

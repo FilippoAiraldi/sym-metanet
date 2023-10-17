@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Collection, Dict, Optional, Tuple
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Optional
 
 from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.engines.core import EngineBase, get_current_engine
@@ -18,7 +19,7 @@ class Destination(ElementWithVars[VarType]):
     def init_vars(self, *_, **__) -> None:
         """Initializes no variable in the ideal destination."""
 
-    def step_dynamics(self, *_, **__) -> Dict[str, VarType]:
+    def step_dynamics(self, *_, **__) -> dict[str, VarType]:
         """No dynamics to steps in the ideal destination."""
         return {}
 
@@ -47,7 +48,7 @@ class Destination(ElementWithVars[VarType]):
     def _get_entering_link(self, net: "Network") -> "Link[VarType]":
         """Internal utility to fetch the link entering this destination (can only be
         one)."""
-        links_up: Collection[Tuple["Node", "Node", "Link[VarType]"]] = net.in_links(
+        links_up: Collection[tuple["Node", "Node", "Link[VarType]"]] = net.in_links(
             net.destinations[self]  # type: ignore[index]
         )
         assert (
@@ -65,7 +66,7 @@ class CongestedDestination(Destination[VarType]):
 
     def init_vars(
         self,
-        init_conditions: Optional[Dict[str, VarType]] = None,
+        init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
         **_,
     ) -> None:
@@ -86,7 +87,7 @@ class CongestedDestination(Destination[VarType]):
         """
         if engine is None:
             engine = get_current_engine()
-        self.disturbances: Dict[str, VarType] = {
+        self.disturbances: dict[str, VarType] = {
             "d": engine.var(f"d_{self.name}")
             if init_conditions is None or "d" not in init_conditions
             else init_conditions["d"]

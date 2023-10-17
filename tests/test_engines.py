@@ -1,5 +1,5 @@
 import unittest
-from typing import Literal, Type, Union
+from typing import Literal, Union
 
 import casadi as cs
 import numpy as np
@@ -23,7 +23,7 @@ from sym_metanet.util.funcs import first
 
 def get_net(sym_type: Literal["MX", "SX"], link_with_ramp: int = 2):
     assert link_with_ramp in {1, 2}
-    XX: Union[Type[cs.SX], Type[cs.MX]] = getattr(cs, sym_type)
+    XX: Union[type[cs.SX], type[cs.MX]] = getattr(cs, sym_type)
     L = 1
     lanes = 2
     C = (3500, 2000)
@@ -102,7 +102,7 @@ def get_hardcoded_dynamics(
     q_up[link_with_ramp] += q_O2_limited
     v_up = cs.vertcat(v[0], v[0], v[1])
     rho_down = cs.vertcat(rho[1], rho[2], cs.fmax(cs.fmin(rho[2], rho_crit), d[2]))
-    Veq = v_free * cs.exp((-1 / a) * ((rho / rho_crit)) ** a)
+    Veq = v_free * cs.exp((-1 / a) * (rho / rho_crit) ** a)
     rho_next = rho + (T / (L * lanes)) * (q_up - q)
     v_next = (
         v

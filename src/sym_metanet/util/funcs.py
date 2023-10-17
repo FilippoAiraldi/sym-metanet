@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from functools import _lru_cache_wrapper, cached_property, wraps
-from typing import Callable, Iterable, List, TypeVar
+from typing import Callable, TypeVar
 
 T = TypeVar("T")
 
@@ -51,8 +52,8 @@ def invalidate_cache(*callables: Callable) -> Callable:
     """
     if not callables:
         raise ValueError("No callables were passed for cache invalidation.")
-    cached_properties: List[cached_property] = []
-    lru_caches: List[_lru_cache_wrapper] = []
+    cached_properties: list[cached_property] = []
+    lru_caches: list[_lru_cache_wrapper] = []
     for p in callables:
         if isinstance(p, cached_property):
             cached_properties.append(p)

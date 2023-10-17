@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import count
-from typing import ClassVar, Dict, Generic, Optional, Set
+from typing import ClassVar, Generic, Optional
 
 from sym_metanet.util.types import VarType
 
@@ -9,7 +9,7 @@ class ElementBase:
     """Base class for any element for a highway modelled in METANET."""
 
     __slots__ = "name"
-    __ids: Dict[type, count] = {}
+    __ids: dict[type, count] = {}
 
     def __init__(self, name: Optional[str] = None) -> None:
         """Instantiates the element with the given `name` attribute.
@@ -39,9 +39,9 @@ class ElementWithVars(ElementBase, Generic[VarType], ABC):
     """Base class for any element with states, actions or disturbances."""
 
     __slots__ = ("states", "next_states", "actions", "disturbances")
-    _states: ClassVar[Set[str]] = set()
-    _actions: ClassVar[Set[str]] = set()
-    _disturbances: ClassVar[Set[str]] = set()
+    _states: ClassVar[set[str]] = set()
+    _actions: ClassVar[set[str]] = set()
+    _disturbances: ClassVar[set[str]] = set()
 
     def __init__(self, name: Optional[str] = None) -> None:
         """Instantiates the element with the given `name` attribute.
@@ -53,10 +53,10 @@ class ElementWithVars(ElementBase, Generic[VarType], ABC):
             of the class' instancies.
         """
         super().__init__(name)
-        self.states: Optional[Dict[str, VarType]] = None
-        self.next_states: Optional[Dict[str, VarType]] = None
-        self.actions: Optional[Dict[str, VarType]] = None
-        self.disturbances: Optional[Dict[str, VarType]] = None
+        self.states: Optional[dict[str, VarType]] = None
+        self.next_states: Optional[dict[str, VarType]] = None
+        self.actions: Optional[dict[str, VarType]] = None
+        self.disturbances: Optional[dict[str, VarType]] = None
 
     @property
     def has_states(self) -> bool:
@@ -88,7 +88,7 @@ class ElementWithVars(ElementBase, Generic[VarType], ABC):
         )
 
     @abstractmethod
-    def step_dynamics(self, *args, **kwargs) -> Dict[str, VarType]:
+    def step_dynamics(self, *args, **kwargs) -> dict[str, VarType]:
         """Internal method for stepping the element's dynamics by one time step.
 
         Returns

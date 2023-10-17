@@ -1,17 +1,5 @@
 from itertools import chain, product
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Generic,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Generic, Literal, Optional, TypeVar, Union
 
 import casadi as cs
 
@@ -108,7 +96,7 @@ class LinksEngine(LinksEngineBase, Generic[VarType]):
     def controlled_Veq(
         rho: VarType,
         v_ctrl: VarType,
-        vsl: List[int],
+        vsl: list[int],
         alpha: VarType,
         v_free: VarType,
         rho_crit: VarType,
@@ -219,22 +207,22 @@ class Engine(EngineBase, Generic[VarType]):
             Raises if `sym_type` is not valid.
         """
         super().__init__()
-        self.sym_type: Union[Type[cs.SX], Type[cs.MX]] = getattr(cs, sym_type)
+        self.sym_type: Union[type[cs.SX], type[cs.MX]] = getattr(cs, sym_type)
 
     @property
-    def nodes(self) -> Type[NodesEngine[VarType]]:
+    def nodes(self) -> type[NodesEngine[VarType]]:
         return NodesEngine[VarType]
 
     @property
-    def links(self) -> Type[LinksEngine[VarType]]:
+    def links(self) -> type[LinksEngine[VarType]]:
         return LinksEngine[VarType]
 
     @property
-    def origins(self) -> Type[OriginsEngine[VarType]]:
+    def origins(self) -> type[OriginsEngine[VarType]]:
         return OriginsEngine[VarType]
 
     @property
-    def destinations(self) -> Type[DestinationsEngine[VarType]]:
+    def destinations(self) -> type[DestinationsEngine[VarType]]:
         return DestinationsEngine[VarType]
 
     def var(self, name: str, n: int = 1, *args, **kwargs) -> VarType:
@@ -251,7 +239,7 @@ class Engine(EngineBase, Generic[VarType]):
         net: "Network",
         compact: int = 0,
         more_out: bool = False,
-        parameters: Optional[Dict[str, VarType]] = None,
+        parameters: Optional[dict[str, VarType]] = None,
         **other_parameters: Any,
     ) -> cs.Function:
         """Converts the network's dynamics to a CasADi Function.
@@ -344,8 +332,8 @@ class Engine(EngineBase, Generic[VarType]):
 
 
 def _filter_vars(
-    vars: Dict[str, Union[VarType, Any]], independent: bool = True
-) -> Dict[str, VarType]:
+    vars: dict[str, Union[VarType, Any]], independent: bool = True
+) -> dict[str, VarType]:
     """Internal utility to filter out symbols that are either only symbolic
     and/or independent (and thus can be inputs to `casadi.Function`)."""
 
@@ -375,11 +363,11 @@ def _filter_vars(
 
 
 def _gather_inputs(
-    x: Dict[ElementWithVars, Dict[str, VarType]],
-    u: Dict[ElementWithVars, Dict[str, VarType]],
-    d: Dict[ElementWithVars, Dict[str, VarType]],
+    x: dict[ElementWithVars, dict[str, VarType]],
+    u: dict[ElementWithVars, dict[str, VarType]],
+    d: dict[ElementWithVars, dict[str, VarType]],
     compact: int,
-) -> Tuple[List[str], List[VarType]]:
+) -> tuple[list[str], list[VarType]]:
     """Internal utility to gather inputs for `casadi.Function`."""
 
     if compact <= 0:
@@ -393,9 +381,9 @@ def _gather_inputs(
         return names_in, args_in
 
     # group variables as (name, list of vars)
-    states: Dict[str, List[VarType]] = {}
-    actions: Dict[str, List[VarType]] = {}
-    disturbances: Dict[str, List[VarType]] = {}
+    states: dict[str, list[VarType]] = {}
+    actions: dict[str, list[VarType]] = {}
+    disturbances: dict[str, list[VarType]] = {}
     for vars_in, group in [(x, states), (u, actions), (d, disturbances)]:
         for el, vars in vars_in.items():  # type: ignore[attr-defined]
             for varname, var in vars.items():
@@ -424,9 +412,9 @@ def _gather_inputs(
 
 
 def _gather_outputs(
-    x_next: Dict[ElementWithVars, Dict[str, VarType]],
+    x_next: dict[ElementWithVars, dict[str, VarType]],
     compact: int,
-) -> Tuple[List[str], List[VarType]]:
+) -> tuple[list[str], list[VarType]]:
     """Internal utility to gather outputs for `casadi.Function`."""
 
     if compact <= 0:
@@ -439,7 +427,7 @@ def _gather_outputs(
         return names_out, args_out
 
     # group variables as (name, list of vars)
-    next_states: Dict[str, List[VarType]] = {}
+    next_states: dict[str, list[VarType]] = {}
     for vars in x_next.values():
         for varname, var in vars.items():
             varname += "+"
@@ -463,9 +451,9 @@ def _gather_outputs(
 
 
 def _add_parameters_to_inputs(
-    names_in: List[str],
-    args_in: List[VarType],
-    parameters: Dict[str, VarType],
+    names_in: list[str],
+    args_in: list[VarType],
+    parameters: dict[str, VarType],
     compact: int,
 ) -> None:
     """Internal utility to add parameters to inputs for `casadi.Function`."""
@@ -478,19 +466,19 @@ def _add_parameters_to_inputs(
 
 
 def _add_flows_to_outputs(
-    names_out: List[str],
-    args_out: List[VarType],
+    names_out: list[str],
+    args_out: list[VarType],
     engine: Engine,
     net: "Network",
-    parameters: Dict[str, VarType],
-    other_parameters: Dict[str, Any],
+    parameters: dict[str, VarType],
+    other_parameters: dict[str, Any],
     compact: int,
 ) -> None:
     """Internal utility to add even more outputs for `casadi.Function`."""
 
     # add link and origin flows (q, q_o) to output
-    names_link: List[str] = []
-    flows_link: List[VarType] = []
+    names_link: list[str] = []
+    flows_link: list[VarType] = []
     names_origins, flows_origins = [], []
     link: "Link[VarType]"
     for _, _, link in net.links:

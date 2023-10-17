@@ -1,6 +1,6 @@
 import pickle
 import unittest
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import casadi as cs
 import numpy as np
@@ -31,7 +31,7 @@ def create_demands(time: np.ndarray) -> np.ndarray:
     )
 
 
-def get_net(vsl: bool = False) -> Tuple[Network, Dict[str, Any]]:
+def get_net(vsl: bool = False) -> tuple[Network, dict[str, Any]]:
     T = 10 / 3600
     Tfin = 2.5
     time = np.arange(0, Tfin, T)

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Collection, Optional, Tuple
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Optional
 
 from sym_metanet.blocks.base import ElementBase
 from sym_metanet.engines.core import EngineBase, get_current_engine
@@ -50,7 +51,7 @@ class Node(ElementBase):
             )
 
         # if no destination, then there must be 1 or more exiting links
-        links_down: Collection[Tuple["Node", "Node", "Link[Variable]"]] = net.out_links(
+        links_down: Collection[tuple["Node", "Node", "Link[Variable]"]] = net.out_links(
             self
         )
         if len(links_down) == 1:
@@ -66,7 +67,7 @@ class Node(ElementBase):
         link: "Link[VarType]",
         engine: Optional[EngineBase] = None,
         **kwargs,
-    ) -> Tuple[VarType, VarType]:
+    ) -> tuple[VarType, VarType]:
         """Computes the (virtual) upstream speed and flow of the node for this the
         current link.
 
@@ -92,7 +93,7 @@ class Node(ElementBase):
         # Speed is dictated by the entering links, if any; otherwise by the
         # origin (same as first segment). Flow is dictated both by entering
         # links and origin.
-        links_up: Collection[Tuple["Node", "Node", "Link[VarType]"]] = net.in_links(
+        links_up: Collection[tuple["Node", "Node", "Link[VarType]"]] = net.in_links(
             self
         )
         n_up = len(links_up)
@@ -122,7 +123,7 @@ class Node(ElementBase):
             v_last = engine.vcat(*v_last)
             q_last = engine.vcat(*q_last)
             links_down: Collection[
-                Tuple["Node", "Node", "Link[VarType]"]
+                tuple["Node", "Node", "Link[VarType]"]
             ] = net.out_links(self)
             betas = engine.vcat(*(dlink.turnrate for _, _, dlink in links_down))
 

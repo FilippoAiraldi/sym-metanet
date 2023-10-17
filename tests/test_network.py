@@ -1,6 +1,6 @@
 import re
 import unittest
-from typing import Iterable
+from collections.abc import Iterable
 
 from sym_metanet import Destination, Link, MeteredOnRamp, Network, Node, Origin, engines
 

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Collection, Dict, Literal, Optional, Tuple, Union
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.engines.core import EngineBase, get_current_engine
@@ -18,7 +19,7 @@ class Origin(ElementWithVars[VarType]):
     def init_vars(self, *_, **__) -> None:
         """Initializes no variable in the ideal origin."""
 
-    def step_dynamics(self, *_, **__) -> Dict[str, VarType]:
+    def step_dynamics(self, *_, **__) -> dict[str, VarType]:
         """No dynamics to steps in the ideal origin."""
         return {}
 
@@ -59,7 +60,7 @@ class Origin(ElementWithVars[VarType]):
     def _get_exiting_link(self, net: "Network") -> "Link[VarType]":
         """Internal utility to fetch the link leaving this destination (can only be
         one)."""
-        links_down: Collection[Tuple["Node", "Node", "Link[VarType]"]] = net.out_links(
+        links_down: Collection[tuple["Node", "Node", "Link[VarType]"]] = net.out_links(
             net.origins[self]  # type: ignore[index]
         )
         assert (
@@ -85,7 +86,7 @@ class MainstreamOrigin(Origin[VarType]):
 
     def init_vars(
         self,
-        init_conditions: Optional[Dict[str, VarType]] = None,
+        init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
         positive_init_queue: bool = False,
         **_,
@@ -114,17 +115,17 @@ class MainstreamOrigin(Origin[VarType]):
         if engine is None:
             engine = get_current_engine()
 
-        self.states: Dict[str, VarType] = {
+        self.states: dict[str, VarType] = {
             "w": init_conditions["w"]
             if "w" in init_conditions
             else engine.var(f"w_{self.name}")
         }
-        self.actions: Dict[str, VarType] = {
+        self.actions: dict[str, VarType] = {
             "v_ctrl": init_conditions["v_ctrl"]
             if "v_ctrl" in init_conditions
             else engine.var(f"v_ctrl_{self.name}")
         }
-        self.disturbances: Dict[str, VarType] = {
+        self.disturbances: dict[str, VarType] = {
             "d": init_conditions["d"]
             if "d" in init_conditions
             else engine.var(f"d_{self.name}")
@@ -140,7 +141,7 @@ class MainstreamOrigin(Origin[VarType]):
         engine: Optional[EngineBase] = None,
         positive_next_queue: bool = False,
         **kwargs,
-    ) -> Dict[str, VarType]:
+    ) -> dict[str, VarType]:
         """Steps the dynamics of this origin.
 
         Parameters
@@ -251,7 +252,7 @@ class MeteredOnRamp(Origin[VarType]):
 
     def init_vars(
         self,
-        init_conditions: Optional[Dict[str, VarType]] = None,
+        init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
         positive_init_queue: bool = False,
         **_,
@@ -280,17 +281,17 @@ class MeteredOnRamp(Origin[VarType]):
         if engine is None:
             engine = get_current_engine()
 
-        self.states: Dict[str, VarType] = {
+        self.states: dict[str, VarType] = {
             "w": init_conditions["w"]
             if "w" in init_conditions
             else engine.var(f"w_{self.name}")
         }
-        self.actions: Dict[str, VarType] = {
+        self.actions: dict[str, VarType] = {
             "r": init_conditions["r"]
             if "r" in init_conditions
             else engine.var(f"r_{self.name}")
         }
-        self.disturbances: Dict[str, VarType] = {
+        self.disturbances: dict[str, VarType] = {
             "d": init_conditions["d"]
             if "d" in init_conditions
             else engine.var(f"d_{self.name}")
@@ -306,7 +307,7 @@ class MeteredOnRamp(Origin[VarType]):
         engine: Optional[EngineBase] = None,
         positive_next_queue: bool = False,
         **kwargs,
-    ) -> Dict[str, VarType]:
+    ) -> dict[str, VarType]:
         """Steps the dynamics of this origin.
 
         Parameters
@@ -409,7 +410,7 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
 
     def init_vars(
         self,
-        init_conditions: Optional[Dict[str, VarType]] = None,
+        init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
         *args,
         **kwargs,

@@ -1,4 +1,4 @@
-from typing import Callable, List, Literal, Optional, Type, Union
+from typing import Callable, Literal, Optional, Union
 
 import numpy as np
 
@@ -94,7 +94,7 @@ class LinksEngine(LinksEngineBase):
     def controlled_Veq(
         rho: np.ndarray,
         v_ctrl: np.ndarray,
-        vsl: List[int],
+        vsl: list[int],
         alpha: np.ndarray,
         v_free: np.ndarray,
         rho_crit: np.ndarray,
@@ -276,19 +276,19 @@ class Engine(EngineBase):
         self._var_type = val
 
     @property
-    def nodes(self) -> Type[NodesEngine]:
+    def nodes(self) -> type[NodesEngine]:
         return NodesEngine
 
     @property
-    def links(self) -> Type[LinksEngine]:
+    def links(self) -> type[LinksEngine]:
         return LinksEngine
 
     @property
-    def origins(self) -> Type[OriginsEngine]:
+    def origins(self) -> type[OriginsEngine]:
         return OriginsEngine
 
     @property
-    def destinations(self) -> Type[DestinationsEngine]:
+    def destinations(self) -> type[DestinationsEngine]:
         return DestinationsEngine
 
     def var(self, name: str, n: int = 1, *args, **kwargs) -> np.ndarray:

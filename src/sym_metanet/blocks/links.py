@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Collection, Dict, Optional, Set, Tuple, Union
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.blocks.origins import MeteredOnRamp
@@ -81,7 +82,7 @@ class Link(ElementWithVars[VarType]):
 
     def init_vars(
         self,
-        init_conditions: Optional[Dict[str, VarType]] = None,
+        init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
         positive_init_speed: bool = False,
         positive_init_density: bool = False,
@@ -110,7 +111,7 @@ class Link(ElementWithVars[VarType]):
         if engine is None:
             engine = get_current_engine()
 
-        self.states: Dict[str, VarType] = {
+        self.states: dict[str, VarType] = {
             name: (
                 init_conditions[name]
                 if name in init_conditions
@@ -154,7 +155,7 @@ class Link(ElementWithVars[VarType]):
         positive_next_speed: bool = True,
         positive_next_density: bool = False,
         **_,
-    ) -> Dict[str, VarType]:
+    ) -> dict[str, VarType]:
         """Steps the dynamics of this link.
 
         Parameters
@@ -222,7 +223,7 @@ class Link(ElementWithVars[VarType]):
         lanes_drop = None
         if phi is not None:
             links_down: Collection[
-                Tuple["Node", "Node", "Link[VarType]"]
+                tuple["Node", "Node", "Link[VarType]"]
             ] = net.out_links(node_down)
             if len(links_down) == 1:
                 link_down = first(links_down)[-1]
@@ -278,7 +279,7 @@ class LinkWithVsl(Link[VarType]):
     _actions = {"v_ctrl"}
 
     def __init__(
-        self, *args: Any, segments_with_vsl: Set[int], alpha: float, **kwargs: Any
+        self, *args: Any, segments_with_vsl: set[int], alpha: float, **kwargs: Any
     ) -> None:
         """Creates an instance of a METANET link with VSL signs.
 
@@ -306,7 +307,7 @@ class LinkWithVsl(Link[VarType]):
 
     def init_vars(  # type: ignore[override]
         self,
-        init_conditions: Optional[Dict[str, VarType]] = None,
+        init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
         **kwargs: Any,
     ) -> None:
@@ -334,7 +335,7 @@ class LinkWithVsl(Link[VarType]):
         if engine is None:
             engine = get_current_engine()
         super().init_vars(init_conditions, engine, **kwargs)
-        self.actions: Dict[str, VarType] = {
+        self.actions: dict[str, VarType] = {
             "v_ctrl": init_conditions["v_ctrl"]
             if "v_ctrl" in init_conditions
             else engine.var(f"v_ctrl_{self.name}", len(self.vsl))
