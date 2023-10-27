@@ -20,6 +20,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = [
     "networkx >= 2.8.4",
@@ -28,7 +29,9 @@ keywords = [
     "modelling-framework",
     "highway-network",
     "highway-traffic",
-]
+    "rollout",
+    "radial-basis-function",
+    "inverse-distance-weighting", ]
 dynamic = ["version"]
 
 [project.urls]
