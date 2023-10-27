@@ -33,7 +33,7 @@ class OutLinkViewWrapper(nx.classes.reportviews.OutEdgeView):
         data: Union[bool, str] = LINKENTRY,
         default: Optional[dict[str, Any]] = None,
     ) -> Collection[tuple["Node", "Node", "Link[VarType]"]]:
-        return super().__call__(nbunch, data, default)
+        return super().__call__(nbunch=nbunch, data=data, default=default)
 
 
 class InLinkViewWrapper(nx.classes.reportviews.InEdgeView):
@@ -54,4 +54,4 @@ class InLinkViewWrapper(nx.classes.reportviews.InEdgeView):
         data: Union[bool, str] = LINKENTRY,
         default: Optional[dict[str, Any]] = None,
     ) -> Collection[tuple["Node", "Node", "Link[VarType]"]]:
-        return super().__call__(nbunch, data, default)
+        return super().__call__(nbunch=nbunch, data=data, default=default)
