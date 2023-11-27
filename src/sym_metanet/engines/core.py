@@ -407,11 +407,11 @@ class OriginsEngineBase(ABC):
             Sampling time.
         type : "limited" or "unlimited", optional
             Type of equation to compute the flow for a simplified metered ramp. By
-            default, "limited" is selected, which means that the desired flow is limited
+            default, "limited" is selected, so that the desired flow is limited
             according to the capacity, current demands, queues and densities of the ramp
-            and its attached segment. This equation needs that all optional arguments
+            and its attached segment. This choice requires that all optional arguments
             are provided. Otherwise, "unlimited" makes sure that the  desired flow is
-            the actual flow of the ramp, which can cause negative queues though.
+            the actual flow of the ramp, which nevertheless can cause negative queues.
 
         Returns
         -------

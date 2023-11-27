@@ -303,7 +303,7 @@ class LinkWithVsl(Link[VarType]):
         self.alpha = alpha
         for index in self.vsl:
             if index >= self.N or index < 0:
-                raise ValueError("Invalid segment index for VSL sign.")
+                raise ValueError(f"Invalid segment index {index} for VSL sign.")
 
     def init_vars(  # type: ignore[override]
         self,

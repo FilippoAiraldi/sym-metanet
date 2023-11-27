@@ -1,5 +1,5 @@
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.engines.core import EngineBase, get_current_engine
@@ -412,8 +412,8 @@ class SimplifiedMeteredOnRamp(MeteredOnRamp[VarType]):
         self,
         init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Initializes as control action the flow `q` on the ramp instead of the
         metering rate `r`."""

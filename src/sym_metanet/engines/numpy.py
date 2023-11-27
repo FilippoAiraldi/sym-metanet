@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Callable, Literal, Optional, Union
 
 import numpy as np
@@ -197,7 +198,18 @@ class DestinationsEngine(DestinationsEngineBase):
 class Engine(EngineBase):
     """Symbolic engine implemented with NumPy."""
 
-    def __init__(self, var_type: Union[str, np.ndarray] = "empty") -> None:
+    def __init__(
+        self,
+        var_type: Union[str, np.ndarray] = "empty",
+        seed: Union[
+            None,
+            int,
+            Sequence[int],
+            np.random.SeedSequence,
+            np.random.BitGenerator,
+            np.random.Generator,
+        ] = None,
+    ) -> None:
         """Instantiates a NumPy engine.
 
         Parameters
@@ -213,6 +225,9 @@ class Engine(EngineBase):
 
             or initialized with the given array value. By default, 'empty' is
             selected.
+        seed : None, int, array_like[ints], SeedSequence, BitGenerator, Generator
+            Seed for the random number generator (this is used in case `var_type` is
+            either ``'rand'`` or ``'randn'``).
 
         Raises
         ------
@@ -221,6 +236,7 @@ class Engine(EngineBase):
         """
         super().__init__()
         self.var_type = var_type
+        self.np_random = np.random.default_rng(seed)
 
     @property
     def var_type(self) -> Union[str, np.ndarray]:
@@ -251,26 +267,15 @@ class Engine(EngineBase):
         """
         if isinstance(val, str):
             if val == "empty":
-
-                def gen(n):
-                    return np.empty((n,), float)
-
+                gen = lambda n: np.empty((n,), float)
             elif val == "rand":
-
-                def gen(n):
-                    return np.random.rand(n)
-
+                gen = lambda n: self.np_random.random(size=n)
             elif val == "randn":
-
-                def gen(n):
-                    return np.random.randn(n)
-
+                gen = lambda n: self.np_random.normal(size=n)
             else:
                 raise ValueError("Invalid variable initialization method.")
         else:
-
-            def gen(n):
-                return np.full((n,), val)
+            gen = lambda n: np.full((n,), val)
 
         self._var_gen: Callable[[int], np.ndarray] = gen
         self._var_type = val
