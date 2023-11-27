@@ -231,6 +231,9 @@ class Engine(EngineBase, Generic[VarType]):
     def vcat(self, *arrays: VarType) -> VarType:
         return cs.vcat(arrays)
 
+    def min(self, array1: VarType, array2: VarType) -> VarType:
+        return cs.fmin(array1, array2)
+
     def max(self, array1: VarType, array2: VarType) -> VarType:
         return cs.fmax(array1, array2)
 

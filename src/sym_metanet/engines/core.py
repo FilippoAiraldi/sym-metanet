@@ -537,6 +537,21 @@ class EngineBase(ABC):
         """
 
     @abstractmethod
+    def min(self, array1, array2):
+        """Returns the minimum value of the given elements/variables.
+
+        Parameters
+        ----------
+        array1, array2
+            Values to be compared.
+
+        Returns
+        -------
+        sym variable
+            The minimum value.
+        """
+
+    @abstractmethod
     def max(self, array1, array2):
         """Returns the maximum value of the given elements/variables.
 

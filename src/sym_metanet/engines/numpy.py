@@ -302,6 +302,9 @@ class Engine(EngineBase):
     def vcat(self, *arrays: np.ndarray) -> np.ndarray:
         return np.hstack(arrays)
 
+    def min(self, array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
+        return np.minimum(array1, array2)
+
     def max(self, array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
         return np.maximum(array1, array2)
 
