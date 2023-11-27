@@ -1,5 +1,5 @@
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from sym_metanet.blocks.base import ElementWithVars
 from sym_metanet.blocks.origins import MeteredOnRamp
@@ -305,7 +305,7 @@ class LinkWithVsl(Link[VarType]):
             if index >= self.N or index < 0:
                 raise ValueError(f"Invalid segment index {index} for VSL sign.")
 
-    def init_vars(  # type: ignore[override]
+    def init_vars(
         self,
         init_conditions: Optional[dict[str, VarType]] = None,
         engine: Optional[EngineBase] = None,
@@ -351,3 +351,79 @@ class LinkWithVsl(Link[VarType]):
             self.rho_crit,
             self.a,
         )
+
+
+class SimplifiedLinkWithVsl(LinkWithVsl[VarType]):
+    """A simplified version of a link with VSL sign, where the equilibrium speed of the
+    link is the direct control action (instead of controlling the displayed speed).
+
+    See `LinkWithVsl` for the original version."""
+
+    __slots__ = ("vsl", "alpha", "V_eq_type")
+    _actions = {"V"}
+
+    def __init__(
+        self,
+        *args: Any,
+        segments_with_vsl: set[int],
+        V_eq_type: Literal["limited", "unlimited"] = "limited",
+        **kwargs: Any,
+    ) -> None:
+        """Creates an instance of a (simplified) METANET link with VSL signs.
+
+        Parameters
+        ----------
+        args, kwargs
+            See base class `Link` for the other parameters.
+            Average speed of cars when traffic is freely flowing, i.e., `v_free`.
+        segments_with_vsl : set of ints
+            The set of segment indices that are equipped with a VSL sign (0-based).
+        V_eq_type : "limited" or "unlimited"
+            If "limited", the equilibrium speed action is capped by the standard
+            equilibrium speed of the link, which is a function of the link density. If
+            "unlimited", this cap is not forced, and it's up to the user to satisfy it.
+            By default, "limited" is selected.
+
+        References
+        ----------
+        [1] Hegyi, A., 2004, "Model predictive control for integrating traffic control
+            measures", Netherlands TRAIL Research School.
+        """
+        super().__init__(
+            *args, segments_with_vsl=segments_with_vsl, alpha=float("nan"), **kwargs
+        )
+        self.V_eq_type = V_eq_type
+
+    def init_vars(
+        self,
+        init_conditions: Optional[dict[str, VarType]] = None,
+        engine: Optional[EngineBase] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Initializes as control action the equilibrium speed `V` of the link instead
+        of the control speed `v_ctrl`."""
+        if init_conditions is None:
+            init_conditions = {}
+        if engine is None:
+            engine = get_current_engine()
+
+        super().init_vars(init_conditions, engine, *args, **kwargs)
+
+        del self.actions["v_ctrl"]
+        self.actions["V"] = (
+            init_conditions["V"]
+            if "V" in init_conditions
+            else engine.var(f"V_{self.name}", len(self.vsl))
+        )
+
+    def _get_equilibrium_speed(self, engine: EngineBase, rho: VarType) -> VarType:
+        if engine is None:
+            engine = get_current_engine()
+        V_ctrl = self.actions["V"]
+        Veq = engine.links.Veq(rho, self.v_free, self.rho_crit, self.a)
+        if self.V_eq_type == "unlimited":
+            Veq[self.vsl] = V_ctrl
+        else:
+            Veq[self.vsl] = engine.min(Veq[self.vsl], V_ctrl)
+        return Veq
