@@ -263,7 +263,9 @@ class Engine(EngineBase, Generic[VarType]):
             aggregated in a single vector each.
 
         more_out : bool, optional
-            Includes flows of links and origins in the output. By default `False`.
+            Includes flows of links and origins in the output. Note that these flows are
+            for the current time instant and current states, not for the next time step.
+            By default `False`.
         parameters : dict[str, casadi.SX or MX], optional
             Symbolic network parameters to be included in the function, by default None.
         **other_parameters
