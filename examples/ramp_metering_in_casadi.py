@@ -113,7 +113,7 @@ r, _ = mpc.action("r", lb=0, ub=1)
 d = mpc.disturbance("d", n_orig)
 
 # add dynamics constraints
-mpc.set_dynamics(F)
+mpc.set_nonlinear_dynamics(lambda x, u, d: F(x, u, d)[0])
 
 # set the optimization objective
 r_last = mpc.parameter("r_last", (r.size1(), 1))

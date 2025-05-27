@@ -163,7 +163,7 @@ class TestExamples(unittest.TestCase):
         )  # O2 queue is constrained
         r, _ = mpc.action("r", lb=0, ub=1)
         mpc.disturbance("d", n_orig)
-        mpc.set_dynamics(F)
+        mpc.set_nonlinear_dynamics(lambda x, u, d: F(x, u, d)[0])
         r_last = mpc.parameter("r_last", (r.size1(), 1))
         mpc.minimize(
             pars["T"] * cs.sum2(cs.sum1(rho * pars["L"] * pars["lanes"]) + cs.sum1(w))
@@ -256,7 +256,7 @@ class TestExamples(unittest.TestCase):
         v_ctrl, _ = mpc.action("v_ctrl", 2, lb=20, ub=pars["v_free"])
         r, _ = mpc.action("r", lb=0, ub=1)
         mpc.disturbance("d", n_orig)
-        mpc.set_dynamics(F)
+        mpc.set_nonlinear_dynamics(lambda x, u, d: F(x, u, d)[0])
         v_ctrl_last = mpc.parameter("v_ctrl_last", (v_ctrl.size1(), 1))
         r_last = mpc.parameter("r_last", (r.size1(), 1))
         mpc.minimize(
